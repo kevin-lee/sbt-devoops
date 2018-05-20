@@ -1,2 +1,2 @@
-# sbt-github-devoops
+# SBT DevOops
 Sbt Plugin to help CI and CD
