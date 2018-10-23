@@ -6,10 +6,10 @@ import wartremover.WartRemover.autoImport.{Wart, Warts}
   */
 object ProjectInfo {
 
-  val ProjectScalaVersion = "2.12.6"
-  val CrossScalaVersions = Seq("2.10.6", ProjectScalaVersion)
+  val ProjectScalaVersion = "2.12.7"
+  val CrossScalaVersions = Seq("2.10.7", ProjectScalaVersion)
 
-  val CrossSbtVersions = Vector("0.13.17", "1.1.6")
+  val CrossSbtVersions = Vector("0.13.17", "1.2.6")
 
   val ProjectVersion = "0.1.0-SNAPSHOT"
 
