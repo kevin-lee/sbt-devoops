@@ -1,0 +1,141 @@
+package io.kevinlee.sbt
+
+import CommonPredef._
+
+import scala.annotation.tailrec
+
+/**
+  * @author Kevin Lee
+  * @since 2018-10-21
+  */
+sealed trait AlphaNumHyphen extends Ordered[AlphaNumHyphen] {
+  override def compare(that: AlphaNumHyphen): Int =
+    (this, that) match {
+      case (Num(thisValue), Num(thatValue)) =>
+        thisValue.compareTo(thatValue)
+      case (Num(_), AlphaHyphen(_)) =>
+        -1
+      case (AlphaHyphen(_), Num(_)) =>
+        1
+      case (AlphaHyphen(thisValue), AlphaHyphen(thatValue)) =>
+        thisValue.compareTo(thatValue)
+    }
+}
+
+final case class AlphaHyphen private(value: String) extends AlphaNumHyphen
+object AlphaHyphen {
+  private[sbt] def apply(value: String): AlphaHyphen = new AlphaHyphen(value)
+}
+final case class Num private(value: Int) extends AlphaNumHyphen
+object Num {
+  private[sbt] def apply(value: Int): Num = new Num(value)
+}
+
+object AlphaNumHyphen {
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+  def apply(value: String): AlphaNumHyphen =
+    if (value.forall(_.isDigit)) {
+      Num(value.toInt)
+    } else if (value.forall(x => x.isUpper || x.isLower || (x === '-'))) {
+      AlphaHyphen(value)
+    } else {
+      throw new IllegalArgumentException(
+        s"[Invalid] It can contain only alpha numeric and hyphen (-). value: $value"
+      )
+    }
+}
+
+final case class Identifier(values: Seq[AlphaNumHyphen]) extends AnyVal
+object Identifier {
+  def compare(a: Identifier, b: Identifier): Int = {
+    @tailrec
+    def compareElems(x: Seq[AlphaNumHyphen], y: Seq[AlphaNumHyphen]): Int = (x, y) match {
+      case (head1 +: tail1, head2 +: tail2) =>
+        val result = head1.compare(head2)
+        if (result === 0) {
+          compareElems(tail1, tail2)
+        } else {
+          result
+        }
+      case (Seq(), _ +: _) =>
+        -1
+      case (_ +: _, Seq()) =>
+        1
+    }
+    compareElems(a.values, b.values)
+  }
+}
+
+final case class Major(major: Int) extends AnyVal
+final case class Minor(minor: Int) extends AnyVal
+final case class Patch(patch: Int) extends AnyVal
+
+trait SequenceBasedVersion[T] extends Ordered[T] {
+  def major: Major
+  def minor: Minor
+
+  def render: String
+}
+
+final case class SemanticVersion(
+  major: Major
+, minor: Minor
+, patch: Patch
+, pre: Option[Identifier]
+, buildMetadata: Option[Identifier]
+) extends SequenceBasedVersion[SemanticVersion] {
+
+  override def compare(that: SemanticVersion): Int = {
+    val mj = this.major.major.compareTo(that.major.major)
+    if (mj === 0) {
+      val mn = this.minor.minor.compareTo(that.minor.minor)
+      if (mn === 0) {
+        val pt = this.patch.patch.compareTo(that.patch.patch)
+        if (pt === 0) {
+          (this.pre, that.pre) match {
+            case (Some(thisPre), Some(thatPre)) =>
+              Identifier.compare(thisPre, thatPre)
+            case (Some(_), None) =>
+              -1
+            case (None, Some(_)) =>
+              1
+            case (None, None) =>
+              0
+          }
+        } else {
+          pt
+        }
+      } else {
+        mn
+      }
+    } else {
+      mj
+    }
+  }
+
+  def render: String =
+    s"${major.major}.${minor.minor}.${patch.patch}" + ((pre, buildMetadata) match {
+        case (Some(p), Some(m)) =>
+          p.values.mkString("-", ".", "") + m.values.mkString("+", ".", "")
+        case (Some(p), None) =>
+          p.values.mkString("-", ".", "")
+        case (None, Some(m)) =>
+          m.values.mkString("+", ".", "")
+        case (None, None) =>
+          ""
+      }).toString
+}
+
+object SemanticVersion {
+  def noIdentifier(major: Major, minor: Minor, patch: Patch): SemanticVersion =
+    SemanticVersion(major, minor, patch, None, None)
+
+  def withMajor(major: Major): SemanticVersion =
+    SemanticVersion(major, Minor(0), Patch(0), None, None)
+
+  def withMinor(minor: Minor): SemanticVersion =
+    SemanticVersion(Major(0), minor, Patch(0), None, None)
+
+  def withPatch(patch: Patch): SemanticVersion =
+    SemanticVersion(Major(0), Minor(0), patch, None, None)
+}
