@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val hedgehogVersion = "3db897f63c0a2454098f60a072b3083b647ebeb9"
+  val hedgehogVersion = "7ab54a77ab5a96f27491e5e0b80d4b0446c8e7ca"
   val hedgehogRepo =
     Resolver.url(
       "bintray-scala-hedgehog",

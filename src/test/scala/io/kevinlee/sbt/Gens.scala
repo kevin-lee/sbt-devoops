@@ -8,11 +8,16 @@ import hedgehog._
   */
 object Gens {
 
+  def genMinMax[T : Ordering](genOrderedPair: Gen[(T, T)]): Gen[(T, T)] =
+    genOrderedPair.map { case (x, y) =>
+      if (implicitly[Ordering[T]].compare(x, y) < 0) (x, y) else (y, x)
+    }
+
   def genNonNegativeInt: Gen[Int] =
     Gen.int(Range.linear(0, Int.MaxValue))
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals"))
-  def genDifferentNonNegativeIntPair: Gen[(Int, Int)] = for {
+  def genDifferentNonNegIntPair: Gen[(Int, Int)] = for {
     x <- genNonNegativeInt
     y <- genNonNegativeInt
   } yield {
@@ -23,31 +28,29 @@ object Gens {
     (x, z)
   }
 
+  def genMinMaxNonNegInts: Gen[(Int, Int)] =
+    Gens.genMinMax(Gens.genDifferentNonNegIntPair)
+
+  def pairFromIntsTo[T](constructor: Int => T): ((Int, Int)) => (T, T) =
+    pair => (constructor(pair._1), constructor(pair._2))
+
 
   def genMajor: Gen[Major] =
     genNonNegativeInt.map(Major)
 
-
-  def genDifferentMajors: Gen[(Major, Major)] = for {
-    xAndY <- genDifferentNonNegativeIntPair
-    (x, y) = xAndY
-  } yield (Major(x), Major(y))
-
+  def genMinMaxMajors: Gen[(Major, Major)] =
+    genMinMaxNonNegInts.map(pairFromIntsTo(Major))
 
   def genMinor: Gen[Minor] =
     genNonNegativeInt.map(Minor)
 
-  def genDifferentMinors: Gen[(Minor, Minor)] = for {
-    xAndY <- genDifferentNonNegativeIntPair
-    (x, y) = xAndY
-  } yield (Minor(x), Minor(y))
+  def genMinMaxMinors: Gen[(Minor, Minor)] =
+    genMinMaxNonNegInts.map(pairFromIntsTo(Minor))
 
   def genPatch: Gen[Patch] =
     genNonNegativeInt.map(Patch)
 
-  def genDifferentPatches: Gen[(Patch, Patch)] = for {
-    xAndY <- genDifferentNonNegativeIntPair
-    (x, y) = xAndY
-  } yield (Patch(x), Patch(y))
+  def genMinMaxPatches: Gen[(Patch, Patch)] =
+    genMinMaxNonNegInts.map(pairFromIntsTo(Patch))
 
 }
