@@ -43,19 +43,20 @@ final case class Identifier(values: Seq[AlphaNumHyphen]) extends AnyVal
 object Identifier {
   def compare(a: Identifier, b: Identifier): Int = {
     @tailrec
-    def compareElems(x: Seq[AlphaNumHyphen], y: Seq[AlphaNumHyphen]): Int = (x, y) match {
-      case (head1 +: tail1, head2 +: tail2) =>
-        val result = head1.compare(head2)
-        if (result === 0) {
-          compareElems(tail1, tail2)
-        } else {
-          result
-        }
-      case (Seq(), _ +: _) =>
-        -1
-      case (_ +: _, Seq()) =>
-        1
-    }
+    def compareElems(x: Seq[AlphaNumHyphen], y: Seq[AlphaNumHyphen]): Int =
+      (x, y) match {
+        case (head1 +: tail1, head2 +: tail2) =>
+          val result = head1.compare(head2)
+          if (result === 0) {
+            compareElems(tail1, tail2)
+          } else {
+            result
+          }
+        case (Seq(), _ +: _) =>
+          -1
+        case (_ +: _, Seq()) =>
+          1
+      }
     compareElems(a.values, b.values)
   }
 }
@@ -121,15 +122,19 @@ final case class SemanticVersion(
 }
 
 object SemanticVersion {
+  val major0: Major = Major(0)
+  val minor0: Minor = Minor(0)
+  val patch0: Patch = Patch(0)
+
   def noIdentifier(major: Major, minor: Minor, patch: Patch): SemanticVersion =
     SemanticVersion(major, minor, patch, None, None)
 
   def withMajor(major: Major): SemanticVersion =
-    SemanticVersion(major, Minor(0), Patch(0), None, None)
+    SemanticVersion(major, minor0, patch0, None, None)
 
   def withMinor(minor: Minor): SemanticVersion =
-    SemanticVersion(Major(0), minor, Patch(0), None, None)
+    SemanticVersion(major0, minor, patch0, None, None)
 
   def withPatch(patch: Patch): SemanticVersion =
-    SemanticVersion(Major(0), Minor(0), patch, None, None)
+    SemanticVersion(major0, minor0, patch, None, None)
 }

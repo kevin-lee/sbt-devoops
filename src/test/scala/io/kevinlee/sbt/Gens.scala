@@ -8,6 +8,16 @@ import hedgehog._
   */
 object Gens {
 
+  def genAlphabet: Gen[Char] =
+    Gen.frequency1(
+      8 -> Gen.char('a', 'z'), 2 -> Gen.char('A', 'Z')
+    )
+
+  def genAlphabetHyphen: Gen[Char] =
+    Gen.frequency1(
+      9 -> genAlphabet, 1 -> Gen.constant('-')
+    )
+
   def genMinMax[T : Ordering](genOrderedPair: Gen[(T, T)]): Gen[(T, T)] =
     genOrderedPair.map { case (x, y) =>
       if (implicitly[Ordering[T]].compare(x, y) < 0) (x, y) else (y, x)
@@ -52,5 +62,15 @@ object Gens {
 
   def genMinMaxPatches: Gen[(Patch, Patch)] =
     genMinMaxNonNegInts.map(pairFromIntsTo(Patch))
+
+  def genNum: Gen[Num] =
+    genNonNegativeInt.map(Num)
+
+  def genMinMaxNum: Gen[(Num, Num)] =
+    genMinMaxNonNegInts.map(pairFromIntsTo(Num))
+
+  def genAlphaHyphen(range: Range[Int]): Gen[AlphaHyphen] =
+    Gen.string(genAlphabetHyphen, range).map(AlphaHyphen)
+
 
 }

@@ -266,3 +266,41 @@ object SemanticVersionPatchSpec extends Properties {
   }
 
 }
+
+object AlphaNumHyphenSpec extends Properties {
+
+  override def tests: List[Test] = List(
+    property("Num(same).compare(Num(same)) should return 0", testNumEqual)
+  , property("Num(less).compare(Num(greater)) should return -1", testNumLess)
+  , property("Num(greater).compare(Num(less)) should return 1", testNumMore)
+  , property("testAlphaHyphenEqual", testAlphaHyphenEqual)
+  )
+
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
+  def testNumEqual: Property = for {
+    num <- genNum.log("num")
+  } yield {
+    num.compare(num) ==== 0 and Result.assert(num == num)
+  }
+
+  def testNumLess: Property = for {
+    minMax <- genMinMaxNum.log("(num1, num2)")
+    (num1, num2) = minMax
+  } yield {
+    num1.compare(num2) ==== -1
+  }
+
+  def testNumMore: Property = for {
+    minMax <- genMinMaxNum.log("(num1, num2)")
+    (num1, num2) = minMax
+  } yield {
+    num2.compare(num1) ==== 1
+  }
+
+  def testAlphaHyphenEqual: Property = for {
+    alphaHyphen <- genAlphaHyphen(Range.linear(0, 10)).log("alphaHyphen")
+  } yield {
+    alphaHyphen.compare(alphaHyphen) ==== 0
+  }
+
+}
