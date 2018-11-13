@@ -22,14 +22,8 @@ sealed trait AlphaNumHyphen extends Ordered[AlphaNumHyphen] {
     }
 }
 
-final case class AlphaHyphen private(value: String) extends AlphaNumHyphen
-object AlphaHyphen {
-  private[sbt] def apply(value: String): AlphaHyphen = new AlphaHyphen(value)
-}
-final case class Num private(value: Int) extends AlphaNumHyphen
-object Num {
-  private[sbt] def apply(value: Int): Num = new Num(value)
-}
+final case class AlphaHyphen(value: String) extends AlphaNumHyphen
+final case class Num(value: Int) extends AlphaNumHyphen
 
 object AlphaNumHyphen {
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
