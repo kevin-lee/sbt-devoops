@@ -8,6 +8,16 @@ import hedgehog._
   */
 object Gens {
 
+  def genPlus[A](r: Range[A])(f: Range[A] => Gen[A]): Gen[A] ={
+    val (min, max) = r.bounds(Size(Size.max))
+    Gen.frequency1(
+        (1, Gen.constant(min))
+      , (1, Gen.constant(max))
+      , (1, Gen.constant(r.origin))
+      , (97, f(r))
+    )
+  }
+
   def genAlphabet: Gen[Char] =
     Gen.frequency1(
       8 -> Gen.char('a', 'z'), 2 -> Gen.char('A', 'Z')
@@ -24,7 +34,7 @@ object Gens {
     }
 
   def genNonNegativeInt: Gen[Int] =
-    Gen.int(Range.linear(0, Int.MaxValue))
+    genPlus(Range.linear(0, Int.MaxValue))(Gen.int)
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def genDifferentNonNegIntPair: Gen[(Int, Int)] = for {
