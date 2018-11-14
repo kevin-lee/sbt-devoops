@@ -1,6 +1,7 @@
 package io.kevinlee.sbt
 
 import hedgehog._
+import CommonPredef._
 
 /**
   * @author Kevin Lee
@@ -36,14 +37,13 @@ object Gens {
   def genNonNegativeInt: Gen[Int] =
     genPlus(Range.linear(0, Int.MaxValue))(Gen.int)
 
-  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def genDifferentNonNegIntPair: Gen[(Int, Int)] = for {
     x <- genNonNegativeInt
     y <- genNonNegativeInt
   } yield {
     val z =
-      if (x != y) y
-      else if (y == Int.MaxValue) 0
+      if (x !== y) y
+      else if (y === Int.MaxValue) 0
       else y + 1
     (x, z)
   }
@@ -73,14 +73,31 @@ object Gens {
   def genMinMaxPatches: Gen[(Patch, Patch)] =
     genMinMaxNonNegInts.map(pairFromIntsTo(Patch))
 
-  def genNum: Gen[Num] =
+  def genNum: Gen[AlphaNumHyphen] =
     genNonNegativeInt.map(Num)
 
-  def genMinMaxNum: Gen[(Num, Num)] =
+  def genMinMaxNum: Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
     genMinMaxNonNegInts.map(pairFromIntsTo(Num))
 
-  def genAlphaHyphen(range: Range[Int]): Gen[AlphaHyphen] =
-    Gen.string(genAlphabetHyphen, range).map(AlphaHyphen)
+  def genAlphaHyphenString(max: Int): Gen[String] =
+    Gen.string(genAlphabetHyphen, Range.linear(1, max))
 
+  def genAlphaHyphen(max: Int): Gen[AlphaNumHyphen] =
+    genAlphaHyphenString(max).map(AlphaHyphen)
+
+  def genDifferentAlphaHyphenPair(max: Int): Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
+    for {
+      x <- genAlphaHyphenString(max)
+      y <- genAlphaHyphenString(max)
+      z <- genAlphabetHyphen
+    } yield {
+      if (x === y)
+        (AlphaHyphen(x), AlphaHyphen(y + String.valueOf(z)))
+      else
+        (AlphaHyphen(x), AlphaHyphen(y))
+    }
+
+  def genMinMaxAlphaHyphen(max: Int): Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
+    genMinMax(genDifferentAlphaHyphenPair(max))
 
 }

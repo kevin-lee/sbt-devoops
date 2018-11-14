@@ -273,7 +273,9 @@ object AlphaNumHyphenSpec extends Properties {
     property("Num(same).compare(Num(same)) should return 0", testNumEqual)
   , property("Num(less).compare(Num(greater)) should return -1", testNumLess)
   , property("Num(greater).compare(Num(less)) should return 1", testNumMore)
-  , property("testAlphaHyphenEqual", testAlphaHyphenEqual)
+  , property("AlphaHyphen(same).compare(AlphaHyphen(same)) should return 0", testAlphaHyphenEqual)
+  , property("AlphaHyphen(less).compare(AlphaHyphen(greater)) should return the Int < 0", testAlphaHyphenLess)
+  , property("AlphaHyphen(greater).compare(AlphaHyphen(less)) should return the Int > 0", testAlphaHyphenMore)
   )
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals"))
@@ -297,10 +299,25 @@ object AlphaNumHyphenSpec extends Properties {
     num2.compare(num1) ==== 1
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def testAlphaHyphenEqual: Property = for {
-    alphaHyphen <- genAlphaHyphen(Range.linear(0, 10)).log("alphaHyphen")
+    alphaHyphen <- genAlphaHyphen(10).log("alphaHyphen")
   } yield {
-    alphaHyphen.compare(alphaHyphen) ==== 0
+    alphaHyphen.compare(alphaHyphen) ==== 0 and Result.assert(alphaHyphen == alphaHyphen)
+  }
+
+  def testAlphaHyphenLess: Property = for {
+    alphaHyphenPair <- genMinMaxAlphaHyphen(10).log("(alphaHyphen1, alphaHyphen2)")
+    (alphaHyphen1, alphaHyphen2) = alphaHyphenPair
+  } yield {
+    Result.assert(alphaHyphen1.compare(alphaHyphen2) < 0)
+  }
+
+  def testAlphaHyphenMore: Property = for {
+    alphaHyphenPair <- genMinMaxAlphaHyphen(10).log("(alphaHyphen1, alphaHyphen2)")
+    (alphaHyphen1, alphaHyphen2) = alphaHyphenPair
+  } yield {
+    Result.assert(alphaHyphen2.compare(alphaHyphen1) > 0)
   }
 
 }

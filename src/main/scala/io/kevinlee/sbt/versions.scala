@@ -26,17 +26,21 @@ final case class AlphaHyphen(value: String) extends AlphaNumHyphen
 final case class Num(value: Int) extends AlphaNumHyphen
 
 object AlphaNumHyphen {
+
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def apply(value: String): AlphaNumHyphen =
-    if (value.forall(_.isDigit)) {
-      Num(value.toInt)
+  def parse(value: String): Either[String, AlphaNumHyphen] =
+    if (value.isEmpty) {
+      Left("[Invalid] AlphaNumHyphen cannot be empty.")
+    } else if (value.forall(_.isDigit)) {
+      Right(Num(value.toInt))
     } else if (value.forall(x => x.isUpper || x.isLower || (x === '-'))) {
-      AlphaHyphen(value)
+      Right(AlphaHyphen(value))
     } else {
-      throw new IllegalArgumentException(
-        s"[Invalid] It can contain only alpha numeric and hyphen (-). value: $value"
+      Left(
+        s"[Invalid] AlphaNumHyphen can contain only alpha numeric and hyphen (-). value: $value"
       )
     }
+
 }
 
 final case class Identifier(values: Seq[AlphaNumHyphen]) extends AnyVal
