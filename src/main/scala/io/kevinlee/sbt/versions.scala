@@ -3,6 +3,7 @@ package io.kevinlee.sbt
 import CommonPredef._
 
 import scala.annotation.tailrec
+import scala.util.matching.Regex
 
 /**
   * @author Kevin Lee
@@ -41,10 +42,16 @@ object AlphaNumHyphen {
       )
     }
 
+  def render(alphaNumHyphen: AlphaNumHyphen): String = alphaNumHyphen match {
+    case Num(value) => value.toString
+    case AlphaHyphen(value) => value
+  }
+
 }
 
 final case class Identifier(values: Seq[AlphaNumHyphen]) extends AnyVal
 object Identifier {
+
   def compare(a: Identifier, b: Identifier): Int = {
     @tailrec
     def compareElems(x: Seq[AlphaNumHyphen], y: Seq[AlphaNumHyphen]): Int =
@@ -62,6 +69,37 @@ object Identifier {
           1
       }
     compareElems(a.values, b.values)
+  }
+
+  def render(identifier: Identifier): String =
+    identifier.values.map(AlphaNumHyphen.render).mkString(".")
+
+  def parse(value: String): Either[String, Option[Identifier]] = {
+    val alphaNumHyphens: Either[String, List[AlphaNumHyphen]] =
+      Option(value)
+        .map(_.split("\\."))
+        .map(_.map(AlphaNumHyphen.parse)) match {
+          case Some(preRelease) =>
+            preRelease.foldRight[Either[String, List[AlphaNumHyphen]]](Right(List.empty)){
+              (x, acc) =>
+                x match {
+                  case Right(alp) =>
+                    acc.right.map(alps => alp :: alps)
+                  case Left(error) =>
+                    Left(error)
+                }
+            }.left.map(
+              identity
+            )
+          case None =>
+            Right(List.empty)
+        }
+    alphaNumHyphens.right.map {
+      case Nil =>
+        None
+      case xs =>
+        Some(Identifier(xs))
+    }
   }
 }
 
@@ -115,11 +153,11 @@ final case class SemanticVersion(
   def render: String =
     s"${major.major}.${minor.minor}.${patch.patch}" + ((pre, buildMetadata) match {
         case (Some(p), Some(m)) =>
-          p.values.mkString("-", ".", "") + m.values.mkString("+", ".", "")
+          s"-${Identifier.render(p)}+${Identifier.render(m)}"
         case (Some(p), None) =>
-          p.values.mkString("-", ".", "")
+          s"-${Identifier.render(p)}"
         case (None, Some(m)) =>
-          m.values.mkString("+", ".", "")
+          s"+${Identifier.render(m)}"
         case (None, None) =>
           ""
       }).toString
@@ -129,6 +167,33 @@ object SemanticVersion {
   val major0: Major = Major(0)
   val minor0: Minor = Minor(0)
   val patch0: Patch = Patch(0)
+
+  val semanticVersionRegex: Regex =
+    """(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z\d-\.]+)?)?(?:\+([a-zA-Z\d-\.]+)?)?""".r
+
+  def parse(version: String): Either[String, SemanticVersion] = version match {
+    case semanticVersionRegex(major, minor, patch, pre, meta) =>
+      val preRelease = Identifier.parse(pre)
+      val metaInfo = Identifier.parse(meta)
+      (preRelease, metaInfo) match {
+        case (Left(preError), Left(metaError)) =>
+          Left(s"$preError\n$metaError")
+        case (Left(preError), _) =>
+          Left(preError)
+        case (_, Left(metaError)) =>
+          Left(metaError)
+        case (Right(preR), Right(metaI)) =>
+          Right(
+            SemanticVersion(
+              Major(major.toInt), Minor(minor.toInt), Patch(patch.toInt),
+              preR, metaI
+            )
+          )
+      }
+
+    case _ =>
+      Left("Invalid version String")
+  }
 
   def noIdentifier(major: Major, minor: Minor, patch: Patch): SemanticVersion =
     SemanticVersion(major, minor, patch, None, None)

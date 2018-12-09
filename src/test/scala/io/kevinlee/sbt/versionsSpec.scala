@@ -324,10 +324,55 @@ object AlphaNumHyphenSpec extends Properties {
 
 object SemanticVersionSpec extends Properties {
   override def tests: List[Test] = List(
-      property("SemanticVersion(same) == SemanticVersion(same) should be true", testSemanticVersionEqual)
+      example("""SemanticVersion.parse("1.0.5") should return SementicVersion(Major(1), Minor(0), Patch(5), None, None)""", parseExample1)
+    , example("""SemanticVersion.parse("1.0.5-beta") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExample2)
+    , example("""SemanticVersion.parse("1.0.5-a.3.7.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExample3)
+    , property("SemanticVersion(same) == SemanticVersion(same) should be true", testSemanticVersionEqual)
     , property("SemanticVersion(less).compare(SemanticVersion(greater)) should the value less than 0", testSemanticVersionLess)
     , property("SemanticVersion(greater).compare(SemanticVersion(less)) should the value more than 0", testSemanticVersionGreater)
+    , property("testRender", testSemanticVersion)
     )
+
+  def parseExample1: Result = {
+    val input = "1.0.5"
+    val expected = Right(SemanticVersion(Major(1), Minor(0), Patch(5), None, None))
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExample2: Result = {
+    val input = "1.0.5-beta"
+    val expected =
+      Right(
+        SemanticVersion(
+            Major(1)
+          , Minor(0)
+          , Patch(5)
+          , Some(Identifier(List(AlphaHyphen("beta"))))
+          , None
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExample3: Result = {
+    val input = "1.0.5-a.3.7.xyz"
+    val expected =
+      Right(
+        SemanticVersion(
+            Major(1)
+          , Minor(0)
+          , Patch(5)
+          , Some(Identifier(List[AlphaNumHyphen](AlphaHyphen("a"), Num(3), Num(7), AlphaHyphen("xyz"))))
+          , None
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def testSemanticVersionEqual: Property = for {
@@ -348,6 +393,14 @@ object SemanticVersionSpec extends Properties {
     (v1, v2) = v1AndV2
   } yield {
     Result.assert(v2.compare(v1) > 0)
+  }
+
+  def testSemanticVersion: Property = for {
+    semanticVersion <- genSemanticVersion.log("semanticVersion")
+  } yield {
+    val rendered = semanticVersion.render
+    val actual = SemanticVersion.parse(rendered)
+    actual ==== Right(semanticVersion)
   }
 
 }
