@@ -324,26 +324,26 @@ object AlphaNumHyphenSpec extends Properties {
 
 object SemanticVersionSpec extends Properties {
   override def tests: List[Test] = List(
-      property("SemanticVersion(same) == SemanticVersion(same) should be true", testSemanticVesionEqual)
-    , property("SemanticVersion(less).compare(SemanticVersion(greater)) should the value less than 0", testSemanticVesionLess)
-    , property("SemanticVersion(greater).compare(SemanticVersion(less)) should the value more than 0", testSemanticVesionGreater)
+      property("SemanticVersion(same) == SemanticVersion(same) should be true", testSemanticVersionEqual)
+    , property("SemanticVersion(less).compare(SemanticVersion(greater)) should the value less than 0", testSemanticVersionLess)
+    , property("SemanticVersion(greater).compare(SemanticVersion(less)) should the value more than 0", testSemanticVersionGreater)
     )
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals"))
-  def testSemanticVesionEqual: Property = for {
+  def testSemanticVersionEqual: Property = for {
     v <- genSemanticVersion.log("v")
   } yield {
     Result.assert(v == v).log("v == v")
   }
 
-  def testSemanticVesionLess: Property = for {
+  def testSemanticVersionLess: Property = for {
     v1AndV2 <- genMinMaxSemanticVersions.log("(v1, v2)")
     (v1, v2) = v1AndV2
   } yield {
     Result.assert(v1.compare(v2) < 0)
   }
 
-  def testSemanticVesionGreater: Property = for {
+  def testSemanticVersionGreater: Property = for {
     v1AndV2 <- genMinMaxSemanticVersions.log("(v1, v2)")
     (v1, v2) = v1AndV2
   } yield {
