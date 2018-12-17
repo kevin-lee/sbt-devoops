@@ -3,6 +3,9 @@ package io.kevinlee.sbt
 import hedgehog._
 import CommonPredef._
 
+import scala.annotation.tailrec
+
+
 /**
   * @author Kevin Lee
   * @since 2018-11-04
@@ -19,20 +22,24 @@ object Gens {
     )
   }
 
-  def genAlphabet: Gen[Char] =
+  def genAlphabetChar: Gen[Char] =
     Gen.frequency1(
       8 -> Gen.char('a', 'z'), 2 -> Gen.char('A', 'Z')
     )
 
-  def genAlphabetHyphen: Gen[Char] =
-    Gen.frequency1(
-      9 -> genAlphabet, 1 -> Gen.constant('-')
-    )
+  def genDigitChar: Gen[Char] =
+    Gen.char('0', '9')
+
+  def genHyphen: Gen[AlphaNumHyphen] =
+    Gen.constant(Hyphen)
 
   def genMinMax[T : Ordering](genOrderedPair: Gen[(T, T)]): Gen[(T, T)] =
     genOrderedPair.map { case (x, y) =>
       if (implicitly[Ordering[T]].compare(x, y) < 0) (x, y) else (y, x)
     }
+
+  def genInt(min: Int, max: Int): Gen[Int] =
+    genPlus(Range.linear(min, max))(Gen.int)
 
   def genNonNegativeInt: Gen[Int] =
     genPlus(Range.linear(0, Int.MaxValue))(Gen.int)
@@ -74,40 +81,84 @@ object Gens {
     genMinMaxNonNegInts.map(pairFromIntsTo(Patch))
 
   def genNum: Gen[AlphaNumHyphen] =
-    genNonNegativeInt.map(Num)
+    genInt(0, 999).map(Num)
 
   def genMinMaxNum: Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
     genMinMaxNonNegInts.map(pairFromIntsTo(Num))
 
-  def genAlphaHyphenString(max: Int): Gen[String] =
-    Gen.string(genAlphabetHyphen, Range.linear(1, max))
+  def genAlphabetString(max: Int): Gen[String] =
+    Gen.string(genAlphabetChar, Range.linear(1, max))
 
-  def genAlphaHyphen(max: Int): Gen[AlphaNumHyphen] =
-    genAlphaHyphenString(max).map(AlphaHyphen)
+  def genAlphabet(max: Int): Gen[AlphaNumHyphen] =
+    genAlphabetString(max).map(Alphabet)
 
-  def genDifferentAlphaHyphenPair(max: Int): Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
+  def genDifferentAlphabetPair(max: Int): Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
     for {
-      x <- genAlphaHyphenString(max)
-      y <- genAlphaHyphenString(max)
-      z <- genAlphabetHyphen
+      x <- genAlphabetString(max)
+      y <- genAlphabetString(max)
+      z <- genAlphabetChar
     } yield {
       if (x === y)
-        (AlphaHyphen(x), AlphaHyphen(y + String.valueOf(z)))
+        (Alphabet(x), Alphabet(y + String.valueOf(z)))
       else
-        (AlphaHyphen(x), AlphaHyphen(y))
+        (Alphabet(x), Alphabet(y))
     }
 
-  def genMinMaxAlphaHyphen(max: Int): Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
-    genMinMax(genDifferentAlphaHyphenPair(max))
+  def genMinMaxAlphabet(max: Int): Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
+    genMinMax(genDifferentAlphabetPair(max))
 
+  def combineAlphaNumHyphen(alps: List[AlphaNumHyphen]): List[AlphaNumHyphen] = {
+    @tailrec
+    def combine(x: AlphaNumHyphen, xs: List[AlphaNumHyphen], acc: List[AlphaNumHyphen]): List[AlphaNumHyphen] =
+      (x, xs) match {
+        case (Alphabet(a1), Alphabet(a2) :: rest) =>
+          combine(Alphabet(a1 + a2), rest, acc)
+        case (a@Alphabet(_), Num(n) :: rest) =>
+          combine(Num(n), rest, a :: acc)
+        case (a@Alphabet(_), Hyphen :: rest) =>
+          combine(Hyphen, rest, a :: acc)
+        case (Num(n1), Num(n2) :: rest) =>
+          combine(Num(n1 + n2), rest, acc)
+        case (n@Num(_), (a@Alphabet(_)) :: rest) =>
+          combine(a, rest, n :: acc)
+        case (n@Num(_), Hyphen :: rest) =>
+          combine(Hyphen, rest, n :: acc)
+        case (Hyphen, Hyphen :: rest) =>
+          combine(Hyphen, rest, Hyphen :: acc)
+        case (Hyphen, (a@Alphabet(_)) :: rest) =>
+          combine(a, rest, Hyphen :: acc)
+        case (Hyphen, (n@Num(_)) :: rest) =>
+          combine(n, rest, Hyphen :: acc)
+        case (_, Nil) =>
+          (x :: acc).reverse
+      }
+    alps match {
+      case a :: as =>
+        combine(a, as, List.empty)
+      case Nil =>
+        Nil
+    }
+  }
 
-  def genIdentifier: Gen[Identifier] = for {
-    values <- Gen.choice1[AlphaNumHyphen](genNum, genAlphaHyphen(10)).list(Range.linear(1, 3))
-  } yield Identifier(values)
+  def genAlphaNumHyphenGroup: Gen[AlphaNumHyphenGroup] = for {
+    values <- Gen.choice1[AlphaNumHyphen](genNum, genAlphabet(10), genHyphen).list(Range.linear(1, 3))
+    combined = combineAlphaNumHyphen(values)
+  } yield AlphaNumHyphenGroup(combined)
+
+  def genIdentifier: Gen[Identifier] =
+    genAlphaNumHyphenGroup.list(Range.linear(1, 5)).map(Identifier(_))
+
+  def genMinMaxAlphaNumHyphenGroup: Gen[(AlphaNumHyphenGroup, AlphaNumHyphenGroup)] = for {
+    minMaxIds <- Gen.frequency1(5 -> genMinMaxNum, 3 -> genMinMaxAlphabet(10), 1 -> genHyphen.map(x => (x, x))).list(Range.linear(1, 3))
+    (minIds, maxIds) = minMaxIds.foldLeft((List.empty[AlphaNumHyphen], List.empty[AlphaNumHyphen])){ case ((ids1, ids2), (id1, id2)) =>
+      (ids1 :+ id1, ids2 :+ id2)
+    }
+
+  } yield (AlphaNumHyphenGroup(minIds), AlphaNumHyphenGroup(maxIds))
 
   def genMinMaxIdentifier: Gen[(Identifier, Identifier)] = for {
-    minMaxIds <- Gen.choice1(genMinMaxNum, genMinMaxAlphaHyphen(10)).list(Range.linear(1, 3))
-    (minIds, maxIds) = minMaxIds.foldLeft((List.empty[AlphaNumHyphen], List.empty[AlphaNumHyphen])){ case ((ids1, ids2), (id1, id2)) =>
+    minMaxIds <- genMinMaxAlphaNumHyphenGroup.list(Range.linear(1, 3))
+    (minIds, maxIds) = minMaxIds.foldLeft((List.empty[AlphaNumHyphenGroup], List.empty[AlphaNumHyphenGroup])){ case ((ids1, ids2), (id1, id2)) =>
       (ids1 :+ id1, ids2 :+ id2)
     }
 

@@ -22,7 +22,9 @@ lazy val root = (project in file("."))
   , scalacOptions ++=
       crossVersionProps(commonScalacOptions, scalaVersion.value) {
         case Some((2, 12)) =>
-          Seq("-Ywarn-unused-import")
+          Seq("-Ywarn-unused-import", "-Ywarn-numeric-widen")
+        case Some((2, 11)) =>
+          Seq("-Ywarn-numeric-widen")
         case _ =>
           Nil
       }

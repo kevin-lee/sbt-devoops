@@ -5,6 +5,8 @@ import hedgehog.runner._
 
 import Gens._
 
+import AlphaNumHyphen.{alphabet, num, hyphen}
+
 /**
   * @author Kevin Lee
   * @since 2018-11-04
@@ -301,20 +303,20 @@ object AlphaNumHyphenSpec extends Properties {
 
   @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def testAlphaHyphenEqual: Property = for {
-    alphaHyphen <- genAlphaHyphen(10).log("alphaHyphen")
+    alphaHyphen <- genAlphabet(10).log("alphaHyphen")
   } yield {
     alphaHyphen.compare(alphaHyphen) ==== 0 and Result.assert(alphaHyphen == alphaHyphen)
   }
 
   def testAlphaHyphenLess: Property = for {
-    alphaHyphenPair <- genMinMaxAlphaHyphen(10).log("(alphaHyphen1, alphaHyphen2)")
+    alphaHyphenPair <- genMinMaxAlphabet(10).log("(alphaHyphen1, alphaHyphen2)")
     (alphaHyphen1, alphaHyphen2) = alphaHyphenPair
   } yield {
     Result.assert(alphaHyphen1.compare(alphaHyphen2) < 0)
   }
 
   def testAlphaHyphenMore: Property = for {
-    alphaHyphenPair <- genMinMaxAlphaHyphen(10).log("(alphaHyphen1, alphaHyphen2)")
+    alphaHyphenPair <- genMinMaxAlphabet(10).log("(alphaHyphen1, alphaHyphen2)")
     (alphaHyphen1, alphaHyphen2) = alphaHyphenPair
   } yield {
     Result.assert(alphaHyphen2.compare(alphaHyphen1) > 0)
@@ -327,10 +329,11 @@ object SemanticVersionSpec extends Properties {
       example("""SemanticVersion.parse("1.0.5") should return SementicVersion(Major(1), Minor(0), Patch(5), None, None)""", parseExample1)
     , example("""SemanticVersion.parse("1.0.5-beta") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExample2)
     , example("""SemanticVersion.parse("1.0.5-a.3.7.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExample3)
+    , example("""SemanticVersion.parse("1.0.5-a-b.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExample4)
     , property("SemanticVersion(same) == SemanticVersion(same) should be true", testSemanticVersionEqual)
     , property("SemanticVersion(less).compare(SemanticVersion(greater)) should the value less than 0", testSemanticVersionLess)
     , property("SemanticVersion(greater).compare(SemanticVersion(less)) should the value more than 0", testSemanticVersionGreater)
-    , property("testRender", testSemanticVersion)
+    , property("SemanticVersion round trip", roundTripSemanticVersion)
     )
 
   def parseExample1: Result = {
@@ -348,7 +351,9 @@ object SemanticVersionSpec extends Properties {
             Major(1)
           , Minor(0)
           , Patch(5)
-          , Some(Identifier(List(AlphaHyphen("beta"))))
+          , Option(
+              Identifier(List(AlphaNumHyphenGroup(List(alphabet("beta")))))
+            )
           , None
         )
       )
@@ -365,7 +370,50 @@ object SemanticVersionSpec extends Properties {
             Major(1)
           , Minor(0)
           , Patch(5)
-          , Some(Identifier(List[AlphaNumHyphen](AlphaHyphen("a"), Num(3), Num(7), AlphaHyphen("xyz"))))
+          , Option(
+            Identifier(
+              List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(3))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(7))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
+                )
+              )
+            )
+          )
+          , None
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExample4: Result = {
+    val input = "1.0.5-a-b.xyz"
+    val expected =
+      Right(
+        SemanticVersion(
+            Major(1)
+          , Minor(0)
+          , Patch(5)
+          , Option(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+              )
+            , AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("xyz"))
+              )
+            ))
+          )
           , None
         )
       )
@@ -395,7 +443,7 @@ object SemanticVersionSpec extends Properties {
     Result.assert(v2.compare(v1) > 0)
   }
 
-  def testSemanticVersion: Property = for {
+  def roundTripSemanticVersion: Property = for {
     semanticVersion <- genSemanticVersion.log("semanticVersion")
   } yield {
     val rendered = semanticVersion.render
