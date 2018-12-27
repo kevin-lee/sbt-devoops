@@ -5,7 +5,7 @@ import hedgehog.runner._
 
 import Gens._
 
-import AlphaNumHyphen.{alphabet, num, hyphen}
+import AlphaNumHyphen.{alphabet, num, numFromStringUnsafe, hyphen}
 
 /**
   * @author Kevin Lee
@@ -330,9 +330,15 @@ object SemanticVersionSpec extends Properties {
     , example("""SemanticVersion.parse("1.0.5-beta") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExamplePre1)
     , example("""SemanticVersion.parse("1.0.5-a.3.7.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExamplePre2)
     , example("""SemanticVersion.parse("1.0.5-a-b.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExamplePre3)
+    , example("""SemanticVersion.parse("1.0.5-0") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExamplePre4)
+    , example("""SemanticVersion.parse("1.0.5-000a") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExamplePre5)
+    , example("""SemanticVersion.parse("1.0.5-001") should return Left(Invalid)""", parseExamplePreInvalid1)
     , example("""SemanticVersion.parse("1.0.5+1234") should return SementicVersion(Major(1), Minor(0), Patch(5), None, Some(build meta info)""", parseExampleMeta1)
     , example("""SemanticVersion.parse("1.0.5+a.3.7.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExampleMeta2)
     , example("""SemanticVersion.parse("1.0.5+a-b.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExampleMeta3)
+    , example("""SemanticVersion.parse("1.0.5+0") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExampleMeta4)
+    , example("""SemanticVersion.parse("1.0.5+000a") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExampleMeta5)
+    , example("""SemanticVersion.parse("1.0.5+001") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExampleMeta6)
     , example("""SemanticVersion.parse("1.0.5-beta+1234") should return SementicVersion(Major(1), Minor(0), Patch(5), None, Some(build meta info)""", parseExamplePreMeta1)
     , example("""SemanticVersion.parse("1.0.5-a.3.7.xyz+a.3.7.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExamplePreMeta2)
     , example("""SemanticVersion.parse("1.0.5-a-b.xyz+a-b.xyz") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExamplePreMeta3)
@@ -358,7 +364,9 @@ object SemanticVersionSpec extends Properties {
           , Minor(0)
           , Patch(5)
           , Option(
-              Identifier(List(AlphaNumHyphenGroup(List(alphabet("beta")))))
+            AdditionalInfo.PreRelease(
+              Identifier(List(AlphaNumHyphenGroup(List(alphabet("beta"))))
+              ))
             )
           , None
         )
@@ -377,19 +385,21 @@ object SemanticVersionSpec extends Properties {
           , Minor(0)
           , Patch(5)
           , Option(
-            Identifier(
-              List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("a"))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(3))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(7))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("xyz"))
+            AdditionalInfo.PreRelease(
+              Identifier(
+                List(
+                  AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](alphabet("a"))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](num(3))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](num(7))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](alphabet("xyz"))
+                  )
                 )
               )
             )
@@ -411,16 +421,81 @@ object SemanticVersionSpec extends Properties {
           , Minor(0)
           , Patch(5)
           , Option(
-            Identifier(List(
-              AlphaNumHyphenGroup(
-                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
-              )
-            , AlphaNumHyphenGroup(
-                List[AlphaNumHyphen](alphabet("xyz"))
-              )
-            ))
+            AdditionalInfo.PreRelease(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
+                )
+              ))
+            )
           )
           , None
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExamplePre4: Result = {
+    val input = "1.0.5-0"
+    val expected =
+      Right(
+        SemanticVersion(
+            Major(1)
+          , Minor(0)
+          , Patch(5)
+          , Option(
+            AdditionalInfo.PreRelease(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(0))
+                )
+              ))
+            )
+          )
+          , None
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExamplePre5: Result = {
+    val input = "1.0.5-000a"
+    val expected =
+      Right(
+        SemanticVersion(
+            Major(1)
+          , Minor(0)
+          , Patch(5)
+          , Option(
+            AdditionalInfo.PreRelease(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](numFromStringUnsafe("000"), alphabet("a"))
+                )
+              ))
+            )
+          )
+          , None
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExamplePreInvalid1: Result = {
+    val input = "1.0.5-001"
+    val expected =
+      Left(
+        ParseError.preReleaseParseError(
+          ParseError.leadingZeroNumError("001")
         )
       )
 
@@ -438,7 +513,9 @@ object SemanticVersionSpec extends Properties {
           , Patch(5)
           , None
           , Option(
-              Identifier(List(AlphaNumHyphenGroup(List(num(1234)))))
+              AdditionalInfo.BuildMetaInfo(
+                Identifier(List(AlphaNumHyphenGroup(List(num(1234)))))
+              )
             )
         )
       )
@@ -457,19 +534,21 @@ object SemanticVersionSpec extends Properties {
           , Patch(5)
           , None
           , Option(
-            Identifier(
-              List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("a"))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(3))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(7))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("xyz"))
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(
+                List(
+                  AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](alphabet("a"))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](num(3))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](num(7))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](alphabet("xyz"))
+                  )
                 )
               )
             )
@@ -491,14 +570,91 @@ object SemanticVersionSpec extends Properties {
           , Patch(5)
           , None
           , Option(
-            Identifier(List(
-              AlphaNumHyphenGroup(
-                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
-              )
-            , AlphaNumHyphenGroup(
-                List[AlphaNumHyphen](alphabet("xyz"))
-              )
-            ))
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
+                )
+              ))
+            )
+          )
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExampleMeta4: Result = {
+    val input = "1.0.5+0"
+    val expected =
+      Right(
+        SemanticVersion(
+            Major(1)
+          , Minor(0)
+          , Patch(5)
+          , None
+          , Option(
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(0))
+                )
+              ))
+            )
+          )
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExampleMeta5: Result = {
+    val input = "1.0.5+000a"
+    val expected =
+      Right(
+        SemanticVersion(
+            Major(1)
+          , Minor(0)
+          , Patch(5)
+          , None
+          , Option(
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](numFromStringUnsafe("000"), alphabet("a"))
+                )
+              ))
+            )
+          )
+        )
+      )
+
+    val actual = SemanticVersion.parse(input)
+    actual ==== expected
+  }
+
+  def parseExampleMeta6: Result = {
+    val input = "1.0.5+001"
+    val expected =
+      Right(
+        SemanticVersion(
+            Major(1)
+          , Minor(0)
+          , Patch(5)
+          , None
+          , Option(
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](numFromStringUnsafe("001"))
+                )
+              ))
+            )
           )
         )
       )
@@ -516,10 +672,14 @@ object SemanticVersionSpec extends Properties {
           , Minor(0)
           , Patch(5)
           , Option(
-              Identifier(List(AlphaNumHyphenGroup(List(Alphabet("beta")))))
+              AdditionalInfo.PreRelease(
+                Identifier(List(AlphaNumHyphenGroup(List(alphabet("beta")))))
+              )
             )
           , Option(
-              Identifier(List(AlphaNumHyphenGroup(List(num(1234)))))
+              AdditionalInfo.BuildMetaInfo(
+                Identifier(List(AlphaNumHyphenGroup(List(num(1234)))))
+              )
             )
         )
       )
@@ -537,37 +697,41 @@ object SemanticVersionSpec extends Properties {
           , Minor(0)
           , Patch(5)
           , Option(
-            Identifier(
-              List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("a"))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(3))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(7))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("xyz"))
+            AdditionalInfo.PreRelease(
+              Identifier(
+                List(
+                  AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](alphabet("a"))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](num(3))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](num(7))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](alphabet("xyz"))
+                  )
                 )
               )
             )
           )
           , Option(
-            Identifier(
-              List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("a"))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(3))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(7))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("xyz"))
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(
+                List(
+                  AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](alphabet("a"))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](num(3))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](num(7))
+                  )
+                , AlphaNumHyphenGroup(
+                    List[AlphaNumHyphen](alphabet("xyz"))
+                  )
                 )
               )
             )
@@ -588,24 +752,28 @@ object SemanticVersionSpec extends Properties {
           , Minor(0)
           , Patch(5)
           , Option(
-            Identifier(List(
-              AlphaNumHyphenGroup(
-                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
-              )
-            , AlphaNumHyphenGroup(
-                List[AlphaNumHyphen](alphabet("xyz"))
-              )
-            ))
+            AdditionalInfo.PreRelease(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
+                )
+              ))
+            )
           )
           , Option(
-            Identifier(List(
-              AlphaNumHyphenGroup(
-                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
-              )
-            , AlphaNumHyphenGroup(
-                List[AlphaNumHyphen](alphabet("xyz"))
-              )
-            ))
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
+                )
+              ))
+            )
           )
         )
       )

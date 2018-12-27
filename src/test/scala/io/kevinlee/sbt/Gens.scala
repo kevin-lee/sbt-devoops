@@ -4,6 +4,8 @@ import hedgehog._
 import CommonPredef._
 
 import scala.annotation.tailrec
+import AlphaNumHyphen._
+import io.kevinlee.sbt.AdditionalInfo.{BuildMetaInfo, PreRelease}
 
 
 /**
@@ -81,10 +83,10 @@ object Gens {
     genMinMaxNonNegInts.map(pairFromIntsTo(Patch))
 
   def genNum: Gen[AlphaNumHyphen] =
-    genInt(0, 999).map(Num)
+    genInt(0, 999).map(num)
 
   def genMinMaxNum: Gen[(AlphaNumHyphen, AlphaNumHyphen)] =
-    genMinMaxNonNegInts.map(pairFromIntsTo(Num))
+    genMinMaxNonNegInts.map(pairFromIntsTo(num))
 
   def genAlphabetString(max: Int): Gen[String] =
     Gen.string(genAlphabetChar, Range.linear(1, max))
@@ -145,47 +147,117 @@ object Gens {
     combined = combineAlphaNumHyphen(values)
   } yield AlphaNumHyphenGroup(combined)
 
-  def genIdentifier: Gen[Identifier] =
-    genAlphaNumHyphenGroup.list(Range.linear(1, 5)).map(Identifier(_))
+  def genIdentifier(alphaNumHyphenGroupGen: Gen[AlphaNumHyphenGroup]): Gen[Identifier] =
+    alphaNumHyphenGroupGen.list(Range.linear(1, 5)).map(Identifier(_))
+
+  def toValidNum(alps: List[AlphaNumHyphen]): List[AlphaNumHyphen] = alps match {
+    case Num(n) :: Nil =>
+      if (n === "0" || n.takeWhile(_ === '0').length === 0)
+        alps
+      else
+        Num(n.toInt.toString) :: Nil
+    case _ =>
+      alps
+  }
+
+  def genPreRelease: Gen[PreRelease] = genIdentifier(
+    for {
+      alpnhGroup <-genAlphaNumHyphenGroup
+      AlphaNumHyphenGroup(alps) = alpnhGroup
+      newAlps = toValidNum(alps)
+    } yield AlphaNumHyphenGroup(newAlps)
+  ).map(AdditionalInfo.PreRelease)
+
+  def genBuildMetaInfo: Gen[BuildMetaInfo] =
+    genIdentifier(genAlphaNumHyphenGroup)
+      .map(AdditionalInfo.BuildMetaInfo)
 
   def genMinMaxAlphaNumHyphenGroup: Gen[(AlphaNumHyphenGroup, AlphaNumHyphenGroup)] = for {
-    minMaxIds <- Gen.frequency1(5 -> genMinMaxNum, 3 -> genMinMaxAlphabet(10), 1 -> genHyphen.map(x => (x, x))).list(Range.linear(1, 3))
-    (minIds, maxIds) = minMaxIds.foldLeft((List.empty[AlphaNumHyphen], List.empty[AlphaNumHyphen])){ case ((ids1, ids2), (id1, id2)) =>
-      (ids1 :+ id1, ids2 :+ id2)
-    }
+    minMaxAlps <- Gen.frequency1(
+        5 -> genMinMaxNum, 3 -> genMinMaxAlphabet(10), 1 -> genHyphen.map(x => (x, x))
+      ).list(Range.linear(1, 3))
+    (minAlps, maxAlps) = minMaxAlps.foldLeft(
+        (List.empty[AlphaNumHyphen], List.empty[AlphaNumHyphen])
+      ) { case ((ids1, ids2), (id1, id2)) =>
+        (ids1 :+ id1, ids2 :+ id2)
+      }
+  } yield (AlphaNumHyphenGroup(minAlps), AlphaNumHyphenGroup(maxAlps))
 
-  } yield (AlphaNumHyphenGroup(minIds), AlphaNumHyphenGroup(maxIds))
-
-  def genMinMaxIdentifier: Gen[(Identifier, Identifier)] = for {
+  def genMinMaxIdentifier(
+    minMaxAlphaNumHyphenGroupGen: Gen[(AlphaNumHyphenGroup, AlphaNumHyphenGroup)]
+  ): Gen[(Identifier, Identifier)] = for {
     minMaxIds <- genMinMaxAlphaNumHyphenGroup.list(Range.linear(1, 3))
-    (minIds, maxIds) = minMaxIds.foldLeft((List.empty[AlphaNumHyphenGroup], List.empty[AlphaNumHyphenGroup])){ case ((ids1, ids2), (id1, id2)) =>
-      (ids1 :+ id1, ids2 :+ id2)
-    }
-
+    (minIds, maxIds) =
+      minMaxIds.foldLeft(
+        (List.empty[AlphaNumHyphenGroup], List.empty[AlphaNumHyphenGroup])
+      ) {
+        case ((ids1, ids2), (id1, id2)) =>
+          (ids1 :+ id1, ids2 :+ id2)
+      }
   } yield (Identifier(minIds), Identifier(maxIds))
 
+  def toValidMinMaxNum(minAlps: List[AlphaNumHyphen], maxAlps: List[AlphaNumHyphen]): (List[AlphaNumHyphen], List[AlphaNumHyphen]) =
+    (minAlps, maxAlps) match {
+      case (Num(_) :: Nil, Num(_) :: Nil) =>
+        val newMinAlps = toValidNum(minAlps)
+        val newMaxAlps = toValidNum(maxAlps)
+        (newMinAlps, newMaxAlps) match {
+          case (Num(n1) :: Nil, Num(n2) :: Nil) =>
+            val i1 = n1.toInt
+            val i2 = n2.toInt
+            if (i1 === i2) {
+              val i2a = i2 + 1
+              if (i2a < 0)
+                (num(i1 - 1) :: Nil, num(i2) :: Nil)
+              else
+                (num(i1) :: Nil, num(i2a) :: Nil)
+            } else {
+              (newMinAlps, newMaxAlps)
+            }
+          case (_, _) =>
+            (newMinAlps, newMaxAlps)
+        }
+      case (Num(_) :: Nil, _) =>
+        (toValidNum(minAlps), maxAlps)
+      case (_, Num(_) :: Nil) =>
+        (minAlps, toValidNum(maxAlps))
+      case (_, _) =>
+        (minAlps, maxAlps)
+    }
+
+  def genMinMaxPreRelease: Gen[(PreRelease, PreRelease)] = genMinMaxIdentifier(
+    for {
+      minMaxAlpGroup <- genMinMaxAlphaNumHyphenGroup
+      (AlphaNumHyphenGroup(minAlps), AlphaNumHyphenGroup(maxAlps)) = minMaxAlpGroup
+      (newMinAlps, newMaxAlps) = toValidMinMaxNum(minAlps, maxAlps)
+    } yield (AlphaNumHyphenGroup(newMinAlps), AlphaNumHyphenGroup(newMaxAlps))
+  ).map { case (min, max) => (PreRelease(min), PreRelease(max)) }
+
+  def genMinMaxBuildMetaInfo: Gen[(BuildMetaInfo, BuildMetaInfo)] =
+    genMinMaxIdentifier(genMinMaxAlphaNumHyphenGroup)
+      .map { case (min, max) => (BuildMetaInfo(min), BuildMetaInfo(max)) }
 
   def genSemanticVersion: Gen[SemanticVersion] = for {
     major <- genMajor
     minor <- genMinor
     patch <- genPatch
-    pre <- genIdentifier.option
-    meta <- genIdentifier.option
+    pre <- genPreRelease.option
+    meta <- genBuildMetaInfo.option
   } yield SemanticVersion(major, minor, patch, pre, meta)
 
   def genMinMaxSemanticVersions: Gen[(SemanticVersion, SemanticVersion)] = for {
     majorPair <- genMinMaxMajors
     minorPair <- genMinMaxMinors
     patchPair <- genMinMaxPatches
-    pre <- genMinMaxIdentifier.option
-    meta <- genMinMaxIdentifier.option
+    pre <- genMinMaxPreRelease.option
+    meta <- genMinMaxBuildMetaInfo.option
   } yield {
     val (pre1, pre2) =
-      pre.fold[(Option[Identifier], Option[Identifier])]((None, None))(
+      pre.fold[(Option[PreRelease], Option[PreRelease])]((None, None))(
         xy => (Option(xy._1), Option(xy._2))
       )
     val (meta1, meta2) =
-      meta.fold[(Option[Identifier], Option[Identifier])]((None, None))(
+      meta.fold[(Option[BuildMetaInfo], Option[BuildMetaInfo])]((None, None))(
         xy => (Option(xy._1), Option(xy._2))
       )
 

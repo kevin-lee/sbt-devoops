@@ -1,5 +1,6 @@
 package io.kevinlee.sbt
 
+import io.kevinlee.sbt.AdditionalInfo.{BuildMetaInfo, PreRelease}
 import io.kevinlee.sbt.Common._
 import io.kevinlee.sbt.CommonPredef._
 
@@ -17,21 +18,7 @@ final case class AlphaNumHyphenGroup(values: List[AlphaNumHyphen]) extends Order
 
 object AlphaNumHyphenGroup {
 
-  sealed trait Chars
-  final case class NumChars(ns: Vector[Char]) extends Chars
-  final case class AlphabetChars(as: Vector[Char]) extends Chars
-  case object HyphenChars extends Chars
-
-  object Chars {
-    def toAlphaNumHyphen(chars: Chars): AlphaNumHyphen = chars match {
-      case NumChars(ns) =>
-        Num(ns.mkString.toInt)
-      case AlphabetChars(as) =>
-        Alphabet(as.mkString)
-      case HyphenChars =>
-        Hyphen
-    }
-  }
+  import AlphaNumHyphen._
 
   def render(alphaNumHyphenGroup: AlphaNumHyphenGroup): String =
     alphaNumHyphenGroup.values.map(AlphaNumHyphen.render).mkString
@@ -39,33 +26,27 @@ object AlphaNumHyphenGroup {
   def parse(value: String): Either[ParseError, AlphaNumHyphenGroup] = {
 
     @tailrec
-    def accumulate(cs: List[Char], chars: Chars, acc: Vector[AlphaNumHyphen]): Either[ParseError, Vector[AlphaNumHyphen]] =
+    def accumulate(cs: List[Char], chars: AlphaNumHyphen, acc: Vector[AlphaNumHyphen]): Either[ParseError, Vector[AlphaNumHyphen]] =
       cs match {
         case x :: xs =>
 
           if (x.isDigit) {
             chars match {
-              case NumChars(ns) =>
-                accumulate(xs, NumChars(ns :+ x), acc)
+              case Num(ns) =>
+                accumulate(xs, Num(ns :+ x), acc)
 
-              case theOther =>
-                accumulate(xs, NumChars(Vector(x)), acc :+ Chars.toAlphaNumHyphen(theOther))
+              case _ =>
+                accumulate(xs, Num(x.toString), acc :+ chars)
             }
           } else if (x === '-') {
-            chars match {
-              case HyphenChars =>
-                accumulate(xs, HyphenChars, acc :+ Hyphen)
-
-              case theOther =>
-                accumulate(xs, HyphenChars, acc :+ Chars.toAlphaNumHyphen(theOther))
-            }
+            accumulate(xs, Hyphen, acc :+ chars)
           } else if (x.isUpper || x.isLower) {
             chars match {
-              case AlphabetChars(as) =>
-                accumulate(xs, AlphabetChars(as :+ x), acc)
+              case Alphabet(as) =>
+                accumulate(xs, Alphabet(as :+ x), acc)
 
-              case theOther =>
-                accumulate(xs, AlphabetChars(Vector(x)), acc :+ Chars.toAlphaNumHyphen(theOther))
+              case _ =>
+                accumulate(xs, Alphabet(x.toString), acc :+ chars)
             }
           } else {
             Left(
@@ -74,18 +55,18 @@ object AlphaNumHyphenGroup {
           }
 
         case Nil =>
-          Right(acc :+ Chars.toAlphaNumHyphen(chars))
+          Right(acc :+ chars)
       }
 
     value.toList match {
       case x :: xs =>
         val result =
-          if (x.isDigit)
-            accumulate(xs, NumChars(Vector(x)), Vector.empty)
-          else if (x === '-')
-            accumulate(xs, HyphenChars, Vector.empty)
+          if (x.isDigit) {
+            accumulate(xs, Num(x.toString), Vector.empty)
+          } else if (x === '-')
+            accumulate(xs, Hyphen, Vector.empty)
           else if (x.isLower || x.isUpper)
-            accumulate(xs, AlphabetChars(Vector(x)), Vector.empty)
+            accumulate(xs, Alphabet(x.toString), Vector.empty)
           else
             Left(
               ParseError.invalidAlphaNumHyphenError(x, xs)
@@ -101,10 +82,13 @@ object AlphaNumHyphenGroup {
 }
 
 sealed trait AlphaNumHyphen extends Ordered[AlphaNumHyphen] {
+
+  import AlphaNumHyphen._
+
   override def compare(that: AlphaNumHyphen): Int =
     (this, that) match {
       case (Num(thisValue), Num(thatValue)) =>
-        thisValue.compareTo(thatValue)
+        thisValue.toInt.compareTo(thatValue.toInt)
       case (Num(_), Alphabet(_)) =>
         -1
       case (Num(_), Hyphen) =>
@@ -124,23 +108,29 @@ sealed trait AlphaNumHyphen extends Ordered[AlphaNumHyphen] {
     }
 }
 
-final case class Alphabet(value: String) extends AlphaNumHyphen
-final case class Num(value: Int) extends AlphaNumHyphen
-case object Hyphen extends AlphaNumHyphen
-
 object AlphaNumHyphen {
+
+  final case class Alphabet(value: String) extends AlphaNumHyphen
+  final case class Num(value: String) extends AlphaNumHyphen
+  case object Hyphen extends AlphaNumHyphen
 
   def alphabet(value: String): AlphaNumHyphen =
     Alphabet(value)
 
   def num(value: Int): AlphaNumHyphen =
-    Num(value)
+    Num(value.toString)
+
+  def numFromStringUnsafe(value: String): AlphaNumHyphen =
+    if (value.forall(_.isDigit))
+      Num(value)
+    else
+      sys.error(s"The Num value cannot contain any non-digit. value: $value")
 
   def hyphen: AlphaNumHyphen =
     Hyphen
 
   def render(alphaNumHyphen: AlphaNumHyphen): String = alphaNumHyphen match {
-    case Num(value) => value.toString
+    case Num(value) => value
     case Alphabet(value) => value
     case Hyphen => "-"
   }
@@ -157,7 +147,33 @@ object Identifier {
   def render(identifier: Identifier): String =
     identifier.values.map(AlphaNumHyphenGroup.render).mkString(".")
 
-  def parse(value: String): Either[ParseError, Option[Identifier]] = {
+}
+
+object AdditionalInfo {
+
+  import AlphaNumHyphen._
+
+  final case class PreRelease(identifier: Identifier)
+  final case class BuildMetaInfo(identifier: Identifier)
+
+  def parsePreRelease(value: String): Either[ParseError, Option[PreRelease]] =
+    parse(value, {
+      case a @ AlphaNumHyphenGroup(Num(n) :: Nil) =>
+        if ((n === "0") || n.takeWhile(_ === '0').length === 0)
+          Right(a)
+        else
+          Left(ParseError.leadingZeroNumError(n))
+      case a @ AlphaNumHyphenGroup(_) =>
+        Right(a)
+    }).right.map(_.map(PreRelease))
+
+  def parseBuildMetaInfo(value: String): Either[ParseError, Option[BuildMetaInfo]] =
+    parse(value, Right.apply).right.map(_.map(BuildMetaInfo))
+
+  def parse(
+    value: String
+  , validator: AlphaNumHyphenGroup => Either[ParseError, AlphaNumHyphenGroup]
+  ): Either[ParseError, Option[Identifier]] = {
     val alphaNumHyphens: Either[ParseError, List[AlphaNumHyphenGroup]] =
       Option(value)
         .map(_.split("\\."))
@@ -165,7 +181,7 @@ object Identifier {
           case Some(preRelease) =>
             preRelease.foldRight[Either[ParseError, List[AlphaNumHyphenGroup]]](Right(List.empty)){
               (x, acc) =>
-                x match {
+                x.right.flatMap(validator) match {
                   case Right(alp) =>
                     acc.right.map(alps => alp :: alps)
                   case Left(error) =>
@@ -199,8 +215,8 @@ final case class SemanticVersion(
   major: Major
 , minor: Minor
 , patch: Patch
-, pre: Option[Identifier]
-, buildMetadata: Option[Identifier]
+, pre: Option[PreRelease]
+, buildMetadata: Option[BuildMetaInfo]
 ) extends SequenceBasedVersion[SemanticVersion] {
 
   override def compare(that: SemanticVersion): Int = {
@@ -212,7 +228,7 @@ final case class SemanticVersion(
         if (pt === 0) {
           (this.pre, that.pre) match {
             case (Some(thisPre), Some(thatPre)) =>
-              Identifier.compare(thisPre, thatPre)
+              Identifier.compare(thisPre.identifier, thatPre.identifier)
             case (Some(_), None) =>
               -1
             case (None, Some(_)) =>
@@ -234,11 +250,11 @@ final case class SemanticVersion(
   def render: String =
     s"${major.major}.${minor.minor}.${patch.patch}" + ((pre, buildMetadata) match {
         case (Some(p), Some(m)) =>
-          s"-${Identifier.render(p)}+${Identifier.render(m)}"
+          s"-${Identifier.render(p.identifier)}+${Identifier.render(m.identifier)}"
         case (Some(p), None) =>
-          s"-${Identifier.render(p)}"
+          s"-${Identifier.render(p.identifier)}"
         case (None, Some(m)) =>
-          s"+${Identifier.render(m)}"
+          s"+${Identifier.render(m.identifier)}"
         case (None, None) =>
           ""
       }).toString
@@ -254,8 +270,8 @@ object SemanticVersion {
 
   def parse(version: String): Either[ParseError, SemanticVersion] = version match {
     case semanticVersionRegex(major, minor, patch, pre, meta) =>
-      val preRelease = Identifier.parse(pre)
-      val metaInfo = Identifier.parse(meta)
+      val preRelease = AdditionalInfo.parsePreRelease(pre)
+      val metaInfo = AdditionalInfo.parseBuildMetaInfo(meta)
       (preRelease, metaInfo) match {
         case (Left(preError), Left(metaError)) =>
           Left(ParseError.combine(preError, metaError))
@@ -296,6 +312,8 @@ object ParseError {
   final case class InvalidAlphaNumHyphenError(c: Char, rest: List[Char]) extends ParseError
   case object EmptyAlphaNumHyphenError extends ParseError
 
+  final case class LeadingZeroNumError(n: String) extends ParseError
+
   final case class PreReleaseParseError(parseError: ParseError) extends ParseError
   final case class BuildMetadataParseError(parseError: ParseError) extends ParseError
 
@@ -310,6 +328,9 @@ object ParseError {
 
     case EmptyAlphaNumHyphenError =>
       "AlphaNumHyphen cannot be empty but the given value is an empty String."
+
+    case LeadingZeroNumError(n) =>
+      s"Invalid Num value. It should not have any leading zeros. value: $n"
 
     case PreReleaseParseError(error) =>
       s"Error in parsing pre-release: ${render(error)}"
@@ -332,6 +353,9 @@ object ParseError {
 
   def emptyAlphaNumHyphenError: ParseError =
     EmptyAlphaNumHyphenError
+
+  def leadingZeroNumError(n: String): ParseError =
+    LeadingZeroNumError(n)
 
   def preReleaseParseError(parseError: ParseError): ParseError =
     PreReleaseParseError(parseError)
