@@ -1,4 +1,4 @@
-package io.kevinlee.sbt
+package io.kevinlee
 
 import scala.annotation.tailrec
 import CommonPredef._

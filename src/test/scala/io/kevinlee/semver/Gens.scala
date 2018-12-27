@@ -1,12 +1,11 @@
-package io.kevinlee.sbt
+package io.kevinlee.semver
 
 import hedgehog._
-import CommonPredef._
+import io.kevinlee.CommonPredef._
 
 import scala.annotation.tailrec
 import AlphaNumHyphen._
-import io.kevinlee.sbt.AdditionalInfo.{BuildMetaInfo, PreRelease}
-
+import io.kevinlee.semver.AdditionalInfo.{BuildMetaInfo, PreRelease}
 
 /**
   * @author Kevin Lee
@@ -278,4 +277,3 @@ object Gens {
   }
 
 }
-

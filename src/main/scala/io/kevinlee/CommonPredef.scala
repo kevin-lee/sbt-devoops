@@ -1,4 +1,4 @@
-package io.kevinlee.sbt
+package io.kevinlee
 
 /**
   * @author Kevin Lee

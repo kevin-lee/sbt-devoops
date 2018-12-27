@@ -1,8 +1,8 @@
-package io.kevinlee.sbt
+package io.kevinlee.semver
 
-import io.kevinlee.sbt.AdditionalInfo.{BuildMetaInfo, PreRelease}
-import io.kevinlee.sbt.Common._
-import io.kevinlee.sbt.CommonPredef._
+import io.kevinlee.semver.AdditionalInfo.{BuildMetaInfo, PreRelease}
+import io.kevinlee.Common._
+import io.kevinlee.CommonPredef._
 
 import scala.annotation.tailrec
 import scala.util.matching.Regex
