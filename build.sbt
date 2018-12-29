@@ -1,6 +1,11 @@
 import BuildTools._
 import Dependencies._
 import ProjectInfo._
+import sbt.Path
+
+import org.scoverage.coveralls.Imports.CoverallsKeys._
+
+lazy val writeVersion = inputKey[Unit]("Write Version in File'")
 
 lazy val root = (project in file("."))
   .settings(
@@ -38,8 +43,16 @@ lazy val root = (project in file("."))
   , bintrayPackageLabels := Seq("sbt", "plugin")
   , bintrayVcsUrl := Some("""git@github.com:Kevin-Lee/sbt-devoops.git""")
   , initialCommands in console := """import io.kevinlee.sbt._"""
+  , writeVersion := versionWriter(() => Def.spaceDelimited("filename").parsed)(ProjectVersion)
+  , coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 10)) =>
+        false
+      case _ =>
+        true
+    })
+  , coverallsTokenFile := Option(s"""${Path.userHome.absolutePath}/.coveralls-credentials""")
 
-  // set up 'scripted; sbt plugin for testing sbt plugins
+// set up 'scripted; sbt plugin for testing sbt plugins
 //  , scriptedLaunchOpts ++=
 //      Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
 
