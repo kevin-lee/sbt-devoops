@@ -13,6 +13,7 @@ import sbt.{AutoPlugin, CircularDependencyLevel, Compile, PluginTrigger, Setting
   */
 object DevOopsScalaPlugin extends AutoPlugin {
 
+  // $COVERAGE-OFF$
   override def requires: JvmPlugin.type = plugins.JvmPlugin
   override def trigger: PluginTrigger = allRequirements
 
@@ -135,4 +136,6 @@ object DevOopsScalaPlugin extends AutoPlugin {
     , updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error)
 
   )
+
+  // $COVERAGE-ON$
 }
