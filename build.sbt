@@ -1,5 +1,4 @@
 import BuildTools._
-import Dependencies._
 import ProjectInfo._
 import sbt.Path
 
@@ -35,15 +34,20 @@ lazy val root = (project in file("."))
       }
   , wartremoverErrors in (Compile, compile) ++= commonWarts
   , wartremoverErrors in (Test, compile) ++= commonWarts
-  , resolvers += hedgehogRepo
-  , libraryDependencies ++= Seq(commonsIo) ++ hedgehogLibs
+  , resolvers += Deps.hedgehogRepo
+  , libraryDependencies ++= Seq(Deps.commonsIo) ++ Deps.hedgehogLibs
   , testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework"))
-  , addSbtPlugin(wartRemover)
-  , addSbtPlugin(scoverage)
+
+  , addSbtPlugin(Deps.wartRemover)
+  , addSbtPlugin(Deps.scoverage)
+
   , bintrayPackageLabels := Seq("sbt", "plugin")
   , bintrayVcsUrl := Some("""git@github.com:Kevin-Lee/sbt-devoops.git""")
+
   , initialCommands in console := """import io.kevinlee.sbt._"""
+
   , writeVersion := versionWriter(() => Def.spaceDelimited("filename").parsed)(ProjectVersion)
+
   , coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 10)) =>
         false

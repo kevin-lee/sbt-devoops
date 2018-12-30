@@ -1,6 +1,6 @@
 import sbt._
 
-object Dependencies {
+object Deps {
   val hedgehogVersion = "59fa4de48083870452c2e949cb5fda5cc4f97256"
   val hedgehogRepo =
     Resolver.url(
