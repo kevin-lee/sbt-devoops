@@ -16,6 +16,7 @@ lazy val root = (project in file("."))
   , developers   := List(
       Developer("Kevin-Lee", "Kevin Lee", "kevin.code@kevinlee.io", url("https://github.com/Kevin-Lee"))
     )
+  , startYear := Some(2018)
   , sbtPlugin := true
   , sbtVersion in Global := "1.2.6"
   , scalaCompilerBridgeSource := {
@@ -41,9 +42,12 @@ lazy val root = (project in file("."))
 //  , addSbtPlugin(Deps.wartRemover)
 //  , addSbtPlugin(Deps.scoverage)
 //  , addSbtPlugin(Deps.bintray)
+  , licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+  , publishMavenStyle := false
 
   , bintrayPackageLabels := Seq("sbt", "plugin")
   , bintrayVcsUrl := Some("""git@github.com:Kevin-Lee/sbt-devoops.git""")
+  , bintrayRepository := "sbt-plugins"
 
   , initialCommands in console := """import io.kevinlee.sbt._"""
 
