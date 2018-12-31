@@ -20,4 +20,6 @@ object Deps {
 
   val scoverage: ModuleID = "org.scoverage" % "sbt-scoverage" % "1.5.1"
 
+  val bintray: ModuleID = "org.foundweekends" % "sbt-bintray" % "0.5.4"
+
 }

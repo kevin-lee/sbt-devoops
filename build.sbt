@@ -38,8 +38,9 @@ lazy val root = (project in file("."))
   , libraryDependencies ++= Seq(Deps.commonsIo) ++ Deps.hedgehogLibs
   , testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework"))
 
-  , addSbtPlugin(Deps.wartRemover)
-  , addSbtPlugin(Deps.scoverage)
+//  , addSbtPlugin(Deps.wartRemover)
+//  , addSbtPlugin(Deps.scoverage)
+//  , addSbtPlugin(Deps.bintray)
 
   , bintrayPackageLabels := Seq("sbt", "plugin")
   , bintrayVcsUrl := Some("""git@github.com:Kevin-Lee/sbt-devoops.git""")
