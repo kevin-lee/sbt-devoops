@@ -51,7 +51,7 @@ lazy val root = (project in file("."))
 
   , initialCommands in console := """import io.kevinlee.sbt._"""
 
-  , writeVersion := versionWriter(() => Def.spaceDelimited("filename").parsed)(ProjectVersion)
+  , writeVersion := versionWriter(Def.spaceDelimited("filename").parsed)(ProjectVersion)
 
   , coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 10)) =>
