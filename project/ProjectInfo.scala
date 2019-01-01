@@ -1,4 +1,4 @@
-import wartremover.WartRemover.autoImport.{Wart, Warts}
+import wartremover.{Wart, Warts}
 
 /**
   * @author Kevin Lee
@@ -6,15 +6,15 @@ import wartremover.WartRemover.autoImport.{Wart, Warts}
   */
 object ProjectInfo {
 
-  val ProjectScalaVersion = "2.12.7"
-  val CrossScalaVersions = Seq("2.10.7", ProjectScalaVersion)
+  val ProjectScalaVersion: String = "2.12.7"
+  val CrossScalaVersions: Seq[String] = Seq("2.10.7", ProjectScalaVersion)
 
-  val CrossSbtVersions = Vector("0.13.17", "1.2.6")
+  val CrossSbtVersions: Seq[String] = Seq("0.13.17", "1.2.6")
 
-  val ProjectVersion = "0.1.0"
+  val ProjectVersion: String = "0.2.0-SNAPSHOT"
 
-  val commonScalacOptions = Seq(
-    "-deprecation"
+  val commonScalacOptions: Seq[String] = Seq(
+      "-deprecation"
     , "-unchecked"
     , "-feature"
     , "-Ywarn-value-discard"
@@ -28,6 +28,13 @@ object ProjectInfo {
     , "-encoding", "UTF-8"
   )
 
-  val commonWarts = Warts.allBut(Wart.DefaultArguments, Wart.Overloading, Wart.Any, Wart.Nothing, Wart.NonUnitStatements)
+  val commonWarts: Seq[Wart] =
+    Warts.allBut(
+        Wart.DefaultArguments
+      , Wart.Overloading
+      , Wart.Any
+      , Wart.Nothing
+      , Wart.NonUnitStatements
+    )
 
 }
