@@ -24,6 +24,16 @@ object Git {
         Left(errorHandler(code, error))
     }
 
+  def currentBranchName(baseDir: File): Either[GitCommandError, GitCommandResult] =
+    ProcessResult.toEither(
+      SysProcess.run(
+        SysProcess.process(Some(baseDir), "git", "rev-parse", "--abbrev-ref", "HEAD")
+      )
+    )(fromProcessResultToEither(
+      r => GitCommandResult.gitCurrentBranchName(BranchName(r.mkString.trim))
+    , (code, err) => GitCommandError.gitCurrentBranchError(code, err)
+    ))
+
   def checkout(branchName: BranchName, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
       SysProcess.run(

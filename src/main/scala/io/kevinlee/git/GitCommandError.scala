@@ -9,21 +9,31 @@ sealed trait GitCommandError
 object GitCommandError {
   // $COVERAGE-OFF$
 
-  final case class GitTagError(code: Int, error: String) extends GitCommandError
+  final case class GitCurrentBranchError(code: Int, error: String) extends GitCommandError
   final case class GitCheckoutError(code: Int, error: String) extends GitCommandError
+  final case class GitTagError(code: Int, error: String) extends GitCommandError
 
-  def gitTagError(code: Int, error: String): GitCommandError =
-    GitTagError(code, error)
+  def gitCurrentBranchError(code: Int, error: String): GitCommandError =
+    GitCurrentBranchError(code, error)
 
   def gitCheckoutError(code: Int, error: String): GitCommandError =
     GitCheckoutError(code, error)
 
-  def render(gitError: GitCommandError): String = gitError match {
-    case GitTagError(code, error) =>
-      s"failed] Git tag: [code: $code], [error: $error]"
+  def gitTagError(code: Int, error: String): GitCommandError =
+    GitTagError(code, error)
 
+  private def renderCodeAndError(code: Int, error: String): String =
+    s"[code: $code], [error: $error]"
+
+  def render(gitError: GitCommandError): String = gitError match {
     case GitCheckoutError(code, error) =>
-      s"failed] Git checkout: [code: $code], [error: $error]"
+      s"failed] Git checkout: ${renderCodeAndError(code, error)}"
+
+    case GitTagError(code, error) =>
+      s"failed] Git tag: ${renderCodeAndError(code, error)}"
+
+    case GitCurrentBranchError(code, error) =>
+      s"failed] Git getting the current branch: ${renderCodeAndError(code, error)}"
   }
 
   // $COVERAGE-ON$
