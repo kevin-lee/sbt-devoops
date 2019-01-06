@@ -1,4 +1,4 @@
-package io.kevinlee.sbt.devoops.errors
+package io.kevinlee.sbt.devoops.data
 
 import io.kevinlee.git.GitCommandError
 
@@ -10,6 +10,7 @@ sealed trait SbtTaskError
 
 object SbtTaskError {
 
+  // $COVERAGE-OFF$
   final case class GitTaskGitCommandError(cause: GitCommandError) extends SbtTaskError
   final case class GitTaskError(cause: String) extends SbtTaskError
 
