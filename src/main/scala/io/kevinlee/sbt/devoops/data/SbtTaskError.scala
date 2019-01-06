@@ -11,18 +11,18 @@ sealed trait SbtTaskError
 object SbtTaskError {
 
   // $COVERAGE-OFF$
-  final case class GitTaskGitCommandError(cause: GitCommandError) extends SbtTaskError
+  final case class GitCommandTaskError(cause: GitCommandError) extends SbtTaskError
   final case class GitTaskError(cause: String) extends SbtTaskError
 
-  def gitTaskGitCommandError(cause: GitCommandError): SbtTaskError =
-    GitTaskGitCommandError(cause)
+  def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
+    GitCommandTaskError(cause)
 
   def gitTaskError(cause: String): SbtTaskError =
     GitTaskError(cause)
 
   def render(sbtTaskError: SbtTaskError): String = sbtTaskError match {
 
-    case GitTaskGitCommandError(err: GitCommandError) =>
+    case GitCommandTaskError(err: GitCommandError) =>
       GitCommandError.render(err)
 
     case GitTaskError(cause) =>

@@ -2,9 +2,8 @@ package io.kevinlee.sbt.devoops
 
 import io.kevinlee.git.Git
 import io.kevinlee.git.Git.{BranchName, TagName}
-import io.kevinlee.sbt.devoops.data.{SbtTaskError, SbtTaskResult}
+import io.kevinlee.sbt.devoops.data.SbtTask
 import io.kevinlee.semver.SemanticVersion
-
 import sbt.Keys._
 import sbt.{AutoPlugin, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
@@ -46,24 +45,20 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val basePath = baseDirectory.value
       val tagFrom = BranchName(gitTagFrom.value)
       // TODO: Probably fetch and merge (pull) before tagging?
-      Git.doIfCurrentBranchMatches(tagFrom, basePath) {
-        val tagName = TagName(gitTagName.value)
-        gitTagDescription.value
-          .fold(
-            Git.tag(tagName, basePath)
-          ) { desc =>
-            Git.tagWithDescription(
-              tagName
-            , Git.Description(desc)
-            , baseDirectory.value
-            )
-          }
-      }
-      .left.map(SbtTaskError.gitTaskGitCommandError)
-      .right.map(SbtTaskResult.gitCommandTaskResult)
-      .fold(
-        SbtTaskError.error
-      , SbtTaskResult.consolePrintln
+      SbtTask.handleGitCommandTask(
+        Git.doIfCurrentBranchMatches(tagFrom, basePath) {
+          val tagName = TagName(gitTagName.value)
+          gitTagDescription.value
+            .fold(
+              Git.tag(tagName, basePath)
+            ) { desc =>
+              Git.tagWithDescription(
+                tagName
+              , Git.Description(desc)
+              , baseDirectory.value
+              )
+            }
+        }
       )
     }
   )

@@ -10,6 +10,7 @@ import io.kevinlee.git.GitCommandResult.GitCurrentBranchName
   * @since 2019-01-01
   */
 object Git {
+  // $COVERAGE-OFF$
 
   final case class BranchName(value: String) extends AnyVal
   final case class TagName(name: String) extends AnyVal
