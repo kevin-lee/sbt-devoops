@@ -1,8 +1,7 @@
 package io.kevinlee.sbt.devoops
 
-import io.kevinlee.CommonPredef._
+import io.kevinlee.git.Git
 import io.kevinlee.git.Git.{BranchName, TagName}
-import io.kevinlee.git.{Git, GitCommandResult}
 import io.kevinlee.sbt.devoops.data.{SbtTaskError, SbtTaskResult}
 import io.kevinlee.semver.SemanticVersion
 
@@ -45,43 +44,27 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitTagName := decideVersion(version.value, v => s"v${SemanticVersion.parseUnsafe(v).render}")
   , gitTag := {
       val basePath = baseDirectory.value
-      (Git.currentBranchName(basePath) match {
-        case Right(GitCommandResult.GitCurrentBranchName(BranchName(branchName))) =>
-          // TODO: Probably fetch and merge (pull) before tagging?
-          val tagFrom = gitTagFrom.value
-          val tagName = gitTagName.value
-          if (branchName === tagFrom) {
-            (gitTagDescription.value match {
-              case Some(desc) =>
-                Git.tagWithDescription(
-                  TagName(tagName)
-                  , Git.Description(desc)
-                  , baseDirectory.value
-                )
-              case None =>
-                Git.tag(TagName(tagName), baseDirectory.value)
-            }) match {
-              case Right(result) =>
-                Right(SbtTaskResult.gitCommandTaskResult(result))
-              case Left(error) =>
-                Left(SbtTaskError.gitTaskGitCommandError(error))
-            }
-          } else {
-            Left(SbtTaskError.gitTaskError(
-              s"The current branch is not the same as the release branch set in gitTagFrom: $gitTagFrom"
-            ))
+      val tagFrom = BranchName(gitTagFrom.value)
+      // TODO: Probably fetch and merge (pull) before tagging?
+      Git.doIfCurrentBranchMatches(tagFrom, basePath) {
+        val tagName = TagName(gitTagName.value)
+        gitTagDescription.value
+          .fold(
+            Git.tag(tagName, basePath)
+          ) { desc =>
+            Git.tagWithDescription(
+              tagName
+            , Git.Description(desc)
+            , baseDirectory.value
+            )
           }
-        case Right(gcr) =>
-          Left(SbtTaskError.gitTaskError(s"Unexpected result. Expected: GitCurrentBranchName / actual: ${GitCommandResult.render(gcr)}"))
-
-        case Left(error) =>
-          Left(SbtTaskError.gitTaskGitCommandError(error))
-      }) match {
-        case Right(result) =>
-          println(SbtTaskResult.render(result))
-        case Left (error) =>
-          sys.error(SbtTaskError.render(error))
       }
+      .left.map(SbtTaskError.gitTaskGitCommandError)
+      .right.map(SbtTaskResult.gitCommandTaskResult)
+      .fold(
+        SbtTaskError.error
+      , SbtTaskResult.consolePrintln
+      )
     }
   )
 

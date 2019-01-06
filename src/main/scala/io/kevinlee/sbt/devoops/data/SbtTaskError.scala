@@ -30,4 +30,7 @@ object SbtTaskError {
 
   }
 
+  def error(sbtTaskError: SbtTaskError): Nothing =
+    sys.error(render(sbtTaskError))
+
 }

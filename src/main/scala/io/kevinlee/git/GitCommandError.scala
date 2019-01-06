@@ -9,9 +9,13 @@ sealed trait GitCommandError
 object GitCommandError {
   // $COVERAGE-OFF$
 
+  final case class GitUnexpectedCommandResultError(gitCommandResult: GitCommandResult, expectedResult: String) extends GitCommandError
   final case class GitCurrentBranchError(code: Int, error: String) extends GitCommandError
   final case class GitCheckoutError(code: Int, error: String) extends GitCommandError
   final case class GitTagError(code: Int, error: String) extends GitCommandError
+
+  def gitUnexpectedCommandResultError(gitCommandResult: GitCommandResult, expectedResult: String): GitCommandError =
+    GitUnexpectedCommandResultError(gitCommandResult, expectedResult)
 
   def gitCurrentBranchError(code: Int, error: String): GitCommandError =
     GitCurrentBranchError(code, error)
@@ -26,6 +30,13 @@ object GitCommandError {
     s"[code: $code], [error: $error]"
 
   def render(gitError: GitCommandError): String = gitError match {
+    case GitUnexpectedCommandResultError(gitCommandResult, expectedResult) =>
+      s"""Unexpected git command result]
+         |expected: $expectedResult
+         |---
+         |  actual: ${GitCommandResult.render(gitCommandResult)}
+         |""".stripMargin
+
     case GitCheckoutError(code, error) =>
       s"failed] Git checkout: ${renderCodeAndError(code, error)}"
 

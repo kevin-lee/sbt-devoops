@@ -21,4 +21,7 @@ object SbtTaskResult {
       s"sbt task done: ${GitCommandResult.render(gitCommandResult)}"
   }
 
+  def consolePrintln(sbtTaskResult: SbtTaskResult): Unit =
+    println(render(sbtTaskResult))
+
 }
