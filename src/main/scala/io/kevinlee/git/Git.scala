@@ -28,11 +28,14 @@ object Git {
         Left(errorHandler(code, error))
     }
 
+  def git(baseDir: File, command: String, args: String*): ProcessResult =
+    SysProcess.run(
+      SysProcess.process(Some(baseDir), "git" :: command :: args.toList)
+    )
+
   def currentBranchName(baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      SysProcess.run(
-        SysProcess.process(Some(baseDir), "git", "rev-parse", "--abbrev-ref", "HEAD")
-      )
+      git(baseDir, "rev-parse", "--abbrev-ref", "HEAD")
     )(fromProcessResultToEither(
       r => GitCommandResult.gitCurrentBranchName(BranchName(r.mkString.trim))
     , (code, err) => GitCommandError.gitCurrentBranchError(code, err)
@@ -61,9 +64,7 @@ object Git {
 
   def checkout(branchName: BranchName, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      SysProcess.run(
-        SysProcess.process(Some(baseDir), "git", "checkout", branchName.value)
-      )
+      git(baseDir, "checkout", branchName.value)
     )(fromProcessResultToEither(
       r => GitCommandResult.gitCheckoutResult(r.mkString("\n"))
     , (code, err) => GitCommandError.gitCheckoutError(code, err)
@@ -71,9 +72,7 @@ object Git {
 
   def tag(tagName: TagName, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      SysProcess.run(
-        SysProcess.process(Some(baseDir), "git", "tag", tagName.name)
-      )
+      git(baseDir, "tag", tagName.name)
     )(fromProcessResultToEither(
       r => GitCommandResult.gitTagResult(r.mkString("\n"))
     , (code, err) => GitCommandError.gitTagError(code, err)
@@ -81,7 +80,7 @@ object Git {
 
   def tagWithDescription(tagName: TagName, description: Description, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      SysProcess.run(SysProcess.process(Some(baseDir), "git", "tag", "-a", tagName.name, "-m", description.value))
+      git(baseDir, "tag", "-a", tagName.name, "-m", description.value)
     )(fromProcessResultToEither(
       r => GitCommandResult.gitTagResult(r.mkString("\n"))
     , (code, err) => GitCommandError.gitTagError(code, err)
