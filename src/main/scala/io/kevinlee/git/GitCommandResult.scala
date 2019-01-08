@@ -1,5 +1,7 @@
 package io.kevinlee.git
 
+import io.kevinlee.git.Git.{BranchName, TagName}
+
 sealed trait GitCommandResult
 
 /**
@@ -9,29 +11,36 @@ sealed trait GitCommandResult
 object GitCommandResult {
   // $COVERAGE-OFF$
 
-  final case class GitCurrentBranchName(name: Git.BranchName) extends GitCommandResult
-  final case class GitCheckoutResult(result: String) extends GitCommandResult
-  final case class GitTagResult(result: String) extends GitCommandResult
+  final case class GitCurrentBranchName(name: BranchName) extends GitCommandResult
+  final case class GitCheckoutResult(name: BranchName) extends GitCommandResult
+  final case class GitFetchResult(arg: Option[String]) extends GitCommandResult
+  final case class GitTagResult(tagName: TagName) extends GitCommandResult
 
-  def gitCurrentBranchName(name: Git.BranchName): GitCommandResult =
+  def gitCurrentBranchName(name: BranchName): GitCommandResult =
     GitCurrentBranchName(name)
 
-  def gitCheckoutResult(result: String): GitCommandResult =
-    GitCheckoutResult(result)
+  def gitCheckoutResult(name: BranchName): GitCommandResult =
+    GitCheckoutResult(name)
 
-  def gitTagResult(result: String): GitCommandResult =
-    GitTagResult(result)
+  def gitFetchResult(arg: Option[String]): GitCommandResult =
+    GitFetchResult(arg)
+
+  def gitTagResult(tagName: TagName): GitCommandResult =
+    GitTagResult(tagName)
 
   def render(gitCommandResult: GitCommandResult): String = gitCommandResult match {
 
-    case GitCurrentBranchName(Git.BranchName(name)) =>
-      s"git current branch name: $name"
+    case GitCurrentBranchName(BranchName(branchName)) =>
+      s"git current branch name: $branchName"
 
-    case GitCheckoutResult(result) =>
-      s"git checkout has finished: $result"
+    case GitCheckoutResult(BranchName(branchName)) =>
+      s"git checkout $branchName"
 
-    case GitTagResult(result) =>
-      s"git tag has finished: $result"
+    case GitFetchResult(arg) =>
+      s"git fetch${arg.fold("")(a => s" $a")}"
+
+    case GitTagResult(TagName(tagName)) =>
+      s"git tag $tagName"
 
   }
 

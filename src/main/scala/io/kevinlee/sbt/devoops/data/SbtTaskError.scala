@@ -26,7 +26,7 @@ object SbtTaskError {
       GitCommandError.render(err)
 
     case GitTaskError(cause) =>
-      s"git task has failed: $cause"
+      s"task failed> git command: $cause"
 
   }
 

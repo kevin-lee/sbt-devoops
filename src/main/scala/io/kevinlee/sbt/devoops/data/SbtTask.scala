@@ -9,7 +9,7 @@ import io.kevinlee.git.{GitCommandError, GitCommandResult}
 object SbtTask {
   // $COVERAGE-OFF$
 
-  def handleGitCommandTask(gitCommandTaskResult: Either[GitCommandError, GitCommandResult]): Unit =
+  def handleGitCommandTask(gitCommandTaskResult: Either[GitCommandError, Seq[GitCommandResult]]): Unit =
     gitCommandTaskResult
       .left.map(SbtTaskError.gitCommandTaskError)
       .right.map(SbtTaskResult.gitCommandTaskResult)

@@ -6,6 +6,7 @@ import io.kevinlee.CommonPredef._
 
 import scala.sys.process.ProcessLogger
 
+// $COVERAGE-OFF$
 /**
   * @author Kevin Lee
   * @since 2019-01-01
@@ -64,7 +65,7 @@ sealed trait SysProcess
 object SysProcess {
   final case class SingleSysProcess(commands: Seq[String], baseDir: Option[File]) extends SysProcess
 
-  def process(baseDir: Option[File], commands: String*): SysProcess =
+  def process(baseDir: Option[File], commands: Seq[String]): SysProcess =
     SingleSysProcess(commands, baseDir)
 
   def run(sysProcess: SysProcess): ProcessResult = sysProcess match {
