@@ -41,10 +41,10 @@ object Git {
     , (code, err) => GitCommandError.gitCurrentBranchError(code, err)
     ))
 
-  def doIfCurrentBranchMatches(
+  def doIfCurrentBranchMatches[A](
     branchName: BranchName
   , baseDir: File
-  )(f: => Either[GitCommandError, GitCommandResult]): Either[GitCommandError, GitCommandResult] =
+  )(f: => Either[GitCommandError, A]): Either[GitCommandError, A] =
     currentBranchName(baseDir).right.flatMap {
       case g @ GitCurrentBranchName(BranchName(currentBranchName)) =>
         if (currentBranchName === branchName.value)
@@ -66,15 +66,27 @@ object Git {
     ProcessResult.toEither(
       git(baseDir, "checkout", branchName.value)
     )(fromProcessResultToEither(
-      r => GitCommandResult.gitCheckoutResult(r.mkString("\n"))
+      _ => GitCommandResult.gitCheckoutResult(branchName)
     , (code, err) => GitCommandError.gitCheckoutError(code, err)
     ))
+
+  def fetchTags(baseDir: File): Either[GitCommandError, GitCommandResult] = {
+    val tags = "--tags"
+    ProcessResult.toEither(
+      git(baseDir, "fetch", tags)
+    )(
+      fromProcessResultToEither(
+        _ => GitCommandResult.gitFetchResult(Some(tags))
+        , (code, err) => GitCommandError.gitFetchError(code, err, Some(tags))
+      )
+    )
+  }
 
   def tag(tagName: TagName, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
       git(baseDir, "tag", tagName.name)
     )(fromProcessResultToEither(
-      r => GitCommandResult.gitTagResult(r.mkString("\n"))
+      _ => GitCommandResult.gitTagResult(tagName)
     , (code, err) => GitCommandError.gitTagError(code, err)
     ))
 
@@ -82,7 +94,7 @@ object Git {
     ProcessResult.toEither(
       git(baseDir, "tag", "-a", tagName.name, "-m", description.value)
     )(fromProcessResultToEither(
-      r => GitCommandResult.gitTagResult(r.mkString("\n"))
+      _ => GitCommandResult.gitTagResult(tagName)
     , (code, err) => GitCommandError.gitTagError(code, err)
     ))
 
