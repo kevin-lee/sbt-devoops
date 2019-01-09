@@ -11,13 +11,17 @@ sealed trait GitCommandResult
 object GitCommandResult {
   // $COVERAGE-OFF$
 
-  final case class GitCurrentBranchName(name: BranchName) extends GitCommandResult
+  final case class GitCurrentBranchName(name: BranchName, args: List[String]) extends GitCommandResult
+  final case class GitSameCurrentBranch(current: BranchName) extends GitCommandResult
   final case class GitCheckoutResult(name: BranchName) extends GitCommandResult
   final case class GitFetchResult(arg: Option[String]) extends GitCommandResult
   final case class GitTagResult(tagName: TagName) extends GitCommandResult
 
-  def gitCurrentBranchName(name: BranchName): GitCommandResult =
-    GitCurrentBranchName(name)
+  def gitCurrentBranchName(name: BranchName, args: List[String]): GitCommandResult =
+    GitCurrentBranchName(name, args)
+
+  def gitSameCurrentBranch(current: BranchName): GitCommandResult =
+    GitSameCurrentBranch(current)
 
   def gitCheckoutResult(name: BranchName): GitCommandResult =
     GitCheckoutResult(name)
@@ -30,8 +34,11 @@ object GitCommandResult {
 
   def render(gitCommandResult: GitCommandResult): String = gitCommandResult match {
 
-    case GitCurrentBranchName(BranchName(branchName)) =>
-      s"git current branch name: $branchName"
+    case GitCurrentBranchName(BranchName(branchName), args) =>
+      s"git ${args.mkString(" ")} (current branch name: $branchName)"
+
+    case GitSameCurrentBranch(BranchName(current)) =>
+      s"git current branch name is equal to the given one. current: $current"
 
     case GitCheckoutResult(BranchName(branchName)) =>
       s"git checkout $branchName"
