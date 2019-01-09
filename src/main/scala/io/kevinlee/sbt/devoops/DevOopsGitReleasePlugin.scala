@@ -44,24 +44,22 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitTag := {
       val basePath = baseDirectory.value
       val tagFrom = BranchName(gitTagFrom.value)
+      val tagName = TagName(gitTagName.value)
       SbtTask.handleGitCommandTask(
-        Git.doIfCurrentBranchMatches(tagFrom, basePath) {
-          val tagName = TagName(gitTagName.value)
-          Git.fetchTags(basePath)
-            .right.map(r => Vector(r))
-            .right.flatMap { resultAcc =>
-              gitTagDescription.value
-                .fold(
-                  Git.tag(tagName, basePath)
-                ) { desc =>
-                  Git.tagWithDescription(
-                    tagName
-                  , Git.Description(desc)
-                  , baseDirectory.value
-                  )
-                }.right.map(r => resultAcc :+ r)
-            }
-        }
+        for {
+          currentBranchCheckResults <- Git.checkIfCurrentBranchIsSame(tagFrom, basePath).right
+          fetchResult <- Git.fetchTags(basePath).right
+          tagResult <- gitTagDescription.value
+                        .fold(
+                          Git.tag(tagName, basePath)
+                        ) { desc =>
+                          Git.tagWithDescription(
+                            tagName
+                            , Git.Description(desc)
+                            , baseDirectory.value
+                          )
+                        }.right
+        } yield currentBranchCheckResults :+ fetchResult :+ tagResult
       )
     }
   )

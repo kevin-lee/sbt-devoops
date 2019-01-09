@@ -28,43 +28,56 @@ object Git {
         Left(errorHandler(code, error))
     }
 
-  def git(baseDir: File, command: String, args: String*): ProcessResult =
+  def git(baseDir: File, commandAndArgs: List[String]): ProcessResult =
     SysProcess.run(
-      SysProcess.process(Some(baseDir), "git" :: command :: args.toList)
+      SysProcess.process(Some(baseDir), "git" :: commandAndArgs)
     )
 
-  def currentBranchName(baseDir: File): Either[GitCommandError, GitCommandResult] =
+  def git1(baseDir: File, command: String, args: String*): ProcessResult =
+    git(baseDir, command :: args.toList)
+
+  def currentBranchName(baseDir: File): Either[GitCommandError, GitCommandResult] = {
+    val gitArgs = List("rev-parse", "--abbrev-ref", "HEAD")
     ProcessResult.toEither(
-      git(baseDir, "rev-parse", "--abbrev-ref", "HEAD")
+      git(baseDir, gitArgs)
     )(fromProcessResultToEither(
-      r => GitCommandResult.gitCurrentBranchName(BranchName(r.mkString.trim))
+      r => GitCommandResult.gitCurrentBranchName(BranchName(r.mkString.trim), gitArgs)
     , (code, err) => GitCommandError.gitCurrentBranchError(code, err)
     ))
+  }
 
-  def doIfCurrentBranchMatches[A](
+  def checkIfCurrentBranchIsSame(
     branchName: BranchName
   , baseDir: File
-  )(f: => Either[GitCommandError, A]): Either[GitCommandError, A] =
-    currentBranchName(baseDir).right.flatMap {
-      case g @ GitCurrentBranchName(BranchName(currentBranchName)) =>
-        if (currentBranchName === branchName.value)
-          f
-        else
-          Left(
-            GitCommandError.gitUnexpectedCommandResultError(
+  ): Either[GitCommandError, Vector[GitCommandResult]] = {
+    def isSameCurrent(
+      branchName: BranchName, currentBranchResult: GitCommandResult
+    ): Either[GitCommandError, GitCommandResult] =
+      currentBranchResult match {
+        case g@GitCurrentBranchName(BranchName(currentBranchName), _) =>
+          if (currentBranchName === branchName.value)
+            Right(GitCommandResult.gitSameCurrentBranch(BranchName(currentBranchName)))
+          else
+            Left(GitCommandError.gitUnexpectedCommandResultError(
               g
-            , s"The current branch should be the same as the given expected one. expected: ${branchName.value} / current: $currentBranchName"
-            )
+              , s"current branch == given expected branch. expected: ${branchName.value}"
+            ))
+        case other =>
+          Left(
+            GitCommandError.gitUnexpectedCommandResultError(other, "GitCurrentBranchName")
           )
-      case other =>
-        Left(
-          GitCommandError.gitUnexpectedCommandResultError(other, "GitCurrentBranchName")
-        )
-    }
+      }
+
+    for {
+      currentBranchResult <- currentBranchName(baseDir).right
+      r <- isSameCurrent(branchName, currentBranchResult).right
+    } yield Vector(currentBranchResult, r)
+  }
+
 
   def checkout(branchName: BranchName, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      git(baseDir, "checkout", branchName.value)
+      git1(baseDir, "checkout", branchName.value)
     )(fromProcessResultToEither(
       _ => GitCommandResult.gitCheckoutResult(branchName)
     , (code, err) => GitCommandError.gitCheckoutError(code, err)
@@ -73,7 +86,7 @@ object Git {
   def fetchTags(baseDir: File): Either[GitCommandError, GitCommandResult] = {
     val tags = "--tags"
     ProcessResult.toEither(
-      git(baseDir, "fetch", tags)
+      git1(baseDir, "fetch", tags)
     )(
       fromProcessResultToEither(
         _ => GitCommandResult.gitFetchResult(Some(tags))
@@ -84,7 +97,7 @@ object Git {
 
   def tag(tagName: TagName, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      git(baseDir, "tag", tagName.name)
+      git1(baseDir, "tag", tagName.name)
     )(fromProcessResultToEither(
       _ => GitCommandResult.gitTagResult(tagName)
     , (code, err) => GitCommandError.gitTagError(code, err)
@@ -92,7 +105,7 @@ object Git {
 
   def tagWithDescription(tagName: TagName, description: Description, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      git(baseDir, "tag", "-a", tagName.name, "-m", description.value)
+      git1(baseDir, "tag", "-a", tagName.name, "-m", description.value)
     )(fromProcessResultToEither(
       _ => GitCommandResult.gitTagResult(tagName)
     , (code, err) => GitCommandError.gitTagError(code, err)
