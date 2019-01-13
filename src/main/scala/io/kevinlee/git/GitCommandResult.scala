@@ -1,6 +1,6 @@
 package io.kevinlee.git
 
-import io.kevinlee.git.Git.{BranchName, TagName}
+import io.kevinlee.git.Git.{BranchName, Repository, TagName}
 
 sealed trait GitCommandResult
 
@@ -16,6 +16,7 @@ object GitCommandResult {
   final case class GitCheckoutResult(name: BranchName) extends GitCommandResult
   final case class GitFetchResult(arg: Option[String]) extends GitCommandResult
   final case class GitTagResult(tagName: TagName) extends GitCommandResult
+  final case class GitPushTagResult(repository: Repository, tagName: TagName, result: List[String]) extends GitCommandResult
 
   def gitCurrentBranchName(name: BranchName, args: List[String]): GitCommandResult =
     GitCurrentBranchName(name, args)
@@ -31,6 +32,9 @@ object GitCommandResult {
 
   def gitTagResult(tagName: TagName): GitCommandResult =
     GitTagResult(tagName)
+
+  def gitPushTagResult(repository: Repository, tagName: TagName, result: List[String]): GitCommandResult =
+    GitPushTagResult(repository, tagName, result)
 
   def render(gitCommandResult: GitCommandResult): String = gitCommandResult match {
 
@@ -48,6 +52,11 @@ object GitCommandResult {
 
     case GitTagResult(TagName(tagName)) =>
       s"git tag $tagName"
+
+    case GitPushTagResult(repository, tagName, result) =>
+      s"""git push ${repository.value} ${tagName.value}
+         |      ${result.mkString("\n      ")}
+         |""".stripMargin
 
   }
 

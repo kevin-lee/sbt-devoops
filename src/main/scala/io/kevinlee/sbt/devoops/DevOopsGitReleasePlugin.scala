@@ -1,7 +1,7 @@
 package io.kevinlee.sbt.devoops
 
 import io.kevinlee.git.Git
-import io.kevinlee.git.Git.{BranchName, TagName}
+import io.kevinlee.git.Git.{BranchName, Repository, TagName}
 import io.kevinlee.sbt.devoops.data.SbtTask
 import io.kevinlee.semver.SemanticVersion
 import sbt.Keys._
@@ -22,10 +22,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       settingKey[String]("The name of branch to tag from. [Default: release]")
 
     lazy val gitTagDescription: SettingKey[Option[String]] =
-      settingKey[Option[String]]("")
+      settingKey[Option[String]]("description for git tagging")
 
     lazy val gitTagName: TaskKey[String] =
-      taskKey[String]("")
+      taskKey[String]("""git tag name (default: parse the project version as semantic version and render with the prefix 'v'. e.g.) version := "1.0.0" / gitTagName := "v1.0.0"""")
+
+    lazy val gitTagPushRepo: TaskKey[String] =
+      taskKey[String]("The name of Git repo to push the tag (default: origin)")
+
 
     lazy val gitTag: TaskKey[Unit] =
       taskKey[Unit]("task to create a git tag from the branch set in gitTagFrom")
@@ -41,10 +45,12 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     gitTagFrom := "release"
 
   , gitTagName := decideVersion(version.value, v => s"v${SemanticVersion.parseUnsafe(v).render}")
+  , gitTagPushRepo := "origin"
   , gitTag := {
       val basePath = baseDirectory.value
       val tagFrom = BranchName(gitTagFrom.value)
       val tagName = TagName(gitTagName.value)
+      val pushRepo = Repository(gitTagPushRepo.value)
       SbtTask.handleGitCommandTask(
         for {
           currentBranchCheckResults <- Git.checkIfCurrentBranchIsSame(tagFrom, basePath).right
@@ -59,7 +65,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                             , baseDirectory.value
                           )
                         }.right
-        } yield currentBranchCheckResults :+ fetchResult :+ tagResult
+          pushResult <- Git.pushTag(pushRepo, tagName, basePath).right
+        } yield currentBranchCheckResults :+ fetchResult :+ tagResult :+ pushResult
       )
     }
   )

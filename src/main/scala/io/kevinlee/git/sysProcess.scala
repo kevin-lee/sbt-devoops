@@ -53,8 +53,14 @@ object ProcessResult {
     Failure(code, error)
 
   def processResult(code: Int, resultCollector: ResultCollector): ProcessResult =
-    if (code === 0) success(resultCollector.outputs)
-    else failure(code, resultCollector.errors.mkString("\n"))
+    if (code === 0) {
+      /* Why concatenate outputs and errors in success?
+       * Sometimes errors has some part of success result. :(
+       */
+      success(resultCollector.outputs ++ resultCollector.errors )
+    } else {
+      failure(code, resultCollector.errors.mkString("\n  "))
+    }
 
   def toEither[A, B](processResult: ProcessResult)(resultToEither: PartialFunction[ProcessResult, Either[A, B]]): Either[A, B] =
     resultToEither(processResult)
