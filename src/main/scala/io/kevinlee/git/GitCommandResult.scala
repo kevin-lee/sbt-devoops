@@ -54,8 +54,9 @@ object GitCommandResult {
       s"git tag $tagName"
 
     case GitPushTagResult(repository, tagName, result) =>
+      val delimiter = " " * 4
       s"""git push ${repository.value} ${tagName.value}
-         |      ${result.mkString("\n      ")}
+         |$delimiter${result.mkString(s"\n$delimiter")}
          |""".stripMargin
 
   }

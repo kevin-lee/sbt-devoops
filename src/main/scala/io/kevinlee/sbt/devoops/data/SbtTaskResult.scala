@@ -18,7 +18,7 @@ object SbtTaskResult {
 
   def render(sbtTaskResult: SbtTaskResult): String = sbtTaskResult match {
     case GitCommandTaskResult(gitCommandResults) =>
-      val delimiter = "  >> "
+      val delimiter = ">> "
       s"""
          |task success> git commands
          |${gitCommandResults.map(GitCommandResult.render).mkString(delimiter, s"\n$delimiter", "")}

@@ -33,6 +33,9 @@ final case class ResultCollector() extends ProcessLogger {
   }
 
   override def buffer[T](f: => T): T = f
+
+  override def toString: String =
+    s"${getClass.getSimpleName}(outputs=$outputs, errors=$errors)"
 }
 
 sealed trait ProcessResult {
@@ -44,13 +47,13 @@ object ProcessResult {
   final case class Success(outputs: List[String]) extends ProcessResult {
     val code: Int = 0
   }
-  final case class Failure(override val code: Int, error: String) extends ProcessResult
+  final case class Failure(override val code: Int, errors: List[String]) extends ProcessResult
 
   def success(outputs: List[String]): ProcessResult =
     Success(outputs)
 
-  def failure(code: Int, error: String): ProcessResult =
-    Failure(code, error)
+  def failure(code: Int, errors: List[String]): ProcessResult =
+    Failure(code, errors)
 
   def processResult(code: Int, resultCollector: ResultCollector): ProcessResult =
     if (code === 0) {
@@ -59,7 +62,7 @@ object ProcessResult {
        */
       success(resultCollector.outputs ++ resultCollector.errors )
     } else {
-      failure(code, resultCollector.errors.mkString("\n  "))
+      failure(code, resultCollector.errors)
     }
 
   def toEither[A, B](processResult: ProcessResult)(resultToEither: PartialFunction[ProcessResult, Either[A, B]]): Either[A, B] =
