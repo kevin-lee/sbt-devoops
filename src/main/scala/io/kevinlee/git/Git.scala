@@ -13,7 +13,8 @@ object Git {
   // $COVERAGE-OFF$
 
   final case class BranchName(value: String) extends AnyVal
-  final case class TagName(name: String) extends AnyVal
+  final case class TagName(value: String) extends AnyVal
+  final case class Repository(value: String) extends AnyVal
 
   final case class Description(value: String) extends AnyVal
 
@@ -97,7 +98,7 @@ object Git {
 
   def tag(tagName: TagName, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      git1(baseDir, "tag", tagName.name)
+      git1(baseDir, "tag", tagName.value)
     )(fromProcessResultToEither(
       _ => GitCommandResult.gitTagResult(tagName)
     , (code, err) => GitCommandError.gitTagError(code, err)
@@ -105,11 +106,17 @@ object Git {
 
   def tagWithDescription(tagName: TagName, description: Description, baseDir: File): Either[GitCommandError, GitCommandResult] =
     ProcessResult.toEither(
-      git1(baseDir, "tag", "-a", tagName.name, "-m", description.value)
+      git1(baseDir, "tag", "-a", tagName.value, "-m", description.value)
     )(fromProcessResultToEither(
       _ => GitCommandResult.gitTagResult(tagName)
     , (code, err) => GitCommandError.gitTagError(code, err)
     ))
 
+  def pushTag(repository: Repository, tagName: TagName, baseDir:File): Either[GitCommandError, GitCommandResult] = ProcessResult.toEither(
+    git1(baseDir, "push", repository.value, tagName.value)
+  )(fromProcessResultToEither(
+    result => GitCommandResult.gitPushTagResult(repository, tagName, result)
+  , (code, err) => GitCommandError.gitPushTagError(code, err, repository, tagName)
+  ))
 
 }
