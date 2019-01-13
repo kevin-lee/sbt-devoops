@@ -20,13 +20,13 @@ object Git {
 
   def fromProcessResultToEither(
     successHandler: List[String] => GitCommandResult
-  , errorHandler: (Int, String) => GitCommandError
+  , errorHandler: (Int, List[String]) => GitCommandError
   ): PartialFunction[ProcessResult, Either[GitCommandError, GitCommandResult]] = {
       case ProcessResult.Success(outputs) =>
         Right(successHandler(outputs))
 
-      case ProcessResult.Failure(code, error) =>
-        Left(errorHandler(code, error))
+      case ProcessResult.Failure(code, errors) =>
+        Left(errorHandler(code, errors))
     }
 
   def git(baseDir: File, commandAndArgs: List[String]): ProcessResult =
@@ -43,7 +43,7 @@ object Git {
       git(baseDir, gitArgs)
     )(fromProcessResultToEither(
       r => GitCommandResult.gitCurrentBranchName(BranchName(r.mkString.trim), gitArgs)
-    , (code, err) => GitCommandError.gitCurrentBranchError(code, err)
+    , (code, errs) => GitCommandError.gitCurrentBranchError(code, errs)
     ))
   }
 
