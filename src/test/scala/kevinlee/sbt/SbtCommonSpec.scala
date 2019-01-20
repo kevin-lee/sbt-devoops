@@ -1,9 +1,9 @@
-package io.kevinlee.sbt
+package kevinlee.sbt
 
 import hedgehog._
 import hedgehog.runner._
 
-import io.kevinlee.semver.Gens
+import kevinlee.semver.Gens
 
 /**
   * @author Kevin Lee

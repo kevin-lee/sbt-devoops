@@ -8,7 +8,7 @@ lazy val writeVersion = inputKey[Unit]("Write Version in File'")
 
 lazy val root = (project in file("."))
   .settings(
-    organization := "io.kevinlee"
+    organization := "kevinlee"
   , name         := "sbt-devoops"
   , scalaVersion := ProjectScalaVersion
   , version      := ProjectVersion
@@ -49,7 +49,7 @@ lazy val root = (project in file("."))
   , bintrayVcsUrl := Some("""git@github.com:Kevin-Lee/sbt-devoops.git""")
   , bintrayRepository := "sbt-plugins"
 
-  , initialCommands in console := """import io.kevinlee.sbt._"""
+  , initialCommands in console := """import kevinlee.sbt._"""
 
   , writeVersion := versionWriter(Def.spaceDelimited("filename").parsed)(ProjectVersion)
 

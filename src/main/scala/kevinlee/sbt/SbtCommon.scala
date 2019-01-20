@@ -1,6 +1,6 @@
-package io.kevinlee.sbt
+package kevinlee.sbt
 
-import io.kevinlee.semver.{Major, Minor, SemanticVersion}
+import kevinlee.semver.{Major, Minor, SemanticVersion}
 
 /**
   * @author Kevin Lee

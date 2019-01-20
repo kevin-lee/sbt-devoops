@@ -1,4 +1,4 @@
-package io.kevinlee.sbt.devoops
+package kevinlee.sbt.devoops
 
 import sbt.Keys._
 import sbt._

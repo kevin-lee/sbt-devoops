@@ -1,7 +1,7 @@
-package io.kevinlee.sbt.devoops
+package kevinlee.sbt.devoops
 
-import io.kevinlee.sbt.SbtCommon._
-import io.kevinlee.semver.{Major, Minor, SemanticVersion}
+import kevinlee.sbt.SbtCommon._
+import kevinlee.semver.{Major, Minor, SemanticVersion}
 
 import sbt.Keys._
 import sbt.plugins.JvmPlugin

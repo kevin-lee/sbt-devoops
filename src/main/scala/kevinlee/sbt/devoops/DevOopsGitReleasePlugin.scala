@@ -1,9 +1,9 @@
-package io.kevinlee.sbt.devoops
+package kevinlee.sbt.devoops
 
-import io.kevinlee.git.Git
-import io.kevinlee.git.Git.{BranchName, Repository, TagName}
-import io.kevinlee.sbt.devoops.data.SbtTask
-import io.kevinlee.semver.SemanticVersion
+import kevinlee.git.Git
+import kevinlee.git.Git.{BranchName, Repository, TagName}
+import kevinlee.sbt.devoops.data.SbtTask
+import kevinlee.semver.SemanticVersion
 import sbt.Keys._
 import sbt.{AutoPlugin, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
