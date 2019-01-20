@@ -1,6 +1,6 @@
-package io.kevinlee.sbt.devoops.data
+package kevinlee.sbt.devoops.data
 
-import io.kevinlee.git.GitCommandResult
+import kevinlee.git.GitCommandResult
 
 /**
   * @author Kevin Lee

@@ -1,8 +1,8 @@
-package io.kevinlee.git
+package kevinlee.git
 
 import java.io.File
 
-import io.kevinlee.CommonPredef._
+import kevinlee.CommonPredef._
 
 import scala.sys.process.ProcessLogger
 

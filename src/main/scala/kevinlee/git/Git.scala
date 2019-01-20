@@ -1,9 +1,9 @@
-package io.kevinlee.git
+package kevinlee.git
 
 import java.io.File
 
-import io.kevinlee.CommonPredef._
-import io.kevinlee.git.GitCommandResult.GitCurrentBranchName
+import kevinlee.CommonPredef._
+import kevinlee.git.GitCommandResult.GitCurrentBranchName
 
 /**
   * @author Kevin Lee

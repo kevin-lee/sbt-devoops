@@ -1,6 +1,6 @@
-package io.kevinlee.git
+package kevinlee.git
 
-import io.kevinlee.git.Git.{Repository, TagName}
+import kevinlee.git.Git.{Repository, TagName}
 
 sealed trait GitCommandError
 
