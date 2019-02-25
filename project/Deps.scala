@@ -1,7 +1,7 @@
 import sbt._
 
 object Deps {
-  val hedgehogVersion: String = "59fa4de48083870452c2e949cb5fda5cc4f97256"
+  val hedgehogVersion: String = "55d9828dc6bcdc85ba3ebb31efd541d0a14423bf"
 
   val hedgehogRepo: Resolver =
     Resolver.url(
