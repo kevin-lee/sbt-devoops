@@ -1,14 +1,11 @@
 package kevinlee.sbt.io
 
 import java.io.File
-import java.nio.charset.StandardCharsets
-import java.security.SecureRandom
 
 import hedgehog._
 import hedgehog.runner._
-import kevinlee.IoUtil
 
-import scala.util.Random
+import kevinlee.test.IoUtil
 
 /**
   * @author Kevin Lee
@@ -18,6 +15,7 @@ object IoSpec extends Properties {
   override def tests: List[Test] = List(
       example("test findFiles with wildcard", testFindFilesWithWildcard)
     , property("test findFiles", testFindFiles)
+    , property("test copy", testCopy)
   )
 
   def testFindFilesWithWildcard: Result = {
@@ -69,29 +67,14 @@ object IoSpec extends Properties {
     }
   }
 
-
-  val random: Random =
-    new Random(new SecureRandom("IoSpec".getBytes(StandardCharsets.UTF_8)))
-
   def testFindFiles: Property = for {
     namesAndContentList <-
-      Gens.genFilenamesAndContent
-        .list(Range.linear(1, 5))
-        .map{ namesList =>
-          namesList.map { case (names, content) =>
-            (names.headOption.fold(s"abc_${random.nextInt()}")(x => s"${x}_${random.nextInt()}") :: names.drop(1), content)
-          }
-        }
+      Gens.genFilenamesAndContentWithFirstUniqueName
         .log("namesAndContentList")
   } yield {
 
     IoUtil.withTempDir { tmp =>
-      val namesAndFiles = for {
-        (names, content) <- namesAndContentList
-        name = names.mkString("/")
-        file = new File(tmp, name)
-        _ = IoUtil.writeFile(file, content)
-      } yield (name, file)
+      val namesAndFiles = IoUtil.createFiles(tmp, namesAndContentList)
 
       val names = namesAndFiles.map{ case (ns, _) => ns }
       val expected = namesAndFiles.map{ case (_, fs) => fs }
@@ -99,4 +82,26 @@ object IoSpec extends Properties {
       actual ==== expected
     }
   }
+
+  def testCopy: Property = for {
+    namesAndContentList <-
+      Gens.genFilenamesAndContentWithFirstUniqueName
+        .log("namesAndContentList")
+    targetName <- Gen.string(Gen.alphaNum, Range.linear(10, 10)).log("targetName")
+  } yield {
+    IoUtil.withTempDir { tmp =>
+      val pathAndFiles = IoUtil.createFiles(tmp, namesAndContentList)
+      val files = pathAndFiles.map { case (_, file) => file }
+      val expected = files.map(file => (file.getName, IoUtil.readFile(file))).sorted
+
+        val targetDir = new File(tmp, targetName)
+      if (!targetDir.exists()) {
+        targetDir.mkdirs()
+      }
+      val actualFiles = Io.copy(files, targetDir)
+      val actual = actualFiles.map(file => (file.getName, IoUtil.readFile(file)))
+      actual ==== expected
+    }
+  }
+
 }

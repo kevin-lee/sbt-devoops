@@ -5,7 +5,7 @@ import java.io.FileFilter
 import kevinlee.CommonPredef._
 import org.apache.commons.io.filefilter.WildcardFileFilter
 import sbt.{File, file}
-import sbt.DirectoryFilter
+import sbt.{DirectoryFilter, IO}
 
 import scala.annotation.tailrec
 
@@ -126,4 +126,8 @@ object Io {
       findFiles(caseSensitivity, baseDir, names, Nil)
     }
   }
+
+
+  def copy(sourceFiles: Seq[File], targetDir: File): Seq[File] =
+    IO.copy(sourceFiles.map(source => (source, new File(targetDir, source.getName)))).toVector.sorted
 }
