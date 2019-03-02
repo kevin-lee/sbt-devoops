@@ -3,9 +3,10 @@ package kevinlee.sbt.devoops
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, Repository, TagName}
 import kevinlee.sbt.devoops.data.SbtTask
+import kevinlee.sbt.io.{CaseSensitivity, Io}
 import kevinlee.semver.SemanticVersion
 import sbt.Keys._
-import sbt.{AutoPlugin, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
+import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
 /**
   * @author Kevin Lee
@@ -33,6 +34,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
     lazy val gitTag: TaskKey[Unit] =
       taskKey[Unit]("task to create a git tag from the branch set in gitTagFrom")
+
+    lazy val copyPackages: TaskKey[Seq[File]] =
+      taskKey[Seq[File]](s"task to copy packaged artifacts to the location specified (default: target/scala-*/$${name.value}*.jar to PROJECT_HOME/cd")
 
     def decideVersion(projectVersion: String, decide: String => String): String =
       decide(projectVersion)
@@ -68,6 +72,29 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           pushResult <- Git.pushTag(pushRepo, tagName, basePath).right
         } yield currentBranchCheckResults :+ fetchResult :+ tagResult :+ pushResult
       )
+    }
+  , copyPackages := {
+      val projectBaseDir = baseDirectory.value
+      val files = Io.findAllFiles(
+          CaseSensitivity.caseSensitive
+        , projectBaseDir
+        , List(
+            s"target/scala-*/${name.value}*.jar"
+          )
+      )
+      if (files.isEmpty) {
+        println("No files were found so nothing has been copied.")
+        Vector.empty[File]
+      } else {
+        val copied = Io.copy(files, new File(projectBaseDir, "cd"))
+        println(
+          s""">> copyPackages - Files copied from:
+             |${files.mkString("  - ",  "\n  - ", "\n")}
+             |  to
+             |${copied.mkString("  - ",  "\n  - ", "\n")}
+             |""".stripMargin)
+        copied
+      }
     }
   )
 
