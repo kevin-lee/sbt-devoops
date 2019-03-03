@@ -92,7 +92,7 @@ object IoSpec extends Properties {
     IoUtil.withTempDir { tmp =>
       val pathAndFiles = IoUtil.createFiles(tmp, namesAndContentList)
       val files = pathAndFiles.map { case (_, file) => file }
-      val expected = files.map(file => (file.getName, IoUtil.readFile(file))).sorted
+      val expected = files.map(file => (file.getName, IoUtil.readFile(file))).toVector.sorted
 
         val targetDir = new File(tmp, targetName)
       if (!targetDir.exists()) {

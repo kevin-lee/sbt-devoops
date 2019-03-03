@@ -35,11 +35,39 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     lazy val gitTag: TaskKey[Unit] =
       taskKey[Unit]("task to create a git tag from the branch set in gitTagFrom")
 
-    lazy val copyPackages: TaskKey[Seq[File]] =
-      taskKey[Seq[File]](s"task to copy packaged artifacts to the location specified (default: target/scala-*/$${name.value}*.jar to PROJECT_HOME/cd")
+    lazy val devOopsCiDir: SettingKey[String] = settingKey[String]("The ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. (default: ci)")
+
+    lazy val devOopsCopyReleasePackages: TaskKey[Seq[File]] =
+      taskKey[Seq[File]](s"task to copy packaged artifacts to the location specified (default: target/scala-*/$${name.value}*.jar to PROJECT_HOME/$${devOopsCiDir.value}/dist")
 
     def decideVersion(projectVersion: String, decide: String => String): String =
       decide(projectVersion)
+
+    def copyFiles(
+      caseSensitivity: CaseSensitivity
+    , projectBaseDir: File
+    , filePaths: List[String]
+    , targetDir: File
+    ): Vector[File] = {
+      val files = Io.findAllFiles(
+          caseSensitivity
+        , projectBaseDir
+        , filePaths
+      )
+      if (files.isEmpty) {
+        println("No files were found so nothing has been copied.")
+        Vector.empty[File]
+      } else {
+        val copied = Io.copy(files, targetDir)
+        println(
+          s""">> copyPackages - Files copied from:
+             |${files.mkString("  - ",  "\n  - ", "\n")}
+             |  to
+             |${copied.mkString("  - ",  "\n  - ", "\n")}
+             |""".stripMargin)
+        copied
+      }
+    }
 
   }
 
@@ -73,29 +101,13 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         } yield currentBranchCheckResults :+ fetchResult :+ tagResult :+ pushResult
       )
     }
-  , copyPackages := {
-      val projectBaseDir = baseDirectory.value
-      val files = Io.findAllFiles(
-          CaseSensitivity.caseSensitive
-        , projectBaseDir
-        , List(
-            s"target/scala-*/${name.value}*.jar"
-          )
-      )
-      if (files.isEmpty) {
-        println("No files were found so nothing has been copied.")
-        Vector.empty[File]
-      } else {
-        val copied = Io.copy(files, new File(projectBaseDir, "cd"))
-        println(
-          s""">> copyPackages - Files copied from:
-             |${files.mkString("  - ",  "\n  - ", "\n")}
-             |  to
-             |${copied.mkString("  - ",  "\n  - ", "\n")}
-             |""".stripMargin)
-        copied
-      }
-    }
+  , devOopsCiDir := "ci"
+  , devOopsCopyReleasePackages := copyFiles(
+      CaseSensitivity.caseSensitive
+    , baseDirectory.value
+    , List(s"target/scala-*/${name.value}*.jar")
+    , new File(new File(devOopsCiDir.value), "dist")
+    )
   )
 
   // $COVERAGE-ON$
