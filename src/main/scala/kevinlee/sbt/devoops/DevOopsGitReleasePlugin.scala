@@ -2,10 +2,14 @@ package kevinlee.sbt.devoops
 
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, Repository, TagName}
-import kevinlee.sbt.devoops.data.SbtTask
+
+import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
+
 import kevinlee.semver.SemanticVersion
+
 import sbt.Keys._
+import sbt.MessageOnlyException
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
 /**
@@ -37,8 +41,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
     lazy val devOopsCiDir: SettingKey[String] = settingKey[String]("The ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. (default: ci)")
 
-    lazy val devOopsCopyReleasePackages: TaskKey[Seq[File]] =
-      taskKey[Seq[File]](s"task to copy packaged artifacts to the location specified (default: target/scala-*/$${name.value}*.jar to PROJECT_HOME/$${devOopsCiDir.value}/dist")
+    lazy val devOopsCopyReleasePackages: TaskKey[Vector[File]] =
+      taskKey[Vector[File]](s"task to copy packaged artifacts to the location specified (default: target/scala-*/$${name.value}*.jar to PROJECT_HOME/$${devOopsCiDir.value}/dist")
 
     def decideVersion(projectVersion: String, decide: String => String): String =
       decide(projectVersion)
@@ -48,15 +52,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     , projectBaseDir: File
     , filePaths: List[String]
     , targetDir: File
-    ): Vector[File] = {
+    ): Either[SbtTaskError, Vector[File]] = {
       val files = Io.findAllFiles(
           caseSensitivity
         , projectBaseDir
         , filePaths
       )
       if (files.isEmpty) {
-        println("No files were found so nothing has been copied.")
-        Vector.empty[File]
+        Left(SbtTaskError.noFileFound("copying files", filePaths))
       } else {
         val copied = Io.copy(files, targetDir)
         println(
@@ -65,7 +68,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
              |  to
              |${copied.mkString("  - ",  "\n  - ", "\n")}
              |""".stripMargin)
-        copied
+        Right(copied)
       }
     }
 
@@ -102,12 +105,21 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       )
     }
   , devOopsCiDir := "ci"
-  , devOopsCopyReleasePackages := copyFiles(
-      CaseSensitivity.caseSensitive
-    , baseDirectory.value
-    , List(s"target/scala-*/${name.value}*.jar")
-    , new File(new File(devOopsCiDir.value), "dist")
-    )
+  , devOopsCopyReleasePackages := {
+      @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+      val result: Vector[File] = copyFiles(
+          CaseSensitivity.caseSensitive
+        , baseDirectory.value
+        , List(s"target/scala-*/${name.value}*.jar")
+        , new File(new File(devOopsCiDir.value), "dist")
+        ) match {
+          case Left(error) =>
+            throw new MessageOnlyException(SbtTaskError.render(error))
+          case Right(files) =>
+            files
+        }
+      result
+    }
   )
 
   // $COVERAGE-ON$
