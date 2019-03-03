@@ -128,6 +128,6 @@ object Io {
   }
 
 
-  def copy(sourceFiles: Seq[File], targetDir: File): Seq[File] =
+  def copy(sourceFiles: Seq[File], targetDir: File): Vector[File] =
     IO.copy(sourceFiles.map(source => (source, new File(targetDir, source.getName)))).toVector.sorted
 }
