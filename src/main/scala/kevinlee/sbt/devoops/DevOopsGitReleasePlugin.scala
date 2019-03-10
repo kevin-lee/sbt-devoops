@@ -1,16 +1,16 @@
 package kevinlee.sbt.devoops
 
-import kevinlee.git.Git
-import kevinlee.git.Git.{BranchName, Repository, TagName}
+import java.io.FileInputStream
 
+import kevinlee.git.Git
+import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
+import kevinlee.github.GitHubApi
+import kevinlee.github.data._
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-
 import kevinlee.semver.SemanticVersion
-
 import sbt.Keys._
-import sbt.MessageOnlyException
-import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
+import sbt.{AutoPlugin, File, MessageOnlyException, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
 /**
   * @author Kevin Lee
@@ -44,6 +44,15 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     lazy val devOopsCopyReleasePackages: TaskKey[Vector[File]] =
       taskKey[Vector[File]](s"task to copy packaged artifacts to the location specified (default: target/scala-*/$${name.value}*.jar to PROJECT_HOME/$${devOopsCiDir.value}/dist")
 
+    lazy val changelogLocation: SettingKey[String] =
+      settingKey[String]("The location of changelog file. (default: PROJECT_HOME/changelogs)")
+
+    lazy val gitHubAuthTokenFile: SettingKey[File] =
+      settingKey[File]("The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: $USER/.github) If you want to get the file in user's home, use new File(Io.getUserHome, \".github\")")
+
+    lazy val gitHubRelease: TaskKey[Unit] =
+      taskKey[Unit]("Release the current version meaning upload the packaged files and changelog to GitHub.")
+
     def decideVersion(projectVersion: String, decide: String => String): String =
       decide(projectVersion)
 
@@ -72,6 +81,39 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       }
     }
 
+    def readOAuthToken(file: File): Either[GitHubError, OAuthToken] = {
+      val props = new java.util.Properties()
+      props.load(new FileInputStream(file))
+      Option(props.getProperty("oauth"))
+        .fold[Either[GitHubError, OAuthToken]](Left(GitHubError.noCredential))(token => Right(OAuthToken(token)))
+    }
+
+    def getRepoFromUrl(repoUrl: RepoUrl): Either[GitHubError, Repo] = {
+      val names =
+        if (repoUrl.repoUrl.startsWith("http"))
+          repoUrl.repoUrl.split("/")
+        else
+          repoUrl.repoUrl.split(":").last.split("/")
+      names.takeRight(2) match {
+        case Array(org, name) =>
+          Right(Repo(RepoOrg(org), RepoName(name.stripSuffix(".git"))))
+        case _ =>
+          Left(GitHubError.invalidGitHubRepoUrl(repoUrl))
+      }
+    }
+
+    def getChangelog(dir: File, tagName: TagName): Either[GitHubError, Changelog] = {
+      val changelogName = s"${tagName.value.stripPrefix("v")}.md"
+      // baseDirectory.value, changelogLocation.value)
+      val changelog = new File(dir, changelogName)
+      if (!changelog.exists) {
+        Left(GitHubError.changelogNotFound(changelog.getCanonicalPath, tagName))
+      } else {
+        val log = scala.io.Source.fromFile(changelog).getLines().mkString("\n")
+        Right(Changelog(log))
+      }
+    }
+
   }
 
   import autoImport._
@@ -95,7 +137,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                           Git.tag(tagName, basePath)
                         ) { desc =>
                           Git.tagWithDescription(
-                            tagName
+                              tagName
                             , Git.Description(desc)
                             , baseDirectory.value
                           )
@@ -119,6 +161,39 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
             files
         }
       result
+    }
+  , changelogLocation := "changelogs"
+  , gitHubAuthTokenFile :=
+      new File(Io.getUserHome, ".github")
+  , gitHubRelease := {
+      val tagName = TagName(gitTagName.value)
+      val assets = devOopsCopyReleasePackages.value
+      gitTag.value
+      SbtTask.handleGitHubTask(
+        for {
+          changelog <- getChangelog(new File(baseDirectory.value, changelogLocation.value), tagName).right
+          url <- Git.getRemoteUrl(Repository(gitTagPushRepo.value), baseDirectory.value).left.map(GitHubError.causedByGitCommandError).right
+          repo <- getRepoFromUrl(url).right
+          oauth <- readOAuthToken(gitHubAuthTokenFile.value).right
+          gitHub <- GitHubApi.connectWithOAuth(oauth).right
+          gitHubRelease <-
+            GitHubApi.release(
+                gitHub
+              , repo
+              , tagName
+              , changelog
+              , assets).right
+        } yield List(
+            "Get changelog"
+          , s"Get remote repo URL: ${url.repoUrl}"
+          , "Get GitHub repo org and name"
+          , "Get GitHub OAuth token"
+          , "Connect GitHub with OAuth"
+          , s"GitHub release: ${gitHubRelease.tagName.value}"
+          , gitHubRelease.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
+          , gitHubRelease.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
+        )
+      )
     }
   )
 

@@ -24,8 +24,7 @@ lazy val root = (project in file("."))
       ("org.scala-sbt" % "compiler-interface" % sv % "component").sources
     }
   , crossSbtVersions := CrossSbtVersions
-  , scalacOptions ++=
-      crossVersionProps(commonScalacOptions, scalaVersion.value) {
+  , scalacOptions ++= crossVersionProps(commonScalacOptions, scalaVersion.value) {
         case Some((2, 12)) =>
           Seq("-Ywarn-unused-import", "-Ywarn-numeric-widen")
         case Some((2, 11)) =>
@@ -33,10 +32,22 @@ lazy val root = (project in file("."))
         case _ =>
           Nil
       }
+  , scalacOptions in (Compile, console) := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings")
   , wartremoverErrors in (Compile, compile) ++= commonWarts
   , wartremoverErrors in (Test, compile) ++= commonWarts
   , resolvers += Deps.hedgehogRepo
-  , libraryDependencies ++= Seq(Deps.commonsIo) ++ Deps.hedgehogLibs
+  , libraryDependencies ++=
+      crossVersionProps(
+          Seq(
+            Deps.commonsIo, Deps.githubApi
+          ) ++ Deps.hedgehogLibs
+        , scalaVersion.value
+      ) {
+        case Some((2, 12)) =>
+          Deps.javaxActivation212
+        case Some((2, 10)) =>
+          Deps.javaxActivation210
+      }
   , testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework"))
 
 //  , addSbtPlugin(Deps.wartRemover)

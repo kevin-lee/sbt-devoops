@@ -17,6 +17,7 @@ object GitCommandError {
   final case class GitFetchError(code: Int, errors: List[String], arg: Option[String]) extends GitCommandError
   final case class GitTagError(code: Int, errors: List[String]) extends GitCommandError
   final case class GitPushTagError(code: Int, errors: List[String], repository: Repository, tagName: TagName) extends GitCommandError
+  final case class GitRemoteGetUrlError(code: Int, errors: List[String], repository: Repository) extends GitCommandError
 
   def gitUnexpectedCommandResultError(gitCommandResult: GitCommandResult, expectedResult: String): GitCommandError =
     GitUnexpectedCommandResultError(gitCommandResult, expectedResult)
@@ -35,6 +36,9 @@ object GitCommandError {
 
   def gitPushTagError(code: Int, errors: List[String], repository: Repository, tagName: TagName): GitCommandError =
     GitPushTagError(code, errors, repository, tagName)
+
+  def gitRemoteGetUrlError(code: Int, errors: List[String], repository: Repository): GitCommandError =
+    GitRemoteGetUrlError(code, errors, repository)
 
   private def renderCodeAndError(code: Int, errors: List[String]): String =
     s"[code: $code], [errors: ${errors.mkString("\n  ")}]"
@@ -61,6 +65,15 @@ object GitCommandError {
 
     case GitPushTagError(code, errors, repository, tagName) =>
       s"""Error] git push ${repository.value} ${tagName.value}
+         |  code: $code
+         |  errors:
+         |  [
+         |    ${errors.mkString("\n    ")}
+         |  ]
+         |""".stripMargin
+
+    case GitRemoteGetUrlError(code, errors, repository) =>
+      s"""Error] git remote get-url ${repository.value}
          |  code: $code
          |  errors:
          |  [

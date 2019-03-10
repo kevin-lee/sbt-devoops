@@ -1,6 +1,7 @@
 package kevinlee.sbt.devoops.data
 
 import kevinlee.git.{GitCommandError, GitCommandResult}
+import kevinlee.github.data.GitHubError
 
 /**
   * @author Kevin Lee
@@ -13,6 +14,15 @@ object SbtTask {
     gitCommandTaskResult
       .left.map(SbtTaskError.gitCommandTaskError)
       .right.map(SbtTaskResult.gitCommandTaskResult)
+      .fold(
+        SbtTaskError.error
+      , SbtTaskResult.consolePrintln
+      )
+
+  def handleGitHubTask(gitHubTaskResult: Either[GitHubError, Seq[String]]): Unit =
+    gitHubTaskResult
+      .left.map(SbtTaskError.gitHubTaskError)
+      .right.map(SbtTaskResult.taskResult)
       .fold(
         SbtTaskError.error
       , SbtTaskResult.consolePrintln
