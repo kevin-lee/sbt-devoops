@@ -15,13 +15,15 @@ object Git {
   final case class BranchName(value: String) extends AnyVal
   final case class TagName(value: String) extends AnyVal
   final case class Repository(value: String) extends AnyVal
+  final case class RemoteName(remoteName: String) extends AnyVal
+  final case class RepoUrl(repoUrl: String) extends AnyVal
 
   final case class Description(value: String) extends AnyVal
 
-  def fromProcessResultToEither(
-    successHandler: List[String] => GitCommandResult
+  def fromProcessResultToEither[A](
+    successHandler: List[String] => A
   , errorHandler: (Int, List[String]) => GitCommandError
-  ): PartialFunction[ProcessResult, Either[GitCommandError, GitCommandResult]] = {
+  ): PartialFunction[ProcessResult, Either[GitCommandError, A]] = {
       case ProcessResult.Success(outputs) =>
         Right(successHandler(outputs))
 
@@ -118,5 +120,13 @@ object Git {
     result => GitCommandResult.gitPushTagResult(repository, tagName, result)
   , (code, err) => GitCommandError.gitPushTagError(code, err, repository, tagName)
   ))
+
+  def getRemoteUrl(repository: Repository, baseDir:File): Either[GitCommandError, RepoUrl] =
+    ProcessResult.toEither(
+      git1(baseDir, "remote", "get-url", repository.value)
+    )(fromProcessResultToEither(
+      result => RepoUrl(result.mkString.trim)
+      , (code, err) => GitCommandError.gitRemoteGetUrlError(code, err, repository)
+    ))
 
 }

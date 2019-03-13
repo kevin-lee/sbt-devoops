@@ -4,6 +4,7 @@ import java.io.FileFilter
 
 import kevinlee.CommonPredef._
 import org.apache.commons.io.filefilter.WildcardFileFilter
+import sbt.MessageOnlyException
 import sbt.{File, file}
 import sbt.{DirectoryFilter, IO}
 
@@ -14,6 +15,11 @@ import scala.annotation.tailrec
   * @since 2019-01-20
   */
 object Io {
+
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+  def getUserHome: String =
+    sys.props.get("user.home")
+      .getOrElse(throw new MessageOnlyException("User home is not found."))
 
   def wildcardFilters(names: Seq[String], caseSensitivity: CaseSensitivity): FileFilter =
     new WildcardFileFilter(names.toArray, CaseSensitivity.toIOCase(caseSensitivity))

@@ -23,4 +23,16 @@ object Deps {
 
   val bintray: ModuleID = "org.foundweekends" % "sbt-bintray" % "0.5.4"
 
+  val githubApi: ModuleID = "org.kohsuke" % "github-api" % "1.95"
+
+  val javaxActivation210: List[ModuleID] = List(
+      "javax.activation" % "activation" % "1.1.1"
+    , "javax.activation" % "javax.activation-api" % "1.2.0"
+    , "com.google.code.findbugs" % "jsr305" % "3.0.2"
+  )
+
+  val javaxActivation212: List[ModuleID] = List(
+      "javax.activation" % "activation" % "1.1.1"
+    , "javax.activation" % "javax.activation-api" % "1.2.0"
+  )
 }

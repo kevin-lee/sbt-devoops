@@ -1,6 +1,7 @@
 package kevinlee.sbt.devoops.data
 
 import kevinlee.git.GitCommandError
+import kevinlee.github.data.GitHubError
 
 /**
   * @author Kevin Lee
@@ -13,6 +14,7 @@ object SbtTaskError {
   // $COVERAGE-OFF$
   final case class GitCommandTaskError(cause: GitCommandError) extends SbtTaskError
   final case class GitTaskError(cause: String) extends SbtTaskError
+  final case class GitHubTaskError(cause: GitHubError) extends SbtTaskError
   final case class NoFileFound(name: String, filePaths: List[String]) extends SbtTaskError
 
   def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
@@ -24,6 +26,9 @@ object SbtTaskError {
   def noFileFound(name: String, filePaths: List[String]): SbtTaskError =
     NoFileFound(name, filePaths)
 
+  def gitHubTaskError(cause: GitHubError): SbtTaskError =
+    GitHubTaskError(cause)
+
   def render(sbtTaskError: SbtTaskError): String = sbtTaskError match {
 
     case GitCommandTaskError(err: GitCommandError) =>
@@ -31,6 +36,9 @@ object SbtTaskError {
 
     case GitTaskError(cause) =>
       s"task failed> git command: $cause"
+
+    case GitHubTaskError(cause) =>
+      GitHubError.render(cause)
 
     case NoFileFound(name: String, filePaths) =>
       s"No file found for $name. Expected files: ${filePaths.mkString("[", ",", "]")}"

@@ -1,6 +1,6 @@
 package kevinlee.git
 
-import kevinlee.git.Git.{BranchName, Repository, TagName}
+import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
 
 sealed trait GitCommandResult
 
@@ -17,6 +17,7 @@ object GitCommandResult {
   final case class GitFetchResult(arg: Option[String]) extends GitCommandResult
   final case class GitTagResult(tagName: TagName) extends GitCommandResult
   final case class GitPushTagResult(repository: Repository, tagName: TagName, result: List[String]) extends GitCommandResult
+  final case class GitRemoteGetUrl(repository: Repository, repoUrl: RepoUrl) extends GitCommandResult
 
   def gitCurrentBranchName(name: BranchName, args: List[String]): GitCommandResult =
     GitCurrentBranchName(name, args)
@@ -35,6 +36,9 @@ object GitCommandResult {
 
   def gitPushTagResult(repository: Repository, tagName: TagName, result: List[String]): GitCommandResult =
     GitPushTagResult(repository, tagName, result)
+
+  def gitRemoteGetUrl(repository: Repository, repoUrl: RepoUrl): GitCommandResult =
+    GitRemoteGetUrl(repository, repoUrl)
 
   def render(gitCommandResult: GitCommandResult): String = gitCommandResult match {
 
@@ -59,6 +63,10 @@ object GitCommandResult {
          |$delimiter${result.mkString(s"\n$delimiter")}
          |""".stripMargin
 
+    case GitRemoteGetUrl(repository, repoUrl) =>
+      s"""git remote get-url ${repository.value}
+         |  ${repoUrl.repoUrl}
+         |""".stripMargin
   }
 
   // $COVERAGE-ON$
