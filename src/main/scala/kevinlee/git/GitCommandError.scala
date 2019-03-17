@@ -1,7 +1,5 @@
 package kevinlee.git
 
-import kevinlee.git.Git.{Repository, TagName}
-
 sealed trait GitCommandError
 
 /**
@@ -11,75 +9,17 @@ sealed trait GitCommandError
 object GitCommandError {
   // $COVERAGE-OFF$
 
-  final case class GitUnexpectedCommandResultError(gitCommandResult: GitCommandResult, expectedResult: String) extends GitCommandError
-  final case class GitCurrentBranchError(code: Int, errors: List[String]) extends GitCommandError
-  final case class GitCheckoutError(code: Int, errors: List[String]) extends GitCommandError
-  final case class GitFetchError(code: Int, errors: List[String], arg: Option[String]) extends GitCommandError
-  final case class GitTagError(code: Int, errors: List[String]) extends GitCommandError
-  final case class GitPushTagError(code: Int, errors: List[String], repository: Repository, tagName: TagName) extends GitCommandError
-  final case class GitRemoteGetUrlError(code: Int, errors: List[String], repository: Repository) extends GitCommandError
+  final case class GenericGotCommandResultError(gitCmd: GitCmd, code: Int, errors: List[String]) extends GitCommandError
 
-  def gitUnexpectedCommandResultError(gitCommandResult: GitCommandResult, expectedResult: String): GitCommandError =
-    GitUnexpectedCommandResultError(gitCommandResult, expectedResult)
+  def genericGotCommandResultError(gitCmd: GitCmd, code: Int, errors: List[String]): GitCommandError =
+    GenericGotCommandResultError(gitCmd, code, errors)
 
-  def gitCurrentBranchError(code: Int, errors: List[String]): GitCommandError =
-    GitCurrentBranchError(code, errors)
-
-  def gitCheckoutError(code: Int, errors: List[String]): GitCommandError =
-    GitCheckoutError(code, errors)
-
-  def gitFetchError(code: Int, errors: List[String], arg: Option[String]): GitCommandError =
-    GitFetchError(code, errors, arg)
-
-  def gitTagError(code: Int, errors: List[String]): GitCommandError =
-    GitTagError(code, errors)
-
-  def gitPushTagError(code: Int, errors: List[String], repository: Repository, tagName: TagName): GitCommandError =
-    GitPushTagError(code, errors, repository, tagName)
-
-  def gitRemoteGetUrlError(code: Int, errors: List[String], repository: Repository): GitCommandError =
-    GitRemoteGetUrlError(code, errors, repository)
-
-  private def renderCodeAndError(code: Int, errors: List[String]): String =
-    s"[code: $code], [errors: ${errors.mkString("\n  ")}]"
+  private def renderCodeAndError(gitCmd: GitCmd, code: Int, errors: List[String]): String =
+    s"[cmd: ${GitCmd.render(gitCmd)}], [code: $code], [errors: ${errors.mkString("\n  ")}]"
 
   def render(gitError: GitCommandError): String = gitError match {
-    case GitUnexpectedCommandResultError(gitCommandResult, expectedResult) =>
-      s"""Unexpected git command result
-         |expected: $expectedResult
-         |---
-         |  actual: ${GitCommandResult.render(gitCommandResult)}
-         |""".stripMargin
-
-    case GitCurrentBranchError(code, errors) =>
-      s"Error] Git getting the current branch: ${renderCodeAndError(code, errors)}"
-
-    case GitCheckoutError(code, errors) =>
-      s"Error] Git checkout: ${renderCodeAndError(code, errors)}"
-
-    case GitFetchError(code, errors, arg) =>
-      s"Error] Git fetch${arg.fold("")(a => s" $a")}: ${renderCodeAndError(code, errors)}"
-
-    case GitTagError(code, errors) =>
-      s"Error] Git tag: ${renderCodeAndError(code, errors)}"
-
-    case GitPushTagError(code, errors, repository, tagName) =>
-      s"""Error] git push ${repository.value} ${tagName.value}
-         |  code: $code
-         |  errors:
-         |  [
-         |    ${errors.mkString("\n    ")}
-         |  ]
-         |""".stripMargin
-
-    case GitRemoteGetUrlError(code, errors, repository) =>
-      s"""Error] git remote get-url ${repository.value}
-         |  code: $code
-         |  errors:
-         |  [
-         |    ${errors.mkString("\n    ")}
-         |  ]
-         |""".stripMargin
+    case GenericGotCommandResultError(gitCmd, code, errors) =>
+      renderCodeAndError(gitCmd, code, errors)
   }
 
   // $COVERAGE-ON$

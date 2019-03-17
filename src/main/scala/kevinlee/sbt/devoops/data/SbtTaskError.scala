@@ -1,6 +1,6 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.git.GitCommandError
+import kevinlee.git.{GitCommandError, SuccessHistory}
 import kevinlee.github.data.GitHubError
 
 /**
@@ -12,13 +12,13 @@ sealed trait SbtTaskError
 object SbtTaskError {
 
   // $COVERAGE-OFF$
-  final case class GitCommandTaskError(cause: GitCommandError) extends SbtTaskError
+  final case class GitCommandTaskError(successHistory: SuccessHistory, cause: GitCommandError) extends SbtTaskError
   final case class GitTaskError(cause: String) extends SbtTaskError
   final case class GitHubTaskError(cause: GitHubError) extends SbtTaskError
   final case class NoFileFound(name: String, filePaths: List[String]) extends SbtTaskError
 
-  def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
-    GitCommandTaskError(cause)
+  def gitCommandTaskError(successHistory: SuccessHistory, cause: GitCommandError): SbtTaskError =
+    GitCommandTaskError(successHistory, cause)
 
   def gitTaskError(cause: String): SbtTaskError =
     GitTaskError(cause)
@@ -31,8 +31,11 @@ object SbtTaskError {
 
   def render(sbtTaskError: SbtTaskError): String = sbtTaskError match {
 
-    case GitCommandTaskError(err: GitCommandError) =>
-      GitCommandError.render(err)
+    case GitCommandTaskError(successHistory, err) =>
+      s""">> ${GitCommandError.render(err)}
+         |>> Git command failed after succeeding the following git commands
+         |${SuccessHistory.render(successHistory)}
+         |""".stripMargin
 
     case GitTaskError(cause) =>
       s"task failed> git command: $cause"

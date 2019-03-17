@@ -2,9 +2,10 @@ package kevinlee.sbt.devoops
 
 import java.io.FileInputStream
 
-import kevinlee.git.Git
+//import kevinlee.git.{Git, GitCmdMonad, GitCommandError, SuccessHistory}
+import kevinlee.git.{Git, SuccessHistory}
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
-import kevinlee.github.GitHubApi
+//import kevinlee.github.GitHubApi
 import kevinlee.github.data._
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
@@ -50,8 +51,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     lazy val gitHubAuthTokenFile: SettingKey[File] =
       settingKey[File]("The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: $USER/.github) If you want to get the file in user's home, use new File(Io.getUserHome, \".github\")")
 
-    lazy val gitHubRelease: TaskKey[Unit] =
-      taskKey[Unit]("Release the current version meaning upload the packaged files and changelog to GitHub.")
+//    lazy val gitHubRelease: TaskKey[Unit] =
+//      taskKey[Unit]("Release the current version meaning upload the packaged files and changelog to GitHub.")
 
     def decideVersion(projectVersion: String, decide: String => String): String =
       decide(projectVersion)
@@ -129,9 +130,10 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val tagName = TagName(gitTagName.value)
       val pushRepo = Repository(gitTagPushRepo.value)
       SbtTask.handleGitCommandTask(
-        for {
-          currentBranchCheckResults <- Git.checkIfCurrentBranchIsSame(tagFrom, basePath).right
-          fetchResult <- Git.fetchTags(basePath).right
+        (for {
+          // FIXME: This should be handled properly.
+          currentBranchCheckResults <- Git.checkIfCurrentBranchIsSame(tagFrom, basePath)
+          fetchResult <- Git.fetchTags(basePath)
           tagResult <- gitTagDescription.value
                         .fold(
                           Git.tag(tagName, basePath)
@@ -141,9 +143,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                             , Git.Description(desc)
                             , baseDirectory.value
                           )
-                        }.right
-          pushResult <- Git.pushTag(pushRepo, tagName, basePath).right
-        } yield currentBranchCheckResults :+ fetchResult :+ tagResult :+ pushResult
+                        }
+          pushResult <- Git.pushTag(pushRepo, tagName, basePath)
+        } yield ()).run(SuccessHistory.empty)
       )
     }
   , devOopsCiDir := "ci"
@@ -165,36 +167,36 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , changelogLocation := "changelogs"
   , gitHubAuthTokenFile :=
       new File(Io.getUserHome, ".github")
-  , gitHubRelease := {
-      val tagName = TagName(gitTagName.value)
-      val assets = devOopsCopyReleasePackages.value
-      gitTag.value
-      SbtTask.handleGitHubTask(
-        for {
-          changelog <- getChangelog(new File(baseDirectory.value, changelogLocation.value), tagName).right
-          url <- Git.getRemoteUrl(Repository(gitTagPushRepo.value), baseDirectory.value).left.map(GitHubError.causedByGitCommandError).right
-          repo <- getRepoFromUrl(url).right
-          oauth <- readOAuthToken(gitHubAuthTokenFile.value).right
-          gitHub <- GitHubApi.connectWithOAuth(oauth).right
-          gitHubRelease <-
-            GitHubApi.release(
-                gitHub
-              , repo
-              , tagName
-              , changelog
-              , assets).right
-        } yield List(
-            "Get changelog"
-          , s"Get remote repo URL: ${url.repoUrl}"
-          , "Get GitHub repo org and name"
-          , "Get GitHub OAuth token"
-          , "Connect GitHub with OAuth"
-          , s"GitHub release: ${gitHubRelease.tagName.value}"
-          , gitHubRelease.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
-          , gitHubRelease.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
-        )
-      )
-    }
+//  , gitHubRelease := {
+//      val tagName = TagName(gitTagName.value)
+//      val assets = devOopsCopyReleasePackages.value
+//      gitTag.value
+//      SbtTask.handleGitHubTask(
+//        for {
+//          changelog <- getChangelog(new File(baseDirectory.value, changelogLocation.value), tagName).right
+//          url <- Git.getRemoteUrl(Repository(gitTagPushRepo.value), baseDirectory.value).left.map(GitHubError.causedByGitCommandError).right
+//          repo <- getRepoFromUrl(url).right
+//          oauth <- readOAuthToken(gitHubAuthTokenFile.value).right
+//          gitHub <- GitHubApi.connectWithOAuth(oauth).right
+//          gitHubRelease <-
+//            GitHubApi.release(
+//                gitHub
+//              , repo
+//              , tagName
+//              , changelog
+//              , assets).right
+//        } yield List(
+//            "Get changelog"
+//          , s"Get remote repo URL: ${url.repoUrl}"
+//          , "Get GitHub repo org and name"
+//          , "Get GitHub OAuth token"
+//          , "Connect GitHub with OAuth"
+//          , s"GitHub release: ${gitHubRelease.tagName.value}"
+//          , gitHubRelease.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
+//          , gitHubRelease.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
+//        )
+//      )
+//    }
   )
 
   // $COVERAGE-ON$

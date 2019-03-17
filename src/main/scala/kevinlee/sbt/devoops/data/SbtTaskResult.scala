@@ -1,6 +1,6 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.git.GitCommandResult
+import kevinlee.git.SuccessHistory
 
 /**
   * @author Kevin Lee
@@ -11,11 +11,11 @@ sealed trait SbtTaskResult
 object SbtTaskResult {
   // $COVERAGE-OFF$
 
-  final case class GitCommandTaskResult(gitCommandResult: Seq[GitCommandResult]) extends SbtTaskResult
+  final case class GitCommandTaskResult(gitCommandResult: SuccessHistory) extends SbtTaskResult
 
   final case class TaskResult(result: Seq[String]) extends SbtTaskResult
 
-  def gitCommandTaskResult(gitCommandResult: Seq[GitCommandResult]): SbtTaskResult =
+  def gitCommandTaskResult(gitCommandResult: SuccessHistory): SbtTaskResult =
     GitCommandTaskResult(gitCommandResult)
 
   def taskResult(result: Seq[String]): SbtTaskResult =
@@ -23,10 +23,9 @@ object SbtTaskResult {
 
   def render(sbtTaskResult: SbtTaskResult): String = sbtTaskResult match {
     case GitCommandTaskResult(gitCommandResults) =>
-      val delimiter = ">> "
       s"""
          |task success> git commands
-         |${gitCommandResults.map(GitCommandResult.render).mkString(delimiter, s"\n$delimiter", "")}
+         |${SuccessHistory.render(gitCommandResults)}
          |""".stripMargin
 
     case TaskResult(result) =>

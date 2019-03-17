@@ -3,7 +3,6 @@ package kevinlee.git
 import java.io.File
 
 import kevinlee.CommonPredef._
-import kevinlee.git.GitCommandResult.GitCurrentBranchName
 
 /**
   * @author Kevin Lee
@@ -17,18 +16,18 @@ object Git {
   final case class Repository(value: String) extends AnyVal
   final case class RemoteName(remoteName: String) extends AnyVal
   final case class RepoUrl(repoUrl: String) extends AnyVal
-
   final case class Description(value: String) extends AnyVal
 
   def fromProcessResultToEither[A](
-    successHandler: List[String] => A
-  , errorHandler: (Int, List[String]) => GitCommandError
-  ): PartialFunction[ProcessResult, Either[GitCommandError, A]] = {
+    gitCmd: GitCmd
+  , successHandler: List[String] => A
+  , errorHandler: (GitCmd, Int, List[String]) => GitCommandError
+  ): PartialFunction[ProcessResult, Either[GitCommandError, (GitCommandResult, A)]] = {
       case ProcessResult.Success(outputs) =>
-        Right(successHandler(outputs))
+        Right((GitCommandResult.genericResult(outputs), successHandler(outputs)))
 
       case ProcessResult.Failure(code, errors) =>
-        Left(errorHandler(code, errors))
+        Left(errorHandler(gitCmd, code, errors))
     }
 
   def git(baseDir: File, commandAndArgs: List[String]): ProcessResult =
@@ -39,94 +38,141 @@ object Git {
   def git1(baseDir: File, command: String, args: String*): ProcessResult =
     git(baseDir, command :: args.toList)
 
-  def currentBranchName(baseDir: File): Either[GitCommandError, GitCommandResult] = {
-    val gitArgs = List("rev-parse", "--abbrev-ref", "HEAD")
+  def gitCmd[A](
+    baseDir: File
+  , gitCmd: GitCmd
+  , f: List[String] => A
+  , e: (GitCmd, Int, List[String]) => GitCommandError
+  ): Either[GitCommandError, (GitCommandResult, A)] = {
+    val gitCmdAndArgs = GitCmd.cmdAndArgs(gitCmd)
     ProcessResult.toEither(
-      git(baseDir, gitArgs)
-    )(fromProcessResultToEither(
-      r => GitCommandResult.gitCurrentBranchName(BranchName(r.mkString.trim), gitArgs)
-    , (code, errs) => GitCommandError.gitCurrentBranchError(code, errs)
-    ))
+      git(baseDir, gitCmdAndArgs)
+    )(
+      fromProcessResultToEither(gitCmd, f, e)
+    )
+  }
+
+  def updateHistory[A](
+    history: SuccessHistory
+  , gitCmd: GitCmd
+  , r: Either[GitCommandError, (GitCommandResult, A)]
+  ): (SuccessHistory, Either[GitCommandError, A]) = r match {
+    case Left(error) =>
+      (history, Left(error))
+    case Right((cmdResult, a)) =>
+      (SuccessHistory((gitCmd, cmdResult) :: history.history), Right(a))
+  }
+
+  def currentBranchName(baseDir: File): GitCmdMonad[BranchName] = GitCmdMonad { history =>
+    val cmd = GitCmd.currentBranchName
+    updateHistory(
+        history
+      , cmd
+      , gitCmd[BranchName](
+          baseDir
+        , cmd
+        , xs => BranchName(xs.mkString.trim)
+        , GitCommandError.genericGotCommandResultError
+      )
+    )
   }
 
   def checkIfCurrentBranchIsSame(
     branchName: BranchName
   , baseDir: File
-  ): Either[GitCommandError, Vector[GitCommandResult]] = {
-    def isSameCurrent(
-      branchName: BranchName, currentBranchResult: GitCommandResult
-    ): Either[GitCommandError, GitCommandResult] =
-      currentBranchResult match {
-        case g@GitCurrentBranchName(BranchName(currentBranchName), _) =>
-          if (currentBranchName === branchName.value)
-            Right(GitCommandResult.gitSameCurrentBranch(BranchName(currentBranchName)))
-          else
-            Left(GitCommandError.gitUnexpectedCommandResultError(
-              g
-              , s"current branch == given expected branch. expected: ${branchName.value}"
-            ))
-        case other =>
-          Left(
-            GitCommandError.gitUnexpectedCommandResultError(other, "GitCurrentBranchName")
-          )
-      }
-
-    for {
-      currentBranchResult <- currentBranchName(baseDir).right
-      r <- isSameCurrent(branchName, currentBranchResult).right
-    } yield Vector(currentBranchResult, r)
-  }
+  ): GitCmdMonad[Boolean] = for {
+    current <- currentBranchName(baseDir)
+  } yield current.value === branchName.value
 
 
-  def checkout(branchName: BranchName, baseDir: File): Either[GitCommandError, GitCommandResult] =
-    ProcessResult.toEither(
-      git1(baseDir, "checkout", branchName.value)
-    )(fromProcessResultToEither(
-      _ => GitCommandResult.gitCheckoutResult(branchName)
-    , (code, err) => GitCommandError.gitCheckoutError(code, err)
-    ))
-
-  def fetchTags(baseDir: File): Either[GitCommandError, GitCommandResult] = {
-    val tags = "--tags"
-    ProcessResult.toEither(
-      git1(baseDir, "fetch", tags)
-    )(
-      fromProcessResultToEither(
-        _ => GitCommandResult.gitFetchResult(Some(tags))
-        , (code, err) => GitCommandError.gitFetchError(code, err, Some(tags))
+  def checkout(branchName: BranchName, baseDir: File): GitCmdMonad[Unit] = GitCmdMonad { history =>
+    val cmd = GitCmd.checkout(branchName)
+    updateHistory(
+        history
+      , cmd
+      , gitCmd(
+          baseDir
+        , cmd
+        , _ => ()
+        , GitCommandError.genericGotCommandResultError
       )
     )
   }
 
-  def tag(tagName: TagName, baseDir: File): Either[GitCommandError, GitCommandResult] =
-    ProcessResult.toEither(
-      git1(baseDir, "tag", tagName.value)
-    )(fromProcessResultToEither(
-      _ => GitCommandResult.gitTagResult(tagName)
-    , (code, err) => GitCommandError.gitTagError(code, err)
-    ))
+  def fetchTags(baseDir: File): GitCmdMonad[List[String]] = GitCmdMonad { history =>
+    val cmd = GitCmd.fetchTags
+    updateHistory(
+      history
+    , cmd
+    , gitCmd(
+          baseDir
+        , cmd
+        , identity
+        , GitCommandError.genericGotCommandResultError
+      )
+    )
 
-  def tagWithDescription(tagName: TagName, description: Description, baseDir: File): Either[GitCommandError, GitCommandResult] =
-    ProcessResult.toEither(
-      git1(baseDir, "tag", "-a", tagName.value, "-m", description.value)
-    )(fromProcessResultToEither(
-      _ => GitCommandResult.gitTagResult(tagName)
-    , (code, err) => GitCommandError.gitTagError(code, err)
-    ))
+  }
 
-  def pushTag(repository: Repository, tagName: TagName, baseDir:File): Either[GitCommandError, GitCommandResult] = ProcessResult.toEither(
-    git1(baseDir, "push", repository.value, tagName.value)
-  )(fromProcessResultToEither(
-    result => GitCommandResult.gitPushTagResult(repository, tagName, result)
-  , (code, err) => GitCommandError.gitPushTagError(code, err, repository, tagName)
-  ))
+  def tag(tagName: TagName, baseDir: File): GitCmdMonad[TagName] = GitCmdMonad { history =>
+    val cmd = GitCmd.tag(tagName)
+    updateHistory(
+        history
+      , cmd
+      , gitCmd(
+          baseDir
+        , cmd
+        , _ => tagName
+        , GitCommandError.genericGotCommandResultError
+      )
+    )
+  }
 
-  def getRemoteUrl(repository: Repository, baseDir:File): Either[GitCommandError, RepoUrl] =
-    ProcessResult.toEither(
-      git1(baseDir, "remote", "get-url", repository.value)
-    )(fromProcessResultToEither(
-      result => RepoUrl(result.mkString.trim)
-      , (code, err) => GitCommandError.gitRemoteGetUrlError(code, err, repository)
-    ))
+  def tagWithDescription(
+    tagName: TagName
+  , description: Description
+  , baseDir: File
+  ): GitCmdMonad[TagName] = GitCmdMonad { history =>
+    val cmd = GitCmd.tagWithDescription(tagName, description)
+    updateHistory(
+        history
+      , cmd
+      , gitCmd(
+          baseDir
+        , cmd
+        , _ => tagName
+        , GitCommandError.genericGotCommandResultError
+      )
+    )
+  }
+
+  def pushTag(repository: Repository, tagName: TagName, baseDir:File): GitCmdMonad[List[String]] =
+    GitCmdMonad { history =>
+      val cmd = GitCmd.push(repository, tagName)
+      updateHistory(
+          history
+        , cmd
+        , gitCmd(
+            baseDir
+          , cmd
+          , identity
+          , GitCommandError.genericGotCommandResultError
+        )
+      )
+    }
+
+  def getRemoteUrl(repository: Repository, baseDir:File): GitCmdMonad[RepoUrl] = GitCmdMonad { history =>
+    val cmd = GitCmd.remoteGetUrl(repository)
+    updateHistory(
+        history
+      , cmd
+      , gitCmd(
+          baseDir
+        , cmd
+        , xs => RepoUrl(xs.mkString.trim)
+        , GitCommandError.genericGotCommandResultError
+      )
+    )
+  }
 
 }
