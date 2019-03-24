@@ -1,6 +1,6 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.git.{GitCommandError, SuccessHistory}
+import kevinlee.git.{GitCmd, GitCommandError, GitCommandResult}
 import kevinlee.github.data.GitHubError
 
 /**
@@ -10,12 +10,16 @@ import kevinlee.github.data.GitHubError
 object SbtTask {
   // $COVERAGE-OFF$
 
-  def handleGitCommandTask(gitCommandTaskResult: (SuccessHistory, Either[GitCommandError, Unit])): Unit =
+  def handleGitCommandTask(
+    gitCommandTaskResult: (List[(GitCmd, GitCommandResult)], Either[GitCommandError, Unit])
+  ): Unit =
     gitCommandTaskResult match {
       case (history, Left(error)) =>
         SbtTaskError.error(SbtTaskError.gitCommandTaskError(history, error))
       case (history, Right(())) =>
-        SbtTaskResult.consolePrintln(SbtTaskResult.gitCommandTaskResult(history))
+        SbtTaskResult.consolePrintln(
+          SbtTaskResult.sbtTaskResults(history.map(SbtTaskResult.gitCommandTaskResult))
+        )
     }
 
   def handleGitHubTask(gitHubTaskResult: Either[GitHubError, Seq[String]]): Unit =

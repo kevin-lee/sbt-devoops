@@ -1,5 +1,6 @@
 package kevinlee.git
 
+import kevinlee.fp.Monoid
 import kevinlee.git.Git.{BranchName, Description, Repository, TagName}
 
 /**
@@ -10,44 +11,46 @@ final case class SuccessHistory(history: List[(GitCmd, GitCommandResult)])
 object SuccessHistory {
   val empty: SuccessHistory = SuccessHistory(Nil)
 
-  def render(successHistory: SuccessHistory): String = {
+  def render(successHistory: List[(GitCmd, GitCommandResult)]): String = {
     val delimiter = ">> "
-    successHistory.history.reverse
+    successHistory.reverse
       .map{ case (cmd, result) =>
         s"${GitCmd.render(cmd)} => ${GitCommandResult.render(result)}"
       }.mkString(delimiter, s"\n$delimiter", "")
   }
 }
 
-final case class GitCmdMonad[A](run: SuccessHistory => (SuccessHistory, Either[GitCommandError, A])) {
-  def map[B](f: A => B): GitCmdMonad[B] = GitCmdMonad { history =>
-    val (next, r) = run(history)
+final case class GitCmdMonad[W, A](run: (W, Either[GitCommandError, A])) {
+  def map[B](f: A => B): GitCmdMonad[W, B] = GitCmdMonad {
+    val (history, r) = run
     r match {
       case Left(_) =>
         @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
         val sameR = r.asInstanceOf[Either[GitCommandError, B]]
-        (next, sameR)
+        (history, sameR)
       case Right(a) =>
-        (next, Right(f(a)))
+        (history, Right(f(a)))
     }
   }
 
-  def flatMap[B](f: A => GitCmdMonad[B]): GitCmdMonad[B] = GitCmdMonad { history =>
-    val (next, r) = run(history)
+  def flatMap[B](f: A => GitCmdMonad[W, B])(implicit M: Monoid[W]): GitCmdMonad[W, B] = GitCmdMonad {
+    val (history, r) = run
     r match {
       case Left(_) =>
         @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
         val sameR = r.asInstanceOf[Either[GitCommandError, B]]
-        (next, sameR)
+        (history, sameR)
       case Right(a) =>
-        f(a).run(next)
+        val (nextHistory, b) = f(a).run
+        (M.append(history, nextHistory), b)
     }
   }
-}
 
-object GitCmdMonad {
-  def pureLeft[A, B](a: GitCommandError): GitCmdMonad[B] = GitCmdMonad(s => (s, Left(a)))
-  def pure[A, B](b: B): GitCmdMonad[B] = GitCmdMonad(s => (s, Right(b)))
+  def mapWritten[X](w: W => X): GitCmdMonad[X, A] = GitCmdMonad {
+    val (history, a) = run
+    (w(history), a)
+  }
+
 }
 
 sealed trait GitCmd

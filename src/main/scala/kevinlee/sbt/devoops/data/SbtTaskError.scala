@@ -1,6 +1,6 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.git.{GitCommandError, SuccessHistory}
+import kevinlee.git.{GitCmd, GitCommandError, GitCommandResult, SuccessHistory}
 import kevinlee.github.data.GitHubError
 
 /**
@@ -12,12 +12,15 @@ sealed trait SbtTaskError
 object SbtTaskError {
 
   // $COVERAGE-OFF$
-  final case class GitCommandTaskError(successHistory: SuccessHistory, cause: GitCommandError) extends SbtTaskError
+  final case class GitCommandTaskError(successHistory: List[(GitCmd, GitCommandResult)], cause: GitCommandError) extends SbtTaskError
   final case class GitTaskError(cause: String) extends SbtTaskError
   final case class GitHubTaskError(cause: GitHubError) extends SbtTaskError
   final case class NoFileFound(name: String, filePaths: List[String]) extends SbtTaskError
 
-  def gitCommandTaskError(successHistory: SuccessHistory, cause: GitCommandError): SbtTaskError =
+  def gitCommandTaskError(
+    successHistory: List[(GitCmd, GitCommandResult)]
+  , cause: GitCommandError
+  ): SbtTaskError =
     GitCommandTaskError(successHistory, cause)
 
   def gitTaskError(cause: String): SbtTaskError =

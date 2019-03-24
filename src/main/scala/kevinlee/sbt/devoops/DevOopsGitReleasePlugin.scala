@@ -3,7 +3,7 @@ package kevinlee.sbt.devoops
 import java.io.FileInputStream
 
 //import kevinlee.git.{Git, GitCmdMonad, GitCommandError, SuccessHistory}
-import kevinlee.git.{Git, SuccessHistory}
+import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
 //import kevinlee.github.GitHubApi
 import kevinlee.github.data._
@@ -132,7 +132,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       SbtTask.handleGitCommandTask(
         (for {
           // FIXME: This should be handled properly.
-          currentBranchCheckResults <- Git.checkIfCurrentBranchIsSame(tagFrom, basePath)
+          currentBranchCheckResults <-
+            Git.checkIfCurrentBranchIsSame(tagFrom, basePath)
           fetchResult <- Git.fetchTags(basePath)
           tagResult <- gitTagDescription.value
                         .fold(
@@ -145,7 +146,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                           )
                         }
           pushResult <- Git.pushTag(pushRepo, tagName, basePath)
-        } yield ()).run(SuccessHistory.empty)
+        } yield ()).run
       )
     }
   , devOopsCiDir := "ci"

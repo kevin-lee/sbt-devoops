@@ -11,6 +11,8 @@ import kevinlee.CommonPredef._
 object Git {
   // $COVERAGE-OFF$
 
+  type GitCmdHistory = List[(GitCmd, GitCommandResult)]
+
   final case class BranchName(value: String) extends AnyVal
   final case class TagName(value: String) extends AnyVal
   final case class Repository(value: String) extends AnyVal
@@ -53,21 +55,19 @@ object Git {
   }
 
   def updateHistory[A](
-    history: SuccessHistory
-  , gitCmd: GitCmd
+    gitCmd: GitCmd
   , r: Either[GitCommandError, (GitCommandResult, A)]
-  ): (SuccessHistory, Either[GitCommandError, A]) = r match {
+  ): (List[(GitCmd, GitCommandResult)], Either[GitCommandError, A]) = r match {
     case Left(error) =>
-      (history, Left(error))
+      (List.empty, Left(error))
     case Right((cmdResult, a)) =>
-      (SuccessHistory((gitCmd, cmdResult) :: history.history), Right(a))
+      (List((gitCmd, cmdResult)), Right(a))
   }
 
-  def currentBranchName(baseDir: File): GitCmdMonad[BranchName] = GitCmdMonad { history =>
+  def currentBranchName(baseDir: File): GitCmdMonad[GitCmdHistory, BranchName] = GitCmdMonad {
     val cmd = GitCmd.currentBranchName
     updateHistory(
-        history
-      , cmd
+        cmd
       , gitCmd[BranchName](
           baseDir
         , cmd
@@ -80,16 +80,15 @@ object Git {
   def checkIfCurrentBranchIsSame(
     branchName: BranchName
   , baseDir: File
-  ): GitCmdMonad[Boolean] = for {
+  ): GitCmdMonad[GitCmdHistory, Boolean] = for {
     current <- currentBranchName(baseDir)
   } yield current.value === branchName.value
 
 
-  def checkout(branchName: BranchName, baseDir: File): GitCmdMonad[Unit] = GitCmdMonad { history =>
+  def checkout(branchName: BranchName, baseDir: File): GitCmdMonad[GitCmdHistory, Unit] = GitCmdMonad {
     val cmd = GitCmd.checkout(branchName)
     updateHistory(
-        history
-      , cmd
+        cmd
       , gitCmd(
           baseDir
         , cmd
@@ -99,11 +98,10 @@ object Git {
     )
   }
 
-  def fetchTags(baseDir: File): GitCmdMonad[List[String]] = GitCmdMonad { history =>
+  def fetchTags(baseDir: File): GitCmdMonad[GitCmdHistory, List[String]] = GitCmdMonad {
     val cmd = GitCmd.fetchTags
     updateHistory(
-      history
-    , cmd
+      cmd
     , gitCmd(
           baseDir
         , cmd
@@ -114,11 +112,10 @@ object Git {
 
   }
 
-  def tag(tagName: TagName, baseDir: File): GitCmdMonad[TagName] = GitCmdMonad { history =>
+  def tag(tagName: TagName, baseDir: File): GitCmdMonad[GitCmdHistory, TagName] = GitCmdMonad {
     val cmd = GitCmd.tag(tagName)
     updateHistory(
-        history
-      , cmd
+        cmd
       , gitCmd(
           baseDir
         , cmd
@@ -132,11 +129,10 @@ object Git {
     tagName: TagName
   , description: Description
   , baseDir: File
-  ): GitCmdMonad[TagName] = GitCmdMonad { history =>
+  ): GitCmdMonad[GitCmdHistory, TagName] = GitCmdMonad {
     val cmd = GitCmd.tagWithDescription(tagName, description)
     updateHistory(
-        history
-      , cmd
+        cmd
       , gitCmd(
           baseDir
         , cmd
@@ -146,12 +142,11 @@ object Git {
     )
   }
 
-  def pushTag(repository: Repository, tagName: TagName, baseDir:File): GitCmdMonad[List[String]] =
-    GitCmdMonad { history =>
+  def pushTag(repository: Repository, tagName: TagName, baseDir:File): GitCmdMonad[GitCmdHistory, List[String]] =
+    GitCmdMonad {
       val cmd = GitCmd.push(repository, tagName)
       updateHistory(
-          history
-        , cmd
+          cmd
         , gitCmd(
             baseDir
           , cmd
@@ -161,11 +156,10 @@ object Git {
       )
     }
 
-  def getRemoteUrl(repository: Repository, baseDir:File): GitCmdMonad[RepoUrl] = GitCmdMonad { history =>
+  def getRemoteUrl(repository: Repository, baseDir:File): GitCmdMonad[GitCmdHistory, RepoUrl] = GitCmdMonad {
     val cmd = GitCmd.remoteGetUrl(repository)
     updateHistory(
-        history
-      , cmd
+        cmd
       , gitCmd(
           baseDir
         , cmd

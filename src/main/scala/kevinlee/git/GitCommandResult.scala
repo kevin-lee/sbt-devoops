@@ -16,7 +16,15 @@ object GitCommandResult {
 
   def render(gitCommandResult: GitCommandResult): String = gitCommandResult match {
     case GenericResult(result) =>
-      result.mkString("[", ", ", "]")
+      result match {
+        case Nil =>
+          ""
+        case oneResult :: Nil =>
+          s" => $oneResult"
+        case rs =>
+          val delimiter = "|  |  "
+          rs.mkString(s"\n$delimiter", s"\n$delimiter", "")
+      }
   }
 
   // $COVERAGE-ON$
