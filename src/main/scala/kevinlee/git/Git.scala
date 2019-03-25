@@ -3,6 +3,8 @@ package kevinlee.git
 import java.io.File
 
 import kevinlee.CommonPredef._
+import kevinlee.fp.Writer.Writer
+import kevinlee.fp.{EitherT, Writer}
 
 /**
   * @author Kevin Lee
@@ -54,17 +56,19 @@ object Git {
     )
   }
 
+  type GitCmdHistoryWriter[A] = Writer[GitCmdHistory, A]
+
   def updateHistory[A](
     gitCmd: GitCmd
   , r: Either[GitCommandError, (GitCommandResult, A)]
-  ): (List[(GitCmd, GitCommandResult)], Either[GitCommandError, A]) = r match {
+  ): GitCmdHistoryWriter[Either[GitCommandError, A]] = r match {
     case Left(error) =>
-      (List.empty, Left(error))
+      Writer(List.empty, Left(error))
     case Right((cmdResult, a)) =>
-      (List((gitCmd, cmdResult)), Right(a))
+      Writer(List((gitCmd, cmdResult)), Right(a))
   }
 
-  def currentBranchName(baseDir: File): GitCmdMonad[GitCmdHistory, BranchName] = GitCmdMonad {
+  def currentBranchName(baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, BranchName] = EitherT {
     val cmd = GitCmd.currentBranchName
     updateHistory(
         cmd
@@ -80,12 +84,12 @@ object Git {
   def checkIfCurrentBranchIsSame(
     branchName: BranchName
   , baseDir: File
-  ): GitCmdMonad[GitCmdHistory, Boolean] = for {
+  ): EitherT[GitCmdHistoryWriter, GitCommandError, Boolean] = for {
     current <- currentBranchName(baseDir)
   } yield current.value === branchName.value
 
 
-  def checkout(branchName: BranchName, baseDir: File): GitCmdMonad[GitCmdHistory, Unit] = GitCmdMonad {
+  def checkout(branchName: BranchName, baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, Unit] = EitherT {
     val cmd = GitCmd.checkout(branchName)
     updateHistory(
         cmd
@@ -98,7 +102,7 @@ object Git {
     )
   }
 
-  def fetchTags(baseDir: File): GitCmdMonad[GitCmdHistory, List[String]] = GitCmdMonad {
+  def fetchTags(baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, List[String]] = EitherT {
     val cmd = GitCmd.fetchTags
     updateHistory(
       cmd
@@ -112,7 +116,7 @@ object Git {
 
   }
 
-  def tag(tagName: TagName, baseDir: File): GitCmdMonad[GitCmdHistory, TagName] = GitCmdMonad {
+  def tag(tagName: TagName, baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, TagName] = EitherT {
     val cmd = GitCmd.tag(tagName)
     updateHistory(
         cmd
@@ -129,7 +133,7 @@ object Git {
     tagName: TagName
   , description: Description
   , baseDir: File
-  ): GitCmdMonad[GitCmdHistory, TagName] = GitCmdMonad {
+  ): EitherT[GitCmdHistoryWriter, GitCommandError, TagName] = EitherT {
     val cmd = GitCmd.tagWithDescription(tagName, description)
     updateHistory(
         cmd
@@ -142,8 +146,8 @@ object Git {
     )
   }
 
-  def pushTag(repository: Repository, tagName: TagName, baseDir:File): GitCmdMonad[GitCmdHistory, List[String]] =
-    GitCmdMonad {
+  def pushTag(repository: Repository, tagName: TagName, baseDir:File): EitherT[GitCmdHistoryWriter, GitCommandError, List[String]] =
+    EitherT {
       val cmd = GitCmd.push(repository, tagName)
       updateHistory(
           cmd
@@ -156,7 +160,7 @@ object Git {
       )
     }
 
-  def getRemoteUrl(repository: Repository, baseDir:File): GitCmdMonad[GitCmdHistory, RepoUrl] = GitCmdMonad {
+  def getRemoteUrl(repository: Repository, baseDir:File): EitherT[GitCmdHistoryWriter, GitCommandError, RepoUrl] = EitherT {
     val cmd = GitCmd.remoteGetUrl(repository)
     updateHistory(
         cmd

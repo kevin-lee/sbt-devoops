@@ -146,7 +146,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                           )
                         }
           pushResult <- Git.pushTag(pushRepo, tagName, basePath)
-        } yield ()).run
+        } yield ()).run.run
       )
     }
   , devOopsCiDir := "ci"

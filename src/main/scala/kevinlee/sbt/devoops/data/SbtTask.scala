@@ -1,6 +1,7 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.git.{GitCmd, GitCommandError, GitCommandResult}
+import kevinlee.git.Git.GitCmdHistory
+import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
 
 /**
@@ -11,7 +12,7 @@ object SbtTask {
   // $COVERAGE-OFF$
 
   def handleGitCommandTask(
-    gitCommandTaskResult: (List[(GitCmd, GitCommandResult)], Either[GitCommandError, Unit])
+    gitCommandTaskResult: (GitCmdHistory, Either[GitCommandError, Unit])
   ): Unit =
     gitCommandTaskResult match {
       case (history, Left(error)) =>
