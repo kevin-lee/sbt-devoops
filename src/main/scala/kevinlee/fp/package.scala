@@ -11,6 +11,6 @@ package object fp {
 
     def flatMap[A, B](a: A)(f: A => B): B = f(a)
 
-    def pure[A](a: A): A = a
+    def pure[A](a: => A): A = a
   }
 }

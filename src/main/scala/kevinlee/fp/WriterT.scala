@@ -44,7 +44,7 @@ object WriterT {
     def flatMap[A, B](fa: WriterT[F, W, A])(f: A => WriterT[F, W, B]): WriterT[F, W, B] =
       fa.flatMap(f)
 
-    def pure[A](a: A): WriterT[F, W, A] = WriterT(F.pure((S.zero, a)))
+    def pure[A](a: => A): WriterT[F, W, A] = WriterT(F.pure((S.zero, a)))
   }
 
 }

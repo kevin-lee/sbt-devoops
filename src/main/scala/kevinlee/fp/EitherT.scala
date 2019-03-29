@@ -1,5 +1,7 @@
 package kevinlee.fp
 
+import EitherOps._
+
 /**
   * @author Kevin Lee
   * @since 2019-03-24
@@ -14,9 +16,36 @@ final case class EitherT[F[_], A, B](run: F[Either[A, B]]) {
         case Right(b) =>
           f(b).run
         case Left(a) =>
-          M.pure(Left(a).asInstanceOf[Either[A, C]])
+          M.pure(Left(a).castR[C])
       }
     )
+
+  def leftMap[C](f: A => C)(implicit F: Functor[F]): EitherT[F, C, B] =
+    EitherT(
+      F.map(run) {
+        case Left(a) =>
+          Left(f(a))
+        case Right(b) =>
+          Right(b).castL[C]
+      }
+    )
+
+  def leftFlatMap[C](f: A => EitherT[F, C, B])(implicit M: Monad[F]): EitherT[F, C, B] =
+    EitherT(
+      M.flatMap(run) {
+        case Left(a) =>
+          f(a).run
+        case Right(b) =>
+          M.pure(Right(b).castL[C])
+      }
+    )
+
+  def isLeft(implicit F: Functor[F]): F[Boolean] =
+    F.map(run)(_.isLeft)
+
+  def isRight(implicit F: Functor[F]): F[Boolean] =
+    F.map(run)(_.isRight)
+
 }
 
 object EitherT {
@@ -33,6 +62,6 @@ object EitherT {
     def flatMap[B, C](fa: EitherT[F, A, B])(f: B => EitherT[F, A, C]): EitherT[F, A, C] =
       fa.flatMap(f)
 
-    def pure[B](b: B): EitherT[F, A, B] = EitherT(F.pure(Right(b)))
+    def pure[B](b: => B): EitherT[F, A, B] = EitherT(F.pure(Right(b)))
   }
 }

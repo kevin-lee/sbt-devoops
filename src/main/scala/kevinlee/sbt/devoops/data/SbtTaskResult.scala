@@ -41,7 +41,7 @@ object SbtTaskResult {
     case SbtTaskResults(results) =>
       val delimiter = ">> "
       s"""task success>
-         |${results.reverse.map(render).mkString(delimiter, s"\n$delimiter", "")}
+         |${results.map(render).mkString(delimiter, s"\n$delimiter", "")}
          |""".stripMargin
 
   }
