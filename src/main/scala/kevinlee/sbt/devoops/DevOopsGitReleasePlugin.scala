@@ -2,14 +2,15 @@ package kevinlee.sbt.devoops
 
 import java.io.FileInputStream
 
-//import kevinlee.git.{Git, GitCmdMonad, GitCommandError, SuccessHistory}
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
-//import kevinlee.github.GitHubApi
 import kevinlee.github.data._
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
 import kevinlee.semver.SemanticVersion
+
+import kevinlee.CommonPredef._
+
 import sbt.Keys._
 import sbt.{AutoPlugin, File, MessageOnlyException, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
@@ -117,7 +118,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
   }
 
+  import SbtTask.{toLeftWhen, fromGitTask}
   import autoImport._
+
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     gitTagFrom := "release"
@@ -129,23 +132,28 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val tagFrom = BranchName(gitTagFrom.value)
       val tagName = TagName(gitTagName.value)
       val pushRepo = Repository(gitTagPushRepo.value)
-      SbtTask.handleGitCommandTask(
+      SbtTask.handleSbtTask(
         (for {
-          // FIXME: This should be handled properly.
-          currentBranchCheckResults <-
-            Git.checkIfCurrentBranchIsSame(tagFrom, basePath)
-          fetchResult <- Git.fetchTags(basePath)
-          tagResult <- gitTagDescription.value
-                        .fold(
-                          Git.tag(tagName, basePath)
-                        ) { desc =>
-                          Git.tagWithDescription(
-                              tagName
-                            , Git.Description(desc)
-                            , baseDirectory.value
-                          )
-                        }
-          pushResult <- Git.pushTag(pushRepo, tagName, basePath)
+          currentBranchName <- fromGitTask(Git.currentBranchName(basePath))
+          _ <- toLeftWhen(
+            currentBranchName.value !== tagFrom.value
+          , SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom")
+          )
+          fetchResult <- fromGitTask(Git.fetchTags(basePath))
+          tagResult <-
+            fromGitTask(
+              gitTagDescription.value
+                .fold(
+                  Git.tag(tagName, basePath)
+                ) { desc =>
+                  Git.tagWithDescription(
+                      tagName
+                    , Git.Description(desc)
+                    , baseDirectory.value
+                  )
+                }
+            )
+          pushResult <- fromGitTask(Git.pushTag(pushRepo, tagName, basePath))
         } yield ()).run.run
       )
     }

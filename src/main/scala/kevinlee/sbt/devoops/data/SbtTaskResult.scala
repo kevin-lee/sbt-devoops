@@ -1,5 +1,7 @@
 package kevinlee.sbt.devoops.data
 
+import kevinlee.fp.Writer.Writer
+import kevinlee.git.Git.GitCmdAndResult
 import kevinlee.git.{GitCmd, GitCommandResult}
 
 /**
@@ -11,13 +13,17 @@ sealed trait SbtTaskResult
 object SbtTaskResult {
   // $COVERAGE-OFF$
 
-  final case class GitCommandTaskResult(gitCmdAndResult: (GitCmd, GitCommandResult)) extends SbtTaskResult
+  type SbtTaskHistory = List[SbtTaskResult]
+
+  type SbtTaskHistoryWriter[A] = Writer[SbtTaskHistory, A]
+
+  final case class GitCommandTaskResult(gitCmdAndResult: GitCmdAndResult) extends SbtTaskResult
 
   final case class TaskResult(result: Seq[String]) extends SbtTaskResult
 
   final case class SbtTaskResults(sbtTaskResults: List[SbtTaskResult]) extends SbtTaskResult
 
-  def gitCommandTaskResult(gitCmdAndResult: (GitCmd, GitCommandResult)): SbtTaskResult =
+  def gitCommandTaskResult(gitCmdAndResult: GitCmdAndResult): SbtTaskResult =
     GitCommandTaskResult(gitCmdAndResult)
 
   def taskResult(result: Seq[String]): SbtTaskResult =
@@ -28,7 +34,7 @@ object SbtTaskResult {
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def render(sbtTaskResult: SbtTaskResult): String = sbtTaskResult match {
-    case GitCommandTaskResult((gitCmd, gitCommandResult)) =>
+    case GitCommandTaskResult(GitCmdAndResult(gitCmd, gitCommandResult)) =>
        s"${GitCmd.render(gitCmd)}${GitCommandResult.render(gitCommandResult)}"
 
     case TaskResult(result) =>
