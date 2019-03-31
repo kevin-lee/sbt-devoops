@@ -21,14 +21,7 @@ final case class EitherT[F[_], A, B](run: F[Either[A, B]]) {
     )
 
   def leftMap[C](f: A => C)(implicit F: Functor[F]): EitherT[F, C, B] =
-    EitherT(
-      F.map(run) {
-        case Left(a) =>
-          Left(f(a))
-        case Right(b) =>
-          Right(b).castL[C]
-      }
-    )
+    EitherT(F.map(run)(_.left.map(f)))
 
   def leftFlatMap[C](f: A => EitherT[F, C, B])(implicit M: Monad[F]): EitherT[F, C, B] =
     EitherT(
