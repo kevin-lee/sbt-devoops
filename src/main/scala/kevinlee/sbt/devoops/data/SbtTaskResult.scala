@@ -1,8 +1,7 @@
 package kevinlee.sbt.devoops.data
 
 import kevinlee.fp.Writer.Writer
-import kevinlee.git.Git.GitCmdAndResult
-import kevinlee.git.{GitCmd, GitCommandResult}
+import kevinlee.git.{GitCmd, GitCmdAndResult, GitCommandResult}
 
 /**
   * @author Kevin Lee

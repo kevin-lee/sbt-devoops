@@ -13,8 +13,6 @@ import kevinlee.fp.{EitherT, Writer}
 object Git {
   // $COVERAGE-OFF$
 
-  final case class GitCmdAndResult(gitCmd: GitCmd, gitCommandResult: GitCommandResult)
-
   type GitCmdHistory = List[GitCmdAndResult]
 
   type GitCmdHistoryWriter[A] = Writer[GitCmdHistory, A]
@@ -69,7 +67,6 @@ object Git {
     )
 
   def gitCmdSimpleWithWriter[A](baseDir: File, cmd: GitCmd, resultHandler: List[String] => A): GitCmdHistoryWriter[Either[GitCommandError, A]] = {
-    val cmd = GitCmd.currentBranchName
     updateHistory(
       cmd
     , gitCmdSimple(

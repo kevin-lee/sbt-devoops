@@ -1,7 +1,6 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.fp.EitherOps._
-import kevinlee.fp.{EitherT, Writer}
+import kevinlee.fp._, Writer.Writer
 import kevinlee.git.Git.GitCmdHistoryWriter
 import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
@@ -15,7 +14,7 @@ object SbtTask {
   // $COVERAGE-OFF$
 
   def fromGitTask[A](
-    taskResult: EitherT[GitCmdHistoryWriter, GitCommandError, A]
+    taskResult: => EitherT[GitCmdHistoryWriter, GitCommandError, A]
   ): EitherT[SbtTaskHistoryWriter, SbtTaskError, A] =
     EitherT[SbtTaskHistoryWriter, SbtTaskError, A](
       taskResult.leftMap(SbtTaskError.gitCommandTaskError)
@@ -23,12 +22,28 @@ object SbtTask {
         .mapWritten(_.map(SbtTaskResult.gitCommandTaskResult))
     )
 
-  def toLeftWhen[C](condition: => Boolean, whenFalse: => C): EitherT[SbtTaskHistoryWriter, C, Unit] = EitherT[SbtTaskHistoryWriter, C, Unit](
+  def toLeftWhen[A](condition: => Boolean, whenFalse: => A): EitherT[SbtTaskHistoryWriter, A, Unit] = EitherT[SbtTaskHistoryWriter, A, Unit] {
+    val aOrB: Either[A, Unit] = if (condition) Left(whenFalse) else Right(())
     Writer(
       List.empty[SbtTaskResult]
-    , if (condition) Left(whenFalse).castR[Unit] else Right(()).castL[C]
+    , aOrB
     )
-  )
+  }
+
+  type HistoryStrings[A] = Writer[List[String], A]
+
+  def eitherTWithHistoryStrings[A, B](
+    r: Either[A, B])(fw: B => List[String]
+  ): EitherT[HistoryStrings, A, B] = EitherT[HistoryStrings, A, B] {
+    val w = r match {
+      case Left(a) =>
+        List.empty[String]
+      case Right(b) =>
+        fw(b)
+    }
+    Writer(w, r)
+  }
+
 
   def handleSbtTask(
     sbtTaskResult: (SbtTaskHistory, Either[SbtTaskError, Unit])
@@ -36,9 +51,11 @@ object SbtTask {
     sbtTaskResult match {
       case (history, Left(error)) =>
         println(
-          s"""${SbtTaskError.render(error)}
+          s"""Failure]
              |>> sbt task failed after succeeding the following tasks
-             |${SbtTaskResult.sbtTaskResults(history)}
+             |${SbtTaskResult.render(SbtTaskResult.sbtTaskResults(history))}
+             |
+             |${SbtTaskError.render(error)}
              |""".stripMargin
         )
         SbtTaskError.error(error)
@@ -48,13 +65,23 @@ object SbtTask {
         )
     }
 
-  def handleGitHubTask(gitHubTaskResult: Either[GitHubError, Seq[String]]): Unit =
-    gitHubTaskResult
-      .left.map(SbtTaskError.gitHubTaskError)
-      .right.map(SbtTaskResult.taskResult)
-      .fold(
-        SbtTaskError.error
-      , SbtTaskResult.consolePrintln
-      )
+  def handleGitHubTask(gitHubTaskResult: (List[String], Either[GitHubError, Unit])): Unit =
+    gitHubTaskResult match {
+      case (history, Left(error)) =>
+        val gitHubTaskError = SbtTaskError.gitHubTaskError(error)
+        println(
+          s"""Failure]
+             |>> sbt task failed after succeeding the following tasks
+             |${SbtTaskResult.render(SbtTaskResult.taskResult(history))}
+             |
+             |${SbtTaskError.render(gitHubTaskError)}
+             |""".stripMargin
+        )
+        SbtTaskError.error(gitHubTaskError)
+      case (history, Right(())) =>
+        SbtTaskResult.consolePrintln(
+          SbtTaskResult.taskResult(history)
+        )
+    }
 
 }
