@@ -51,12 +51,6 @@ final case class EitherT[F[_], A, B](run: F[Either[A, B]]) {
 object EitherT {
   def eitherT[F[_], A, B](either: F[Either[A, B]]): EitherT[F, A, B] = apply(either)
 
-  implicit def eitherTFunctor[F[_], A](implicit F: Functor[F]): Functor[({ type AA[B] = EitherT[F, A, B] })#AA] = new Functor[({ type AA[B] = EitherT[F, A, B] })#AA] {
-
-    override def map[B, C](fa: EitherT[F, A, B])(f: B => C): EitherT[F, A, C] =
-      fa.map(f)
-  }
-
   implicit def eitherTMonad[F[_], A](implicit F: Monad[F]): Monad[({ type AA[B] = EitherT[F, A, B] })#AA] = new Monad[({ type AA[B] = EitherT[F, A, B] })#AA] {
 
     def flatMap[B, C](fa: EitherT[F, A, B])(f: B => EitherT[F, A, C]): EitherT[F, A, C] =
