@@ -1,6 +1,6 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.fp.Writer.Writer
+import kevinlee.fp._
 import kevinlee.git.{GitCmd, GitCmdAndResult, GitCommandResult}
 
 /**
@@ -37,17 +37,25 @@ object SbtTaskResult {
        s"${GitCmd.render(gitCmd)}${GitCommandResult.render(gitCommandResult)}"
 
     case TaskResult(result) =>
-      val delimiter = ">> "
-      s"""
-         |task success> GitHub task
-         |${result.mkString(delimiter, s"\n$delimiter", "")}
-         |""".stripMargin
+      if (result.isEmpty) {
+        ""
+      } else {
+        val delimiter = ">> "
+        s"""
+           |task success> GitHub task
+           |${result.mkString(delimiter, s"\n$delimiter", "")}
+           |""".stripMargin
+      }
 
     case SbtTaskResults(results) =>
-      val delimiter = ">> "
-      s"""task success>
-         |${results.map(render).mkString(delimiter, s"\n$delimiter", "")}
-         |""".stripMargin
+      if (results.isEmpty) {
+        ""
+      } else {
+        val delimiter = ">> "
+        s"""task success>
+           |${results.map(render).mkString(delimiter, s"\n$delimiter", "")}
+           |""".stripMargin
+      }
 
   }
 

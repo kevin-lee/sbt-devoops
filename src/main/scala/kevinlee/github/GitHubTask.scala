@@ -1,7 +1,6 @@
 package kevinlee.github
 
-import kevinlee.fp.EitherT
-import kevinlee.fp.Writer.Writer
+import kevinlee.fp._
 import kevinlee.git.Git.GitCmdHistoryWriter
 import kevinlee.git.{GitCmdAndResult, GitCommandError}
 import kevinlee.github.data.GitHubError

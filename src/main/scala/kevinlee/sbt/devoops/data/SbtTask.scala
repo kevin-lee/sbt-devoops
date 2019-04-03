@@ -1,6 +1,6 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.fp._, Writer.Writer
+import kevinlee.fp._
 import kevinlee.git.Git.GitCmdHistoryWriter
 import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
@@ -30,14 +30,14 @@ object SbtTask {
     )
   }
 
-  type HistoryStrings[A] = Writer[List[String], A]
 
-  def eitherTWithHistoryStrings[A, B](
-    r: Either[A, B])(fw: B => List[String]
-  ): EitherT[HistoryStrings, A, B] = EitherT[HistoryStrings, A, B] {
+  def eitherTWithWriter[W: Monoid, A, B](
+    r: Either[A, B])(
+    fw: B => W
+  ): EitherT[({ type AA[C] = Writer[W, C] })#AA, A, B] = EitherT[({ type AA[C] = Writer[W, C] })#AA, A, B] {
     val w = r match {
       case Left(a) =>
-        List.empty[String]
+        implicitly[Monoid[W]].zero
       case Right(b) =>
         fw(b)
     }
@@ -50,11 +50,11 @@ object SbtTask {
   ): Unit =
     sbtTaskResult match {
       case (history, Left(error)) =>
+        val message = if (history.isEmpty) "no task" else "the following tasks"
         println(
           s"""Failure]
-             |>> sbt task failed after succeeding the following tasks
+             |>> sbt task failed after finishing $message
              |${SbtTaskResult.render(SbtTaskResult.sbtTaskResults(history))}
-             |
              |${SbtTaskError.render(error)}
              |""".stripMargin
         )
@@ -69,11 +69,11 @@ object SbtTask {
     gitHubTaskResult match {
       case (history, Left(error)) =>
         val gitHubTaskError = SbtTaskError.gitHubTaskError(error)
+        val message = if (history.isEmpty) "no task" else "the following tasks"
         println(
           s"""Failure]
-             |>> sbt task failed after succeeding the following tasks
+             |>> sbt task failed after finishing $message
              |${SbtTaskResult.render(SbtTaskResult.taskResult(history))}
-             |
              |${SbtTaskError.render(gitHubTaskError)}
              |""".stripMargin
         )

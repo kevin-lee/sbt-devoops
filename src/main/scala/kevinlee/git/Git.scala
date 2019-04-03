@@ -3,8 +3,7 @@ package kevinlee.git
 import java.io.File
 
 import kevinlee.CommonPredef._
-import kevinlee.fp.Writer.Writer
-import kevinlee.fp.{EitherT, Writer}
+import kevinlee.fp._
 
 /**
   * @author Kevin Lee

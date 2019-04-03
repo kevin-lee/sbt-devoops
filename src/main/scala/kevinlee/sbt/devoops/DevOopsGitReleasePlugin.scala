@@ -118,7 +118,6 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
   }
 
-  import SbtTask.{toLeftWhen, fromGitTask, eitherTWithHistoryStrings}
   import autoImport._
 
 
@@ -134,14 +133,13 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val pushRepo = Repository(gitTagPushRepo.value)
       SbtTask.handleSbtTask(
         (for {
-          currentBranchName <- fromGitTask(Git.currentBranchName(basePath))
-          _ <- toLeftWhen(
-            currentBranchName.value !== tagFrom.value
-          , SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom")
-          )
-          fetchResult <- fromGitTask(Git.fetchTags(basePath))
-          tagResult <-
-            fromGitTask(
+          currentBranchName <- SbtTask.fromGitTask(Git.currentBranchName(basePath))
+          _ <- SbtTask.toLeftWhen(
+              currentBranchName.value !== tagFrom.value
+            , SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom")
+            )
+          fetchResult <- SbtTask.fromGitTask(Git.fetchTags(basePath))
+          tagResult <- SbtTask.fromGitTask(
               gitTagDescription.value
                 .fold(
                   Git.tag(tagName, basePath)
@@ -153,7 +151,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                   )
                 }
             )
-          pushResult <- fromGitTask(Git.pushTag(pushRepo, tagName, basePath))
+          pushResult <- SbtTask.fromGitTask(Git.pushTag(pushRepo, tagName, basePath))
         } yield ()).run.run
       )
     }
@@ -182,34 +180,39 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       gitTag.value
       SbtTask.handleGitHubTask(
         (for {
-          changelog <- eitherTWithHistoryStrings(
-              getChangelog(new File(baseDirectory.value, changelogLocation.value), tagName)
-            )(_ => List("Get changelog"))
+          changelog <- SbtTask.eitherTWithWriter(
+              getChangelog(new File(baseDirectory.value, changelogLocation.value), tagName))(
+              _ => List("Get changelog")
+            )
           url <- GitHubTask.fromGitTask(
               Git.getRemoteUrl(Repository(gitTagPushRepo.value), baseDirectory.value)
             )
-          repo <- eitherTWithHistoryStrings(getRepoFromUrl(url)
-            )(r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}"))
-          oauth <- eitherTWithHistoryStrings(
-              readOAuthToken(gitHubAuthTokenFile.value)
-            )(_ => List("Get GitHub OAuth token"))
-          gitHub <- eitherTWithHistoryStrings(
-              GitHubApi.connectWithOAuth(oauth)
-            )(_ => List("Connect GitHub with OAuth"))
-          gitHubRelease <- eitherTWithHistoryStrings(
+          repo <- SbtTask.eitherTWithWriter(
+              getRepoFromUrl(url))(
+              r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
+            )
+          oauth <- SbtTask.eitherTWithWriter(
+              readOAuthToken(gitHubAuthTokenFile.value))(
+              _ => List("Get GitHub OAuth token")
+            )
+          gitHub <- SbtTask.eitherTWithWriter(
+              GitHubApi.connectWithOAuth(oauth))(
+              _ => List("Connect GitHub with OAuth")
+            )
+          gitHubRelease <- SbtTask.eitherTWithWriter(
               GitHubApi.release(
                 gitHub
               , repo
               , tagName
               , changelog
               , assets
-              )
-            )(release =>
-              List[String](
-                  s"GitHub release: ${release.tagName.value}"
-                , release.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
-                , release.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
-              )
+              ))(
+              release =>
+                List[String](
+                    s"GitHub release: ${release.tagName.value}"
+                  , release.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
+                  , release.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
+                )
             )
         } yield ()).run.run
       )
