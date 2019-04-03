@@ -4,13 +4,11 @@ package kevinlee
   * @author Kevin Lee
   * @since 2019-03-24
   */
-package object fp {
-  type Id[X] = X
+package object fp extends IdInstance {
 
-  implicit val idInstance: Monad[Id] = new Monad[Id] {
+  type Writer[L, V] = WriterT[Id, L, V]
 
-    def flatMap[A, B](a: A)(f: A => B): B = f(a)
-
-    def pure[A](a: => A): A = a
+  object Writer {
+    def apply[W, A](w: W, a: A): WriterT[Id, W, A] = WriterT[Id, W, A]((w, a))
   }
 }

@@ -36,15 +36,33 @@ final case class WriterT[F[_], W, A](run: F[(W, A)]) {
     F.map(run)(_._2)
 }
 
-object WriterT {
+object WriterT extends WriterTMonadInstance {
   def writerT[F[_], W, A](f: F[(W, A)]): WriterT[F, W, A] = WriterT(f)
+}
 
-  implicit def writerTMonad[F[_], W](implicit F: Monad[F], S: Monoid[W]): Monad[({ type AA[A] = WriterT[F, W, A] })#AA] = new Monad[({ type AA[A] = WriterT[F, W, A] })#AA] {
+sealed abstract class WriterTMonadInstance extends WriterInstance {
+
+  implicit def writerTMonad[F[_], W](implicit F0: Monad[F], S0: Monoid[W]): Monad[({ type AA[C] = WriterT[F, W, C] })#AA] = new Monad[({ type AA[C] = WriterT[F, W, C] })#AA] {
+    implicit val F: Monad[F] = F0
+    implicit val S: Monoid[W] = S0
 
     def flatMap[A, B](fa: WriterT[F, W, A])(f: A => WriterT[F, W, B]): WriterT[F, W, B] =
-      fa.flatMap(f)
+      fa.flatMap(f)(F, S)
 
     def pure[A](a: => A): WriterT[F, W, A] = WriterT(F.pure((S.zero, a)))
   }
-
 }
+
+sealed abstract class WriterInstance {
+
+  implicit def writerMonad[W](implicit S0: Monoid[W]): Monad[({ type AA[A] = WriterT[Id, W, A] })#AA] = new Monad[({ type AA[A] = WriterT[Id, W, A] })#AA] {
+    implicit val F: Monad[Id] = idMonad
+    implicit val S: Monoid[W] = S0
+
+    def flatMap[A, B](fa: WriterT[Id, W, A])(f: A => WriterT[Id, W, B]): WriterT[Id, W, B] =
+      fa.flatMap(f)(F, S)
+
+    def pure[A](a: => A): WriterT[Id, W, A] = WriterT(F.pure((S.zero, a)))
+  }
+}
+

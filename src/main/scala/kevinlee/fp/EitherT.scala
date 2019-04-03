@@ -41,13 +41,17 @@ final case class EitherT[F[_], A, B](run: F[Either[A, B]]) {
 
 }
 
-object EitherT {
+object EitherT extends EitherTMonadInstance {
   def eitherT[F[_], A, B](either: F[Either[A, B]]): EitherT[F, A, B] = apply(either)
+}
 
-  implicit def eitherTMonad[F[_], A](implicit F: Monad[F]): Monad[({ type AA[B] = EitherT[F, A, B] })#AA] = new Monad[({ type AA[B] = EitherT[F, A, B] })#AA] {
+sealed abstract class EitherTMonadInstance {
+  implicit def eitherTMonad[F[_], A](implicit F0: Monad[F]): Monad[({ type AA[B] = EitherT[F, A, B] })#AA] = new Monad[({ type AA[B] = EitherT[F, A, B] })#AA] {
+
+    implicit val F: Monad[F] = F0
 
     def flatMap[B, C](fa: EitherT[F, A, B])(f: B => EitherT[F, A, C]): EitherT[F, A, C] =
-      fa.flatMap(f)
+      fa.flatMap(f)(F)
 
     def pure[B](b: => B): EitherT[F, A, B] = EitherT(F.pure(Right(b)))
   }
