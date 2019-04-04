@@ -2,17 +2,21 @@ package kevinlee.sbt.devoops
 
 import java.io.FileInputStream
 
+import kevinlee.CommonPredef._
+
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
 import kevinlee.github.data._
-import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
-import kevinlee.sbt.io.{CaseSensitivity, Io}
-import kevinlee.semver.SemanticVersion
-import kevinlee.CommonPredef._
 import kevinlee.github.{GitHubApi, GitHubTask}
 
+import kevinlee.sbt.SbtCommon.messageOnlyException
+import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
+import kevinlee.sbt.io.{CaseSensitivity, Io}
+
+import kevinlee.semver.SemanticVersion
+
 import sbt.Keys._
-import sbt.{AutoPlugin, File, MessageOnlyException, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
+import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
 /**
   * @author Kevin Lee
@@ -158,7 +162,6 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     }
   , devOopsCiDir := "ci"
   , devOopsCopyReleasePackages := {
-      @SuppressWarnings(Array("org.wartremover.warts.Throw"))
       val result: Vector[File] = copyFiles(
           CaseSensitivity.caseSensitive
         , baseDirectory.value
@@ -166,7 +169,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         , new File(new File(devOopsCiDir.value), "dist")
         ) match {
           case Left(error) =>
-            throw new MessageOnlyException(SbtTaskError.render(error))
+            messageOnlyException(SbtTaskError.render(error))
           case Right(files) =>
             files
         }
