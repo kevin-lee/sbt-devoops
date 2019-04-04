@@ -29,7 +29,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       settingKey[String]("The name of branch to tag from. [Default: release]")
 
     lazy val gitTagDescription: SettingKey[Option[String]] =
-      settingKey[Option[String]]("description for git tagging")
+      settingKey[Option[String]]("description for git tagging [Default: None]")
 
     lazy val gitTagName: TaskKey[String] =
       taskKey[String]("""git tag name (default: parse the project version as semantic version and render with the prefix 'v'. e.g.) version := "1.0.0" / gitTagName := "v1.0.0"""")
@@ -123,6 +123,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     gitTagFrom := "release"
+  , gitTagDescription := None
 
   , gitTagName := decideVersion(version.value, v => s"v${SemanticVersion.parseUnsafe(v).render}")
   , gitTagPushRepo := "origin"
