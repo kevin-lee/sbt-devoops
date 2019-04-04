@@ -11,7 +11,7 @@ object Gens {
 
   def genFilenamesAndContent: Gen[(List[String], String)] = for {
     names <- Gen.string(Gen.alphaNum, Range.linear(1, 5)).list(Range.linear(1, 5))
-    content <- Gen.string(Gen.unicode, Range.linear(5, 50))
+    content <- Gen.string(Gen.unicode, Range.linear(5, 20))
   } yield (names, content)
 
   def genFilenamesAndContentWithFirstUniqueName: Gen[List[NamesAndContent]] =
@@ -21,7 +21,7 @@ object Gens {
         namesList.zipWithIndex.map { case ((names, content), index) =>
           NamesAndContent(
               Names(
-                names.take(1).map(x => s"${x}_$index") ++ names.drop(1)
+                names.map(x => s"${x}_$index")
               )
             , Content(content)
           )
