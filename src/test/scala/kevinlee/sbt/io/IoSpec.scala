@@ -94,13 +94,13 @@ object IoSpec extends Properties {
       val files = pathAndFiles.map { case (_, file) => file }
       val expected = files.map(file => (file.getName, IoUtil.readFile(file))).toVector.sorted
 
-        val targetDir = new File(tmp, targetName)
+      val targetDir = new File(tmp, targetName)
       if (!targetDir.exists()) {
         targetDir.mkdirs()
       }
       val actualFiles = Io.copy(files, targetDir)
       val actual = actualFiles.map(file => (file.getName, IoUtil.readFile(file)))
-      actual ==== expected
+      (actual ==== expected).log(s"actual: $actual / expected: $expected").log(s"files: $files").log("")
     }
   }
 
