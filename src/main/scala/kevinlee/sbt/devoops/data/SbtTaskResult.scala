@@ -1,6 +1,7 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.git.GitCommandResult
+import kevinlee.fp._
+import kevinlee.git.{GitCmd, GitCmdAndResult, GitCommandResult}
 
 /**
   * @author Kevin Lee
@@ -11,30 +12,51 @@ sealed trait SbtTaskResult
 object SbtTaskResult {
   // $COVERAGE-OFF$
 
-  final case class GitCommandTaskResult(gitCommandResult: Seq[GitCommandResult]) extends SbtTaskResult
+  type SbtTaskHistory = List[SbtTaskResult]
+
+  type SbtTaskHistoryWriter[A] = Writer[SbtTaskHistory, A]
+
+  final case class GitCommandTaskResult(gitCmdAndResult: GitCmdAndResult) extends SbtTaskResult
 
   final case class TaskResult(result: Seq[String]) extends SbtTaskResult
 
-  def gitCommandTaskResult(gitCommandResult: Seq[GitCommandResult]): SbtTaskResult =
-    GitCommandTaskResult(gitCommandResult)
+  final case class SbtTaskResults(sbtTaskResults: List[SbtTaskResult]) extends SbtTaskResult
+
+  def gitCommandTaskResult(gitCmdAndResult: GitCmdAndResult): SbtTaskResult =
+    GitCommandTaskResult(gitCmdAndResult)
 
   def taskResult(result: Seq[String]): SbtTaskResult =
     TaskResult(result)
 
+  def sbtTaskResults(sbtTaskResults: List[SbtTaskResult]): SbtTaskResult =
+    SbtTaskResults(sbtTaskResults)
+
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def render(sbtTaskResult: SbtTaskResult): String = sbtTaskResult match {
-    case GitCommandTaskResult(gitCommandResults) =>
-      val delimiter = ">> "
-      s"""
-         |task success> git commands
-         |${gitCommandResults.map(GitCommandResult.render).mkString(delimiter, s"\n$delimiter", "")}
-         |""".stripMargin
+    case GitCommandTaskResult(GitCmdAndResult(gitCmd, gitCommandResult)) =>
+       s"${GitCmd.render(gitCmd)}${GitCommandResult.render(gitCommandResult)}"
 
     case TaskResult(result) =>
-      val delimiter = ">> "
-      s"""
-         |task success> GitHub task
-         |${result.mkString(delimiter, s"\n$delimiter", "")}
-         |""".stripMargin
+      if (result.isEmpty) {
+        ""
+      } else {
+        val delimiter = ">> "
+        s"""
+           |task success> GitHub task
+           |${result.mkString(delimiter, s"\n$delimiter", "")}
+           |""".stripMargin
+      }
+
+    case SbtTaskResults(results) =>
+      if (results.isEmpty) {
+        ""
+      } else {
+        val delimiter = ">> "
+        s"""task success>
+           |${results.map(render).mkString(delimiter, s"\n$delimiter", "")}
+           |""".stripMargin
+      }
+
   }
 
   def consolePrintln(sbtTaskResult: SbtTaskResult): Unit =

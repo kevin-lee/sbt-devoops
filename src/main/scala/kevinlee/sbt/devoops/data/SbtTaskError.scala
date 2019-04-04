@@ -31,8 +31,8 @@ object SbtTaskError {
 
   def render(sbtTaskError: SbtTaskError): String = sbtTaskError match {
 
-    case GitCommandTaskError(err: GitCommandError) =>
-      GitCommandError.render(err)
+    case GitCommandTaskError(err) =>
+      s">> ${GitCommandError.render(err)}"
 
     case GitTaskError(cause) =>
       s"task failed> git command: $cause"

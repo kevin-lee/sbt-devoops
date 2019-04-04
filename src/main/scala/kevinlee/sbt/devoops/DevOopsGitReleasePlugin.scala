@@ -4,11 +4,13 @@ import java.io.FileInputStream
 
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
-import kevinlee.github.GitHubApi
 import kevinlee.github.data._
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
 import kevinlee.semver.SemanticVersion
+import kevinlee.CommonPredef._
+import kevinlee.github.{GitHubApi, GitHubTask}
+
 import sbt.Keys._
 import sbt.{AutoPlugin, File, MessageOnlyException, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
@@ -118,6 +120,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
   import autoImport._
 
+
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     gitTagFrom := "release"
 
@@ -128,22 +131,28 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val tagFrom = BranchName(gitTagFrom.value)
       val tagName = TagName(gitTagName.value)
       val pushRepo = Repository(gitTagPushRepo.value)
-      SbtTask.handleGitCommandTask(
-        for {
-          currentBranchCheckResults <- Git.checkIfCurrentBranchIsSame(tagFrom, basePath).right
-          fetchResult <- Git.fetchTags(basePath).right
-          tagResult <- gitTagDescription.value
-                        .fold(
-                          Git.tag(tagName, basePath)
-                        ) { desc =>
-                          Git.tagWithDescription(
-                              tagName
-                            , Git.Description(desc)
-                            , baseDirectory.value
-                          )
-                        }.right
-          pushResult <- Git.pushTag(pushRepo, tagName, basePath).right
-        } yield currentBranchCheckResults :+ fetchResult :+ tagResult :+ pushResult
+      SbtTask.handleSbtTask(
+        (for {
+          currentBranchName <- SbtTask.fromGitTask(Git.currentBranchName(basePath))
+          _ <- SbtTask.toLeftWhen(
+              currentBranchName.value !== tagFrom.value
+            , SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom")
+            )
+          fetchResult <- SbtTask.fromGitTask(Git.fetchTags(basePath))
+          tagResult <- SbtTask.fromGitTask(
+              gitTagDescription.value
+                .fold(
+                  Git.tag(tagName, basePath)
+                ) { desc =>
+                  Git.tagWithDescription(
+                      tagName
+                    , Git.Description(desc)
+                    , baseDirectory.value
+                  )
+                }
+            )
+          pushResult <- SbtTask.fromGitTask(Git.pushTag(pushRepo, tagName, basePath))
+        } yield ()).run.run
       )
     }
   , devOopsCiDir := "ci"
@@ -170,29 +179,42 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val assets = devOopsCopyReleasePackages.value
       gitTag.value
       SbtTask.handleGitHubTask(
-        for {
-          changelog <- getChangelog(new File(baseDirectory.value, changelogLocation.value), tagName).right
-          url <- Git.getRemoteUrl(Repository(gitTagPushRepo.value), baseDirectory.value).left.map(GitHubError.causedByGitCommandError).right
-          repo <- getRepoFromUrl(url).right
-          oauth <- readOAuthToken(gitHubAuthTokenFile.value).right
-          gitHub <- GitHubApi.connectWithOAuth(oauth).right
-          gitHubRelease <-
-            GitHubApi.release(
+        (for {
+          changelog <- SbtTask.eitherTWithWriter(
+              getChangelog(new File(baseDirectory.value, changelogLocation.value), tagName))(
+              _ => List("Get changelog")
+            )
+          url <- GitHubTask.fromGitTask(
+              Git.getRemoteUrl(Repository(gitTagPushRepo.value), baseDirectory.value)
+            )
+          repo <- SbtTask.eitherTWithWriter(
+              getRepoFromUrl(url))(
+              r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
+            )
+          oauth <- SbtTask.eitherTWithWriter(
+              readOAuthToken(gitHubAuthTokenFile.value))(
+              _ => List("Get GitHub OAuth token")
+            )
+          gitHub <- SbtTask.eitherTWithWriter(
+              GitHubApi.connectWithOAuth(oauth))(
+              _ => List("Connect GitHub with OAuth")
+            )
+          gitHubRelease <- SbtTask.eitherTWithWriter(
+              GitHubApi.release(
                 gitHub
               , repo
               , tagName
               , changelog
-              , assets).right
-        } yield List(
-            "Get changelog"
-          , s"Get remote repo URL: ${url.repoUrl}"
-          , "Get GitHub repo org and name"
-          , "Get GitHub OAuth token"
-          , "Connect GitHub with OAuth"
-          , s"GitHub release: ${gitHubRelease.tagName.value}"
-          , gitHubRelease.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
-          , gitHubRelease.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
-        )
+              , assets
+              ))(
+              release =>
+                List[String](
+                    s"GitHub release: ${release.tagName.value}"
+                  , release.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
+                  , release.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
+                )
+            )
+        } yield ()).run.run
       )
     }
   )

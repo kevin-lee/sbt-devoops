@@ -3,7 +3,7 @@ package kevinlee.git
 import java.io.File
 
 import kevinlee.CommonPredef._
-import kevinlee.git.GitCommandResult.GitCurrentBranchName
+import kevinlee.fp._
 
 /**
   * @author Kevin Lee
@@ -12,23 +12,27 @@ import kevinlee.git.GitCommandResult.GitCurrentBranchName
 object Git {
   // $COVERAGE-OFF$
 
+  type GitCmdHistory = List[GitCmdAndResult]
+
+  type GitCmdHistoryWriter[A] = Writer[GitCmdHistory, A]
+
   final case class BranchName(value: String) extends AnyVal
   final case class TagName(value: String) extends AnyVal
   final case class Repository(value: String) extends AnyVal
   final case class RemoteName(remoteName: String) extends AnyVal
   final case class RepoUrl(repoUrl: String) extends AnyVal
-
   final case class Description(value: String) extends AnyVal
 
   def fromProcessResultToEither[A](
-    successHandler: List[String] => A
-  , errorHandler: (Int, List[String]) => GitCommandError
-  ): PartialFunction[ProcessResult, Either[GitCommandError, A]] = {
+    gitCmd: GitCmd
+  , successHandler: List[String] => A
+  , errorHandler: (GitCmd, Int, List[String]) => GitCommandError
+  ): PartialFunction[ProcessResult, Either[GitCommandError, (GitCommandResult, A)]] = {
       case ProcessResult.Success(outputs) =>
-        Right(successHandler(outputs))
+        Right((GitCommandResult.genericResult(outputs), successHandler(outputs)))
 
       case ProcessResult.Failure(code, errors) =>
-        Left(errorHandler(code, errors))
+        Left(errorHandler(gitCmd, code, errors))
     }
 
   def git(baseDir: File, commandAndArgs: List[String]): ProcessResult =
@@ -39,94 +43,119 @@ object Git {
   def git1(baseDir: File, command: String, args: String*): ProcessResult =
     git(baseDir, command :: args.toList)
 
-  def currentBranchName(baseDir: File): Either[GitCommandError, GitCommandResult] = {
-    val gitArgs = List("rev-parse", "--abbrev-ref", "HEAD")
+  def gitCmd[A](
+    baseDir: File
+  , gitCmd: GitCmd
+  , f: List[String] => A
+  , e: (GitCmd, Int, List[String]) => GitCommandError
+  ): Either[GitCommandError, (GitCommandResult, A)] = {
+    val gitCmdAndArgs = GitCmd.cmdAndArgs(gitCmd)
     ProcessResult.toEither(
-      git(baseDir, gitArgs)
-    )(fromProcessResultToEither(
-      r => GitCommandResult.gitCurrentBranchName(BranchName(r.mkString.trim), gitArgs)
-    , (code, errs) => GitCommandError.gitCurrentBranchError(code, errs)
-    ))
-  }
-
-  def checkIfCurrentBranchIsSame(
-    branchName: BranchName
-  , baseDir: File
-  ): Either[GitCommandError, Vector[GitCommandResult]] = {
-    def isSameCurrent(
-      branchName: BranchName, currentBranchResult: GitCommandResult
-    ): Either[GitCommandError, GitCommandResult] =
-      currentBranchResult match {
-        case g@GitCurrentBranchName(BranchName(currentBranchName), _) =>
-          if (currentBranchName === branchName.value)
-            Right(GitCommandResult.gitSameCurrentBranch(BranchName(currentBranchName)))
-          else
-            Left(GitCommandError.gitUnexpectedCommandResultError(
-              g
-              , s"current branch == given expected branch. expected: ${branchName.value}"
-            ))
-        case other =>
-          Left(
-            GitCommandError.gitUnexpectedCommandResultError(other, "GitCurrentBranchName")
-          )
-      }
-
-    for {
-      currentBranchResult <- currentBranchName(baseDir).right
-      r <- isSameCurrent(branchName, currentBranchResult).right
-    } yield Vector(currentBranchResult, r)
-  }
-
-
-  def checkout(branchName: BranchName, baseDir: File): Either[GitCommandError, GitCommandResult] =
-    ProcessResult.toEither(
-      git1(baseDir, "checkout", branchName.value)
-    )(fromProcessResultToEither(
-      _ => GitCommandResult.gitCheckoutResult(branchName)
-    , (code, err) => GitCommandError.gitCheckoutError(code, err)
-    ))
-
-  def fetchTags(baseDir: File): Either[GitCommandError, GitCommandResult] = {
-    val tags = "--tags"
-    ProcessResult.toEither(
-      git1(baseDir, "fetch", tags)
+      git(baseDir, gitCmdAndArgs)
     )(
-      fromProcessResultToEither(
-        _ => GitCommandResult.gitFetchResult(Some(tags))
-        , (code, err) => GitCommandError.gitFetchError(code, err, Some(tags))
+      fromProcessResultToEither(gitCmd, f, e)
+    )
+  }
+
+  def gitCmdSimple[A](baseDir: File, cmd: GitCmd, resultHandler: List[String] => A): Either[GitCommandError, (GitCommandResult, A)] =
+    gitCmd(
+        baseDir
+      , cmd
+      , resultHandler
+      , GitCommandError.genericGotCommandResultError
+    )
+
+  def gitCmdSimpleWithWriter[A](baseDir: File, cmd: GitCmd, resultHandler: List[String] => A): GitCmdHistoryWriter[Either[GitCommandError, A]] = {
+    updateHistory(
+      cmd
+    , gitCmdSimple(
+        baseDir
+      , cmd
+      , resultHandler
       )
     )
   }
 
-  def tag(tagName: TagName, baseDir: File): Either[GitCommandError, GitCommandResult] =
-    ProcessResult.toEither(
-      git1(baseDir, "tag", tagName.value)
-    )(fromProcessResultToEither(
-      _ => GitCommandResult.gitTagResult(tagName)
-    , (code, err) => GitCommandError.gitTagError(code, err)
-    ))
+  def updateHistory[A](
+    gitCmd: GitCmd
+  , r: Either[GitCommandError, (GitCommandResult, A)]
+  ): GitCmdHistoryWriter[Either[GitCommandError, A]] = r match {
+    case Left(error) =>
+      Writer(List.empty, Left(error))
+    case Right((cmdResult, a)) =>
+      Writer(List(GitCmdAndResult(gitCmd, cmdResult)), Right(a))
+  }
 
-  def tagWithDescription(tagName: TagName, description: Description, baseDir: File): Either[GitCommandError, GitCommandResult] =
-    ProcessResult.toEither(
-      git1(baseDir, "tag", "-a", tagName.value, "-m", description.value)
-    )(fromProcessResultToEither(
-      _ => GitCommandResult.gitTagResult(tagName)
-    , (code, err) => GitCommandError.gitTagError(code, err)
-    ))
+  def currentBranchName(baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, BranchName] = EitherT(
+    gitCmdSimpleWithWriter[BranchName](
+      baseDir
+    , GitCmd.currentBranchName
+    , xs => BranchName(xs.mkString.trim)
+    )
+  )
 
-  def pushTag(repository: Repository, tagName: TagName, baseDir:File): Either[GitCommandError, GitCommandResult] = ProcessResult.toEither(
-    git1(baseDir, "push", repository.value, tagName.value)
-  )(fromProcessResultToEither(
-    result => GitCommandResult.gitPushTagResult(repository, tagName, result)
-  , (code, err) => GitCommandError.gitPushTagError(code, err, repository, tagName)
-  ))
+  def checkIfCurrentBranchIsSame(
+    branchName: BranchName
+  , baseDir: File
+  ): EitherT[GitCmdHistoryWriter, GitCommandError, Boolean] = for {
+    current <- currentBranchName(baseDir)
+  } yield current.value === branchName.value
 
-  def getRemoteUrl(repository: Repository, baseDir:File): Either[GitCommandError, RepoUrl] =
-    ProcessResult.toEither(
-      git1(baseDir, "remote", "get-url", repository.value)
-    )(fromProcessResultToEither(
-      result => RepoUrl(result.mkString.trim)
-      , (code, err) => GitCommandError.gitRemoteGetUrlError(code, err, repository)
-    ))
+
+  def checkout(branchName: BranchName, baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, Unit] = EitherT {
+    gitCmdSimpleWithWriter(
+      baseDir
+    , GitCmd.checkout(branchName)
+    , _ => ()
+    )
+}
+
+  def fetchTags(baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, List[String]] = EitherT(
+    gitCmdSimpleWithWriter(
+      baseDir
+    , GitCmd.fetchTags
+    , identity
+    )
+  )
+
+  def tag(tagName: TagName, baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, TagName] = EitherT(
+    gitCmdSimpleWithWriter(
+      baseDir
+    , GitCmd.tag(tagName)
+    , _ => tagName
+    )
+  )
+
+  def tagWithDescription(
+    tagName: TagName
+  , description: Description
+  , baseDir: File
+  ): EitherT[GitCmdHistoryWriter, GitCommandError, TagName] = EitherT(
+    gitCmdSimpleWithWriter(
+      baseDir
+    , GitCmd.tagWithDescription(tagName, description)
+    , _ => tagName
+    )
+  )
+
+  def pushTag(
+    repository: Repository
+  , tagName: TagName
+  , baseDir:File
+  ): EitherT[GitCmdHistoryWriter, GitCommandError, List[String]] = EitherT(
+    gitCmdSimpleWithWriter(
+      baseDir
+    , GitCmd.push(repository, tagName)
+    , identity
+    )
+  )
+
+  def getRemoteUrl(repository: Repository, baseDir:File): EitherT[GitCmdHistoryWriter, GitCommandError, RepoUrl] = EitherT(
+    gitCmdSimpleWithWriter(
+      baseDir
+    , GitCmd.remoteGetUrl(repository)
+    , xs => RepoUrl(xs.mkString.trim)
+    )
+  )
 
 }

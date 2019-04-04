@@ -25,6 +25,7 @@ object ProjectInfo {
     , "-Ywarn-inaccessible"
     , "-Ywarn-nullary-unit"
     , "-Ywarn-nullary-override"
+    , "-language:higherKinds"
     , "-encoding", "UTF-8"
   )
 
