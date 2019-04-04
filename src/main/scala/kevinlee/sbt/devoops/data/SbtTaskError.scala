@@ -2,6 +2,7 @@ package kevinlee.sbt.devoops.data
 
 import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
+import kevinlee.sbt.SbtCommon.messageOnlyException
 
 /**
   * @author Kevin Lee
@@ -46,6 +47,6 @@ object SbtTaskError {
   }
 
   def error(sbtTaskError: SbtTaskError): Nothing =
-    sys.error(render(sbtTaskError))
+    messageOnlyException(render(sbtTaskError))
 
 }

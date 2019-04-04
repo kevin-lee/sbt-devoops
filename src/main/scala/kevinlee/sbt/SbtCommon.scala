@@ -1,6 +1,7 @@
 package kevinlee.sbt
 
 import kevinlee.semver.{Major, Minor, SemanticVersion}
+import sbt.MessageOnlyException
 
 /**
   * @author Kevin Lee
@@ -15,4 +16,7 @@ object SbtCommon {
   ): Seq[T] =
     commonProps ++ versionSpecific((version.major, version.minor))
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+  def messageOnlyException(message: String): Nothing =
+    throw new MessageOnlyException(message)
 }
