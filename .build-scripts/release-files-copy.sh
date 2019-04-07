@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+alias sbt='sbt -d -J-Xmx2048m'
+
 if [ ! -n "$PROJECT_BUILD_NAME" ]
   then
   echo "NO PROJECT_BUILD_NAME is found so quit!" 1>&2
@@ -10,12 +12,12 @@ echo "======================================================"
 echo "Release to Bintray"
 echo "======================================================"
 echo ""
-echo "Run: sbt ^publish"
+echo "Run: sbt -d -J-Xmx2048m ^publish"
 echo "------------------------------------------------------"
-if sbt ^publish ; then
-  echo "Done: sbt ^publish"
+if sbt -d -J-Xmx2048m ^publish ; then
+  echo "Done: sbt -d -J-Xmx2048m ^publish"
 else
-  echo "Failed: sbt ^publish" 1>&2
+  echo "Failed: sbt -d -J-Xmx2048m ^publish" 1>&2
   exit 1
 fi
 echo "======================================================"
