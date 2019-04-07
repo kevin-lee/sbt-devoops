@@ -113,7 +113,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
           }
       }
     , scalacOptions in (Compile, console) --= crossVersionProps(
-      defaultOptions
+        defaultOptions
       , SemanticVersion.parseUnsafe(scalaVersion.value)
       ) {
         case (Major(2), Minor(10)) =>
