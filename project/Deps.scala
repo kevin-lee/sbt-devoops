@@ -1,8 +1,9 @@
 import sbt._
 
 object Deps {
-  val hedgehogVersion = "59fa4de48083870452c2e949cb5fda5cc4f97256"
-  val hedgehogRepo =
+  val hedgehogVersion: String = "55d9828dc6bcdc85ba3ebb31efd541d0a14423bf"
+
+  val hedgehogRepo: Resolver =
     Resolver.url(
       "bintray-scala-hedgehog",
       url("https://dl.bintray.com/hedgehogqa/scala-hedgehog")
@@ -22,4 +23,16 @@ object Deps {
 
   val bintray: ModuleID = "org.foundweekends" % "sbt-bintray" % "0.5.4"
 
+  val githubApi: ModuleID = "org.kohsuke" % "github-api" % "1.95"
+
+  val javaxActivation210: List[ModuleID] = List(
+      "javax.activation" % "activation" % "1.1.1"
+    , "javax.activation" % "javax.activation-api" % "1.2.0"
+    , "com.google.code.findbugs" % "jsr305" % "3.0.2"
+  )
+
+  val javaxActivation212: List[ModuleID] = List(
+      "javax.activation" % "activation" % "1.1.1"
+    , "javax.activation" % "javax.activation-api" % "1.2.0"
+  )
 }

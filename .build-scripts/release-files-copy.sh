@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+alias sbt='sbt -d -J-Xmx2048m'
+
 if [ ! -n "$PROJECT_BUILD_NAME" ]
   then
   echo "NO PROJECT_BUILD_NAME is found so quit!" 1>&2
@@ -10,12 +12,12 @@ echo "======================================================"
 echo "Release to Bintray"
 echo "======================================================"
 echo ""
-echo "Run: sbt ^publish"
+echo "Run: sbt -d -J-Xmx2048m ^publish"
 echo "------------------------------------------------------"
-if sbt ^publish ; then
-  echo "Done: sbt ^publish"
+if sbt -d -J-Xmx2048m ^publish ; then
+  echo "Done: sbt -d -J-Xmx2048m ^publish"
 else
-  echo "Failed: sbt ^publish" 1>&2
+  echo "Failed: sbt -d -J-Xmx2048m ^publish" 1>&2
   exit 1
 fi
 echo "======================================================"
@@ -24,8 +26,8 @@ echo "======================================================"
 echo "======================================================"
 echo "Copy packaged files to deploy"
 echo "======================================================"
-echo "ls -l target/scala-*/*.jar"
-ls -l target/scala-*/*.jar
+echo "ls -l target/scala-*/sbt-*/*.jar"
+ls -l target/scala-*/sbt-*/*.jar
 echo ""
 echo "======================================================"
 if [ -d "target/ci" ]; then
@@ -42,8 +44,8 @@ echo "ls -l target/ci/$PROJECT_BUILD_NAME"
 ls -l "target/ci/$PROJECT_BUILD_NAME"
 
 echo "------------------------------------------------------"
-echo "cp target/scala-*/*.jar target/ci/$PROJECT_BUILD_NAME/"
-cp target/scala-*/*.jar "target/ci/$PROJECT_BUILD_NAME/"
+echo "cp target/scala-*/sbt-*/*.jar target/ci/$PROJECT_BUILD_NAME/"
+cp target/scala-*/sbt-*/*.jar "target/ci/$PROJECT_BUILD_NAME/"
 echo "------------------------------------------------------"
 echo "ls -lR target/ci/$PROJECT_BUILD_NAME/"
 ls -lR "target/ci/$PROJECT_BUILD_NAME"
