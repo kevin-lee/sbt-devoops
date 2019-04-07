@@ -42,9 +42,9 @@ object BuildTools {
     def apply(): Prefix = NoPrefix
   }
 
-  def versionWriter(paramsResolver: => Seq[String])(projectVersion: String, basePath: String = "target"): Unit = {
+  def versionWriter(paramsResolver: () => Seq[String])(projectVersion: String, basePath: String = "target"): Unit = {
     println("\n== Writing Version File ==")
-    lazy val args: Seq[String] = paramsResolver
+    val args: Seq[String] = paramsResolver()
     println(s"The project version is $projectVersion.")
 
     import IO._

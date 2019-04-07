@@ -5,31 +5,31 @@ echo "Build projects"
 echo "--------------------------------------------"
 echo ""
 echo "============================================"
-echo "Run: sbt -d -J-Xmx2048m clean ^coverage ^test ^coverageReport ^coverageAggregate ^package"
+echo "Run: sbt clean ^coverage ^test ^coverageReport ^coverageAggregate ^package"
 echo "--------------------------------------------"
 if [[ "$BRANCH_NAME" == "rc" ]]
-then
-  if sbt -d -J-Xmx2048m clean ^coverage ^test ^coverageReport ^coverageAggregate ; then
-    echo "Done: sbt -d -J-Xmx2048m clean ^coverage ^test ^coverageReport ^coverageAggregate"
+  then
+  if sbt clean ^coverage ^test ^coverageReport ^coverageAggregate ; then
+    echo "Done: sbt clean ^coverage ^test ^coverageReport ^coverageAggregate"
     echo "============================================"
   else
-    echo "Failed: sbt -d -J-Xmx2048m clean ^coverage ^test ^coverageReport ^coverageAggregate" 1>&2
+    echo "Failed: sbt clean ^coverage ^test ^coverageReport ^coverageAggregate" 1>&2
     echo "============================================"
     exit 1
   fi
-  if sbt -d -J-Xmx2048m ^packageBin ^packageSrc ^packageDoc ; then
-    echo "Done: sbt -d -J-Xmx2048m ^packageBin ^packageSrc ^packageDoc"
+  if sbt ^packageBin ^packageSrc ^packageDoc ; then
+    echo "Done: sbt ^packageBin ^packageSrc ^packageDoc"
     echo "============================================"
   else
-    echo "Failed: sbt -d -J-Xmx2048m ^packageBin ^packageSrc ^packageDoc" 1>&2
+    echo "Failed: sbt ^packageBin ^packageSrc ^packageDoc" 1>&2
     echo "============================================"
     exit 1
   fi
-elif sbt -d -J-Xmx2048m clean ^coverage ^test ^coverageReport ^coverageAggregate ^package ; then
-  echo "Done: sbt -d -J-Xmx2048m clean ^coverage ^test ^coverageReport ^coverageAggregate ^package"
+elif sbt clean ^coverage ^test ^coverageReport ^coverageAggregate ^package ; then
+  echo "Done: sbt clean ^coverage ^test ^coverageReport ^coverageAggregate ^package"
   echo "============================================"
 else
-  echo "Failed: sbt -d -J-Xmx2048m clean ^coverage ^test ^coverageReport ^coverageAggregate ^package" 1>&2
+  echo "Failed: sbt clean ^coverage ^test ^coverageReport ^coverageAggregate ^package" 1>&2
   echo "============================================"
   exit 1
 fi
@@ -37,13 +37,13 @@ fi
 echo ""
 
 echo "============================================"
-echo "Run: sbt -d -J-Xmx2048m ^coveralls"
+echo "Run: sbt ^coveralls"
 echo "--------------------------------------------"
-if sbt -d -J-Xmx2048m ^coveralls ; then
-  echo "Done: sbt -d -J-Xmx2048m ^coveralls"
+if sbt ^coveralls ; then
+  echo "Done: sbt ^coveralls"
   echo "============================================"
 else
-  echo "Failed: sbt -d -J-Xmx2048m ^coveralls" 1>&2
+  echo "Failed: sbt ^coveralls" 1>&2
   echo "============================================"
   exit 1
 fi
