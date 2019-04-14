@@ -14,16 +14,13 @@ else
   echo ""
   if [[ "$BRANCH_NAME" == "rc" ]]
   then
-    sbt -d -J-Xmx2048m "; ^^ ${sbt_version}; clean; coverage; test; coverageReport; coverageAggregate"
+    sbt -d -J-Xmx2048m "; ^^ ${sbt_version}; clean; test; packagedArtifacts"
 
-    sbt -d -J-Xmx2048m "; ^^ ${sbt_version}; packagedArtifacts"
   else
-    sbt -d -J-Xmx2048m "; ^^ ${sbt_version}; clean; coverage; test; coverageReport; coverageAggregate; package"
+    sbt -d -J-Xmx2048m "; ^^ ${sbt_version}; clean; test; package"
   fi
 
   echo ""
-
-  sbt -d -J-Xmx2048m "; ^^ ${sbt_version}; coveralls"
 
   echo "============================================"
   echo "Building projects: Done"
