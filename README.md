@@ -8,10 +8,8 @@
 SBT Plugin to help CI and CD
 
 # Get sbt-devoops
-In the `project/plugins.sbt`, add the following lines,
+In the `project/plugins.sbt`, add the following line,
 ```sbt
-resolvers += "Kevin's sbt Plugins" at "https://dl.bintray.com/kevinlee/sbt-plugins"
-
 addSbtPlugin("kevinlee" % "sbt-devoops" % "0.2.0")
 ```
 
