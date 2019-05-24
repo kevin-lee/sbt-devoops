@@ -35,11 +35,11 @@ lazy val root = (project in file("."))
   , scalacOptions in (Compile, console) := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings")
   , wartremoverErrors in (Compile, compile) ++= commonWarts
   , wartremoverErrors in (Test, compile) ++= commonWarts
-  , resolvers += Deps.hedgehogRepo
+  , resolvers ++= Seq(Deps.kevinsRepo, Deps.hedgehogRepo)
   , libraryDependencies ++=
       crossVersionProps(
           Seq(
-            Deps.commonsIo, Deps.githubApi
+            Deps.commonsIo, Deps.githubApi, Deps.justFp
           ) ++ Deps.hedgehogLibs
         , scalaVersion.value
       ) {
