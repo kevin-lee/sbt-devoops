@@ -1,10 +1,12 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.fp._
-import kevinlee.git.Git.GitCmdHistoryWriter
-import kevinlee.git.GitCommandError
-import kevinlee.github.data.GitHubError
 import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
+
+import kevinlee.fp.Implicits._
+import kevinlee.fp._
+
+import kevinlee.git.Git
+import kevinlee.github.data.GitHubError
 
 /**
   * @author Kevin Lee
@@ -13,9 +15,11 @@ import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
 object SbtTask {
   // $COVERAGE-OFF$
 
+  type Result[A] = EitherT[SbtTaskHistoryWriter, SbtTaskError, A]
+
   def fromGitTask[A](
-    taskResult: => EitherT[GitCmdHistoryWriter, GitCommandError, A]
-  ): EitherT[SbtTaskHistoryWriter, SbtTaskError, A] =
+    taskResult: => Git.CmdResult[A]
+  ): Result[A] =
     EitherT[SbtTaskHistoryWriter, SbtTaskError, A](
       taskResult.leftMap(SbtTaskError.gitCommandTaskError)
         .run
@@ -23,7 +27,7 @@ object SbtTask {
     )
 
   def toLeftWhen[A](condition: => Boolean, whenFalse: => A): EitherT[SbtTaskHistoryWriter, A, Unit] = EitherT[SbtTaskHistoryWriter, A, Unit] {
-    val aOrB: Either[A, Unit] = if (condition) Left(whenFalse) else Right(())
+    val aOrB = if (condition) whenFalse.left else ().right
     Writer(
       List.empty[SbtTaskResult]
     , aOrB
@@ -34,7 +38,7 @@ object SbtTask {
   def eitherTWithWriter[W: Monoid, A, B](
     r: Either[A, B])(
     fw: B => W
-  ): EitherT[({ type AA[C] = Writer[W, C] })#AA, A, B] = EitherT[({ type AA[C] = Writer[W, C] })#AA, A, B] {
+  ): EitherT[Writer[W, ?], A, B] = EitherT[Writer[W, ?], A, B] {
     val w = r match {
       case Left(a) =>
         implicitly[Monoid[W]].zero

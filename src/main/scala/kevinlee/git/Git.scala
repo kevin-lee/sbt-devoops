@@ -4,6 +4,7 @@ import java.io.File
 
 import kevinlee.CommonPredef._
 import kevinlee.fp._
+import kevinlee.fp.Implicits._
 
 /**
   * @author Kevin Lee
@@ -12,9 +13,11 @@ import kevinlee.fp._
 object Git {
   // $COVERAGE-OFF$
 
-  type GitCmdHistory = List[GitCmdAndResult]
+  type CmdHistory = List[GitCmdAndResult]
 
-  type GitCmdHistoryWriter[A] = Writer[GitCmdHistory, A]
+  type CmdHistoryWriter[A] = Writer[CmdHistory, A]
+
+  type CmdResult[A] = EitherT[CmdHistoryWriter, GitCommandError, A]
 
   final case class BranchName(value: String) extends AnyVal
   final case class TagName(value: String) extends AnyVal
@@ -29,10 +32,10 @@ object Git {
   , errorHandler: (GitCmd, Int, List[String]) => GitCommandError
   ): PartialFunction[ProcessResult, Either[GitCommandError, (GitCommandResult, A)]] = {
       case ProcessResult.Success(outputs) =>
-        Right((GitCommandResult.genericResult(outputs), successHandler(outputs)))
+        (GitCommandResult.genericResult(outputs), successHandler(outputs)).right
 
       case ProcessResult.Failure(code, errors) =>
-        Left(errorHandler(gitCmd, code, errors))
+        errorHandler(gitCmd, code, errors).left
     }
 
   def git(baseDir: File, commandAndArgs: List[String]): ProcessResult =
@@ -57,7 +60,11 @@ object Git {
     )
   }
 
-  def gitCmdSimple[A](baseDir: File, cmd: GitCmd, resultHandler: List[String] => A): Either[GitCommandError, (GitCommandResult, A)] =
+  def gitCmdSimple[A](
+      baseDir: File
+    , cmd: GitCmd
+    , resultHandler: List[String] => A
+    ): Either[GitCommandError, (GitCommandResult, A)] =
     gitCmd(
         baseDir
       , cmd
@@ -65,7 +72,11 @@ object Git {
       , GitCommandError.genericGotCommandResultError
     )
 
-  def gitCmdSimpleWithWriter[A](baseDir: File, cmd: GitCmd, resultHandler: List[String] => A): GitCmdHistoryWriter[Either[GitCommandError, A]] = {
+  def gitCmdSimpleWithWriter[A](
+      baseDir: File
+    , cmd: GitCmd
+    , resultHandler: List[String] => A
+    ): CmdHistoryWriter[Either[GitCommandError, A]] = {
     updateHistory(
       cmd
     , gitCmdSimple(
@@ -79,14 +90,14 @@ object Git {
   def updateHistory[A](
     gitCmd: GitCmd
   , r: Either[GitCommandError, (GitCommandResult, A)]
-  ): GitCmdHistoryWriter[Either[GitCommandError, A]] = r match {
+  ): CmdHistoryWriter[Either[GitCommandError, A]] = r match {
     case Left(error) =>
-      Writer(List.empty, Left(error))
+      Writer(List.empty, error.left)
     case Right((cmdResult, a)) =>
-      Writer(List(GitCmdAndResult(gitCmd, cmdResult)), Right(a))
+      Writer(List(GitCmdAndResult(gitCmd, cmdResult)), a.right)
   }
 
-  def currentBranchName(baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, BranchName] = EitherT(
+  def currentBranchName(baseDir: File): CmdResult[BranchName] = EitherT(
     gitCmdSimpleWithWriter[BranchName](
       baseDir
     , GitCmd.currentBranchName
@@ -97,12 +108,12 @@ object Git {
   def checkIfCurrentBranchIsSame(
     branchName: BranchName
   , baseDir: File
-  ): EitherT[GitCmdHistoryWriter, GitCommandError, Boolean] = for {
+  ): CmdResult[Boolean] = for {
     current <- currentBranchName(baseDir)
   } yield current.value === branchName.value
 
 
-  def checkout(branchName: BranchName, baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, Unit] = EitherT {
+  def checkout(branchName: BranchName, baseDir: File): CmdResult[Unit] = EitherT {
     gitCmdSimpleWithWriter(
       baseDir
     , GitCmd.checkout(branchName)
@@ -110,7 +121,7 @@ object Git {
     )
 }
 
-  def fetchTags(baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, List[String]] = EitherT(
+  def fetchTags(baseDir: File): CmdResult[List[String]] = EitherT(
     gitCmdSimpleWithWriter(
       baseDir
     , GitCmd.fetchTags
@@ -118,7 +129,7 @@ object Git {
     )
   )
 
-  def tag(tagName: TagName, baseDir: File): EitherT[GitCmdHistoryWriter, GitCommandError, TagName] = EitherT(
+  def tag(tagName: TagName, baseDir: File): CmdResult[TagName] = EitherT(
     gitCmdSimpleWithWriter(
       baseDir
     , GitCmd.tag(tagName)
@@ -130,7 +141,7 @@ object Git {
     tagName: TagName
   , description: Description
   , baseDir: File
-  ): EitherT[GitCmdHistoryWriter, GitCommandError, TagName] = EitherT(
+  ): CmdResult[TagName] = EitherT(
     gitCmdSimpleWithWriter(
       baseDir
     , GitCmd.tagWithDescription(tagName, description)
@@ -142,7 +153,7 @@ object Git {
     repository: Repository
   , tagName: TagName
   , baseDir:File
-  ): EitherT[GitCmdHistoryWriter, GitCommandError, List[String]] = EitherT(
+  ): CmdResult[List[String]] = EitherT(
     gitCmdSimpleWithWriter(
       baseDir
     , GitCmd.push(repository, tagName)
@@ -150,7 +161,7 @@ object Git {
     )
   )
 
-  def getRemoteUrl(repository: Repository, baseDir:File): EitherT[GitCmdHistoryWriter, GitCommandError, RepoUrl] = EitherT(
+  def getRemoteUrl(repository: Repository, baseDir:File): CmdResult[RepoUrl] = EitherT(
     gitCmdSimpleWithWriter(
       baseDir
     , GitCmd.remoteGetUrl(repository)

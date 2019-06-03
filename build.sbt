@@ -36,6 +36,7 @@ lazy val root = (project in file("."))
   , wartremoverErrors in (Compile, compile) ++= commonWarts
   , wartremoverErrors in (Test, compile) ++= commonWarts
   , resolvers ++= Seq(Deps.kevinsRepo, Deps.hedgehogRepo)
+  , addCompilerPlugin("org.typelevel" % "kind-projector" % "0.10.1" cross CrossVersion.binary)
   , libraryDependencies ++=
       crossVersionProps(
           Seq(

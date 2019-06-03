@@ -7,6 +7,8 @@ import kevinlee.semver.AdditionalInfo.{BuildMetaInfo, PreRelease}
 import scala.annotation.tailrec
 import scala.util.matching.Regex
 
+import kevinlee.fp.Implicits._
+
 /**
   * @author Kevin Lee
   * @since 2018-10-21
@@ -49,13 +51,11 @@ object AlphaNumHyphenGroup {
                 accumulate(xs, Alphabet(x.toString), acc :+ chars)
             }
           } else {
-            Left(
-              ParseError.invalidAlphaNumHyphenError(x, xs)
-            )
+            ParseError.invalidAlphaNumHyphenError(x, xs).left
           }
 
         case Nil =>
-          Right(acc :+ chars)
+          (acc :+ chars).right
       }
 
     value.toList match {
@@ -68,14 +68,12 @@ object AlphaNumHyphenGroup {
           else if (x.isLower || x.isUpper)
             accumulate(xs, Alphabet(x.toString), Vector.empty)
           else
-            Left(
-              ParseError.invalidAlphaNumHyphenError(x, xs)
-            )
+            ParseError.invalidAlphaNumHyphenError(x, xs).left
 
-        result.right.map(groups => AlphaNumHyphenGroup(groups.toList))
+        result.map(groups => AlphaNumHyphenGroup(groups.toList))
 
       case Nil =>
-        Left(ParseError.emptyAlphaNumHyphenError)
+        ParseError.emptyAlphaNumHyphenError.left
     }
 
   }
@@ -160,15 +158,15 @@ object AdditionalInfo {
     parse(value, {
       case a @ AlphaNumHyphenGroup(Num(n) :: Nil) =>
         if ((n === "0") || n.takeWhile(_ === '0').length === 0)
-          Right(a)
+          a.right
         else
-          Left(ParseError.leadingZeroNumError(n))
+          ParseError.leadingZeroNumError(n).left
       case a @ AlphaNumHyphenGroup(_) =>
-        Right(a)
-    }).right.map(_.map(PreRelease))
+        a.right
+    }).map(_.map(PreRelease))
 
   def parseBuildMetaInfo(value: String): Either[ParseError, Option[BuildMetaInfo]] =
-    parse(value, Right.apply).right.map(_.map(BuildMetaInfo))
+    parse(value, Right.apply).map(_.map(BuildMetaInfo))
 
   def parse(
     value: String
@@ -179,19 +177,19 @@ object AdditionalInfo {
         .map(_.split("\\."))
         .map(_.map(AlphaNumHyphenGroup.parse)) match {
           case Some(preRelease) =>
-            preRelease.foldRight[Either[ParseError, List[AlphaNumHyphenGroup]]](Right(List.empty)){
+            preRelease.foldRight[Either[ParseError, List[AlphaNumHyphenGroup]]](List.empty.right){
               (x, acc) =>
-                x.right.flatMap(validator) match {
+                x.flatMap(validator) match {
                   case Right(alp) =>
-                    acc.right.map(alps => alp :: alps)
+                    acc.map(alps => alp :: alps)
                   case Left(error) =>
-                    Left(error)
+                    error.left
                 }
             }
           case None =>
             Right(List.empty)
         }
-    alphaNumHyphens.right.map {
+    alphaNumHyphens.map {
       case Nil =>
         None
       case xs =>
@@ -282,22 +280,21 @@ object SemanticVersion {
       val metaInfo = AdditionalInfo.parseBuildMetaInfo(meta)
       (preRelease, metaInfo) match {
         case (Left(preError), Left(metaError)) =>
-          Left(ParseError.combine(preError, metaError))
+          ParseError.combine(preError, metaError).left
         case (Left(preError), _) =>
-          Left(ParseError.preReleaseParseError(preError))
+          ParseError.preReleaseParseError(preError).left
         case (_, Left(metaError)) =>
-          Left(ParseError.buildMetadataParseError(metaError))
+          ParseError.buildMetadataParseError(metaError).left
         case (Right(preR), Right(metaI)) =>
-          Right(
-            SemanticVersion(
-              Major(major.toInt), Minor(minor.toInt), Patch(patch.toInt),
-              preR, metaI
-            )
-          )
+          SemanticVersion(
+            Major(major.toInt), Minor(minor.toInt), Patch(patch.toInt),
+            preR, metaI
+          ).right
+
       }
 
     case _ =>
-      Left(ParseError.invalidVersionStringError(version))
+      ParseError.invalidVersionStringError(version).left
   }
 
   def noIdentifier(major: Major, minor: Minor, patch: Patch): SemanticVersion =
