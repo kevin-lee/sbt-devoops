@@ -2,6 +2,9 @@ package kevinlee.semver
 
 import hedgehog._
 import hedgehog.runner._
+
+import kevinlee.fp.Implicits._
+
 import kevinlee.semver.AlphaNumHyphen.{alphabet, hyphen, num, numFromStringUnsafe}
 import kevinlee.semver.Gens._
 
@@ -348,7 +351,7 @@ object SemanticVersionSpec extends Properties {
 
   def parseExample1: Result = {
     val input = "1.0.5"
-    val expected = Right(SemanticVersion(Major(1), Minor(0), Patch(5), None, None))
+    val expected = SemanticVersion(Major(1), Minor(0), Patch(5), None, None).right
     val actual = SemanticVersion.parse(input)
     actual ==== expected
   }
@@ -356,19 +359,17 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePre1: Result = {
     val input = "1.0.5-beta"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , Option(
-            AdditionalInfo.PreRelease(
-              Identifier(List(AlphaNumHyphenGroup(List(alphabet("beta"))))
-              ))
-            )
-          , None
-        )
-      )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , Option(
+          AdditionalInfo.PreRelease(
+            Identifier(List(AlphaNumHyphenGroup(List(alphabet("beta"))))
+            ))
+          )
+        , None
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -377,34 +378,32 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePre2: Result = {
     val input = "1.0.5-a.3.7.xyz"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , Option(
-            AdditionalInfo.PreRelease(
-              Identifier(
-                List(
-                  AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](alphabet("a"))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](num(3))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](num(7))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](alphabet("xyz"))
-                  )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , Option(
+          AdditionalInfo.PreRelease(
+            Identifier(
+              List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(3))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(7))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
                 )
               )
             )
           )
-          , None
         )
-      )
+        , None
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -413,26 +412,24 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePre3: Result = {
     val input = "1.0.5-a-b.xyz"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , Option(
-            AdditionalInfo.PreRelease(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("xyz"))
-                )
-              ))
-            )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , Option(
+          AdditionalInfo.PreRelease(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+              )
+            , AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("xyz"))
+              )
+            ))
           )
-          , None
         )
-      )
+        , None
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -441,23 +438,21 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePre4: Result = {
     val input = "1.0.5-0"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , Option(
-            AdditionalInfo.PreRelease(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(0))
-                )
-              ))
-            )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , Option(
+          AdditionalInfo.PreRelease(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](num(0))
+              )
+            ))
           )
-          , None
         )
-      )
+        , None
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -466,23 +461,21 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePre5: Result = {
     val input = "1.0.5-000a"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , Option(
-            AdditionalInfo.PreRelease(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](numFromStringUnsafe("000"), alphabet("a"))
-                )
-              ))
-            )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , Option(
+          AdditionalInfo.PreRelease(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](numFromStringUnsafe("000"), alphabet("a"))
+              )
+            ))
           )
-          , None
         )
-      )
+        , None
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -491,11 +484,9 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePreInvalid1: Result = {
     val input = "1.0.5-001"
     val expected =
-      Left(
-        ParseError.preReleaseParseError(
-          ParseError.leadingZeroNumError("001")
-        )
-      )
+      ParseError.preReleaseParseError(
+        ParseError.leadingZeroNumError("001")
+      ).left
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -504,19 +495,17 @@ object SemanticVersionSpec extends Properties {
   def parseExampleMeta1: Result = {
     val input = "1.0.5+1234"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , None
-          , Option(
-              AdditionalInfo.BuildMetaInfo(
-                Identifier(List(AlphaNumHyphenGroup(List(num(1234)))))
-              )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , None
+        , Option(
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(List(AlphaNumHyphenGroup(List(num(1234)))))
             )
-        )
-      )
+          )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -525,34 +514,32 @@ object SemanticVersionSpec extends Properties {
   def parseExampleMeta2: Result = {
     val input = "1.0.5+a.3.7.xyz"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , None
-          , Option(
-            AdditionalInfo.BuildMetaInfo(
-              Identifier(
-                List(
-                  AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](alphabet("a"))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](num(3))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](num(7))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](alphabet("xyz"))
-                  )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , None
+        , Option(
+          AdditionalInfo.BuildMetaInfo(
+            Identifier(
+              List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(3))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(7))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
                 )
               )
             )
           )
         )
-      )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -561,26 +548,24 @@ object SemanticVersionSpec extends Properties {
   def parseExampleMeta3: Result = {
     val input = "1.0.5+a-b.xyz"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , None
-          , Option(
-            AdditionalInfo.BuildMetaInfo(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("xyz"))
-                )
-              ))
-            )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , None
+        , Option(
+          AdditionalInfo.BuildMetaInfo(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+              )
+            , AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("xyz"))
+              )
+            ))
           )
         )
-      )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -589,23 +574,21 @@ object SemanticVersionSpec extends Properties {
   def parseExampleMeta4: Result = {
     val input = "1.0.5+0"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , None
-          , Option(
-            AdditionalInfo.BuildMetaInfo(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](num(0))
-                )
-              ))
-            )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , None
+        , Option(
+          AdditionalInfo.BuildMetaInfo(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](num(0))
+              )
+            ))
           )
         )
-      )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -614,23 +597,21 @@ object SemanticVersionSpec extends Properties {
   def parseExampleMeta5: Result = {
     val input = "1.0.5+000a"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , None
-          , Option(
-            AdditionalInfo.BuildMetaInfo(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](numFromStringUnsafe("000"), alphabet("a"))
-                )
-              ))
-            )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , None
+        , Option(
+          AdditionalInfo.BuildMetaInfo(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](numFromStringUnsafe("000"), alphabet("a"))
+              )
+            ))
           )
         )
-      )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -639,23 +620,21 @@ object SemanticVersionSpec extends Properties {
   def parseExampleMeta6: Result = {
     val input = "1.0.5+001"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , None
-          , Option(
-            AdditionalInfo.BuildMetaInfo(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](numFromStringUnsafe("001"))
-                )
-              ))
-            )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , None
+        , Option(
+          AdditionalInfo.BuildMetaInfo(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](numFromStringUnsafe("001"))
+              )
+            ))
           )
         )
-      )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -664,23 +643,21 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePreMeta1: Result = {
     val input = "1.0.5-beta+1234"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , Option(
-              AdditionalInfo.PreRelease(
-                Identifier(List(AlphaNumHyphenGroup(List(alphabet("beta")))))
-              )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , Option(
+            AdditionalInfo.PreRelease(
+              Identifier(List(AlphaNumHyphenGroup(List(alphabet("beta")))))
             )
-          , Option(
-              AdditionalInfo.BuildMetaInfo(
-                Identifier(List(AlphaNumHyphenGroup(List(num(1234)))))
-              )
+          )
+        , Option(
+            AdditionalInfo.BuildMetaInfo(
+              Identifier(List(AlphaNumHyphenGroup(List(num(1234)))))
             )
-        )
-      )
+          )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -689,53 +666,51 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePreMeta2: Result = {
     val input = "1.0.5-a.3.7.xyz+a.3.7.xyz"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , Option(
-            AdditionalInfo.PreRelease(
-              Identifier(
-                List(
-                  AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](alphabet("a"))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](num(3))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](num(7))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](alphabet("xyz"))
-                  )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , Option(
+          AdditionalInfo.PreRelease(
+            Identifier(
+              List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"))
                 )
-              )
-            )
-          )
-          , Option(
-            AdditionalInfo.BuildMetaInfo(
-              Identifier(
-                List(
-                  AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](alphabet("a"))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](num(3))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](num(7))
-                  )
-                , AlphaNumHyphenGroup(
-                    List[AlphaNumHyphen](alphabet("xyz"))
-                  )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(3))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(7))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
                 )
               )
             )
           )
         )
-      )
+        , Option(
+          AdditionalInfo.BuildMetaInfo(
+            Identifier(
+              List(
+                AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("a"))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(3))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](num(7))
+                )
+              , AlphaNumHyphenGroup(
+                  List[AlphaNumHyphen](alphabet("xyz"))
+                )
+              )
+            )
+          )
+        )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -744,37 +719,35 @@ object SemanticVersionSpec extends Properties {
   def parseExamplePreMeta3: Result = {
     val input = "1.0.5-a-b.xyz+a-b.xyz"
     val expected =
-      Right(
-        SemanticVersion(
-            Major(1)
-          , Minor(0)
-          , Patch(5)
-          , Option(
-            AdditionalInfo.PreRelease(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("xyz"))
-                )
-              ))
-            )
-          )
-          , Option(
-            AdditionalInfo.BuildMetaInfo(
-              Identifier(List(
-                AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
-                )
-              , AlphaNumHyphenGroup(
-                  List[AlphaNumHyphen](alphabet("xyz"))
-                )
-              ))
-            )
+      SemanticVersion(
+          Major(1)
+        , Minor(0)
+        , Patch(5)
+        , Option(
+          AdditionalInfo.PreRelease(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+              )
+            , AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("xyz"))
+              )
+            ))
           )
         )
-      )
+        , Option(
+          AdditionalInfo.BuildMetaInfo(
+            Identifier(List(
+              AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("a"), hyphen, alphabet("b"))
+              )
+            , AlphaNumHyphenGroup(
+                List[AlphaNumHyphen](alphabet("xyz"))
+              )
+            ))
+          )
+        )
+      ).right
 
     val actual = SemanticVersion.parse(input)
     actual ==== expected
@@ -806,7 +779,7 @@ object SemanticVersionSpec extends Properties {
   } yield {
     val rendered = semanticVersion.render
     val actual = SemanticVersion.parse(rendered)
-    actual ==== Right(semanticVersion)
+    actual ==== semanticVersion.right
   }
 
 }

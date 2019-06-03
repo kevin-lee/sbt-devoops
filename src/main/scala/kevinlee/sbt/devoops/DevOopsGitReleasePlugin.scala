@@ -4,8 +4,11 @@ import java.io.FileInputStream
 
 import kevinlee.CommonPredef._
 
+import kevinlee.fp.Implicits._
+
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
+
 import kevinlee.github.data._
 import kevinlee.github.{GitHubApi, GitHubTask}
 
@@ -74,7 +77,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         , filePaths
       )
       if (files.isEmpty) {
-        Left(SbtTaskError.noFileFound("copying files", filePaths))
+        SbtTaskError.noFileFound("copying files", filePaths).left
       } else {
         val copied = Io.copy(files, targetDir)
         println(
@@ -83,7 +86,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
              |  to
              |${copied.mkString("  - ",  "\n  - ", "\n")}
              |""".stripMargin)
-        Right(copied)
+        copied.right
       }
     }
 
@@ -91,7 +94,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val props = new java.util.Properties()
       props.load(new FileInputStream(file))
       Option(props.getProperty("oauth"))
-        .fold[Either[GitHubError, OAuthToken]](Left(GitHubError.noCredential))(token => Right(OAuthToken(token)))
+        .fold[Either[GitHubError, OAuthToken]](GitHubError.noCredential.left)(token => OAuthToken(token).right)
     }
 
     def getRepoFromUrl(repoUrl: RepoUrl): Either[GitHubError, Repo] = {
@@ -102,9 +105,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           repoUrl.repoUrl.split(":").last.split("/")
       names.takeRight(2) match {
         case Array(org, name) =>
-          Right(Repo(RepoOrg(org), RepoName(name.stripSuffix(".git"))))
+          Repo(RepoOrg(org), RepoName(name.stripSuffix(".git"))).right
         case _ =>
-          Left(GitHubError.invalidGitHubRepoUrl(repoUrl))
+          GitHubError.invalidGitHubRepoUrl(repoUrl).left
       }
     }
 
@@ -113,10 +116,15 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       // baseDirectory.value, changelogLocation.value)
       val changelog = new File(dir, changelogName)
       if (!changelog.exists) {
-        Left(GitHubError.changelogNotFound(changelog.getCanonicalPath, tagName))
+        GitHubError.changelogNotFound(changelog.getCanonicalPath, tagName).left
       } else {
-        val log = scala.io.Source.fromFile(changelog).getLines().mkString("\n")
-        Right(Changelog(log))
+        lazy val changelogSource = scala.io.Source.fromFile(changelog)
+        try {
+          val log = changelogSource.getLines().mkString("\n")
+          Changelog(log).right
+        } finally {
+          changelogSource.close()
+        }
       }
     }
 

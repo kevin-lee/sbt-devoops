@@ -1,8 +1,7 @@
 package kevinlee.github
 
 import kevinlee.fp._
-import kevinlee.git.Git.GitCmdHistoryWriter
-import kevinlee.git.{GitCmdAndResult, GitCommandError}
+import kevinlee.git.{Git, GitCmdAndResult}
 import kevinlee.github.data.GitHubError
 
 /**
@@ -13,9 +12,11 @@ object GitHubTask {
 
   type GitHubTaskHistoryWriter[A] = Writer[List[String], A]
 
+  type GitHubTaskResult[A] = EitherT[GitHubTaskHistoryWriter, GitHubError, A]
+
   def fromGitTask[A](
-    taskResult: EitherT[GitCmdHistoryWriter, GitCommandError, A]
-  ): EitherT[GitHubTaskHistoryWriter, GitHubError, A] =
+    taskResult: Git.CmdResult[A]
+  ): GitHubTaskResult[A] =
     EitherT[GitHubTaskHistoryWriter, GitHubError, A](
       taskResult.leftMap(GitHubError.causedByGitCommandError)
         .run

@@ -1,7 +1,7 @@
 import sbt._
 
 object Deps {
-  val hedgehogVersion: String = "d74f5bb31f26d3e3b7f7d0198b6e768a1ed20669"
+  val hedgehogVersion: String = "f120baa58d2362761de3d03512ccd5d0199f07fc"
 
   val hedgehogRepo: Resolver =
     Resolver.url(
@@ -17,7 +17,7 @@ object Deps {
 
   val kevinsRepo: Resolver = "Kevin's Repo" at "https://dl.bintray.com/kevinlee/maven"
 
-  val justFp: ModuleID = "kevinlee" %% "just-fp" % "0.1.0"
+  val justFp: ModuleID = "kevinlee" %% "just-fp" % "0.4.0"
 
   val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
 
