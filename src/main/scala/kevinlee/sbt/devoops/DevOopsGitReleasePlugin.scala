@@ -50,8 +50,11 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
     lazy val devOopsCiDir: SettingKey[String] = settingKey[String]("The ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. (default: ci)")
 
+    lazy val devOopsPackagedArtifacts: TaskKey[List[String]] =
+      taskKey(s"""A list of packaged artifacts to be copied to PROJECT_HOME/$${devOopsCiDir.value}/dist (default: List(s"target/scala-*/$${name.value}*.jar") )""")
+
     lazy val devOopsCopyReleasePackages: TaskKey[Vector[File]] =
-      taskKey[Vector[File]](s"task to copy packaged artifacts to the location specified (default: target/scala-*/$${name.value}*.jar to PROJECT_HOME/$${devOopsCiDir.value}/dist")
+      taskKey[Vector[File]](s"task to copy packaged artifacts to the location specified (default: devOopsPackagedArtifacts.value to PROJECT_HOME/$${devOopsCiDir.value}/dist")
 
     lazy val changelogLocation: SettingKey[String] =
       settingKey[String]("The location of changelog file. (default: PROJECT_HOME/changelogs)")
@@ -169,11 +172,12 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       )
     }
   , devOopsCiDir := "ci"
+  , devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar")
   , devOopsCopyReleasePackages := {
       val result: Vector[File] = copyFiles(
           CaseSensitivity.caseSensitive
         , baseDirectory.value
-        , List(s"target/scala-*/${name.value}*.jar")
+        , devOopsPackagedArtifacts.value
         , new File(new File(devOopsCiDir.value), "dist")
         ) match {
           case Left(error) =>

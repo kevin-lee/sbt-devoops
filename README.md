@@ -141,16 +141,29 @@ task success>
 
 
 ### `devOopsCiDir`
-`devOopsCiDir` is the ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. When running `devOopsCopyReleasePackages`, all the jar files with prefixed with the project name (`target/scala-*/${name.value}*.jar`) are copied to `${devOopsCiDir.value}/dist`.
+`devOopsCiDir` is the ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. When running `devOopsCopyReleasePackages`, all the jar files with prefixed with the project name (`devOopsPackagedArtifacts.value`) are copied to `${devOopsCiDir.value}/dist`.
 
 Default:
 ```sbt
 devOopsCiDir := "ci"
+// so the artifactsare copied to ci/dist
 ```
 
+### `devOopsPackagedArtifacts`
+A `List` of packaged artifacts to be copied to `PROJECT_HOME/${devOopsCiDir.value}/dist`.
+
+Default:
+```sbt
+devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar")
+```
+
+So for Java projects, change it to 
+```sbt
+devOopsPackagedArtifacts := List(s"target/${name.value}*.jar")
+```
 
 ### `devOopsCopyReleasePackages`
-It is an sbt task to copy packaged artifacts to the location specified (default: `target/scala-*/$${name.value}*.jar` to `PROJECT_HOME/$${devOopsCiDir.value}/dist`).
+It is an sbt task to copy packaged artifacts to the location specified (default: `devOopsPackagedArtifacts.value` to `PROJECT_HOME/${devOopsCiDir.value}/dist`).
 
 e.g.)
 ```sbt
