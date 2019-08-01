@@ -123,9 +123,11 @@ gitTagPushRepo := "origin"
 
 
 ### `gitTag`
-It is an sbt task to create a git tag from the branch set in `gitTagFrom`.
+It is an sbt task to create a git tag from the branch set in `gitTagFrom`. It may fail if the project version is no GA.
 
-e.g.)
+e.g.) 
+
+**Success Case**
 ```sbtshell
 sbt:test-project> gitTag
 task success>
@@ -137,6 +139,25 @@ task success>
   |   * [new tag]         v0.1.0 -> v0.1.0
 
 [success] Total time: 10 s, completed 6 Apr. 2019, 11:08:03 pm
+```
+
+**Failure Case**
+```sbtshell
+sbt:test-project> gitTag
+Failure]
+>> sbt task failed after finishing the following tasks
+task success>
+>> non sbt task success> The semantic version from the project version has been parsed. version: 0.1.0-SNAPSHOT
+
+  This version is not eligible for tagging. [version: 0.1.0-SNAPSHOT]
+  It should be GA version with any pre-release or meta-info suffix
+    e.g.)
+    * 1.0.0 (⭕️)
+    * 1.0.0-SNAPSHOT (❌)
+    * 1.0.0-beta (❌)
+    * 1.0.0+123 (❌)
+    * 1.0.0-beta+123 (❌)
+
 ```
 
 
