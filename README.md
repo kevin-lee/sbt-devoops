@@ -76,7 +76,7 @@ The name of the branch from which it tags. So if the current branch is not the s
 
 Default: 
 ```sbt
-gitTagFrom := "release"
+gitTagFrom := "master"
 ```
 
 ### `gitTagDescription` (Optional)
@@ -129,7 +129,7 @@ e.g.)
 ```sbtshell
 sbt:test-project> gitTag
 task success>
->> git rev-parse --abbrev-ref HEAD => release
+>> git rev-parse --abbrev-ref HEAD => master
 >> git fetch --tags
 >> git tag v0.1.0
 >> git push origin v0.1.0
@@ -166,7 +166,7 @@ devOopsPackagedArtifacts := List(s"target/${name.value}*.jar")
 It is an sbt task to copy packaged artifacts to the location specified (default: `devOopsPackagedArtifacts.value` to `PROJECT_HOME/${devOopsCiDir.value}/dist`).
 
 e.g.)
-```sbt
+```sbtshell
 sbt:test-project> devOopsCopyReleasePackages
 >> copyPackages - Files copied from:
   - /user/home/test-project/target/scala-2.12/test-project_2.12-0.1.0.jar
@@ -211,7 +211,7 @@ It does
 * Upload the packaged files and changelog to GitHub.
 
 e.g.)
-```sbt
+```sbtshell
 sbt:test-project> gitHubRelease
 >> copyPackages - Files copied from:
   - /user/home/test-project/target/scala-2.12/test-project_2.12-0.1.0.jar
@@ -225,7 +225,7 @@ sbt:test-project> gitHubRelease
 
 
 task success>
->> git rev-parse --abbrev-ref HEAD => release
+>> git rev-parse --abbrev-ref HEAD => master
 >> git fetch --tags
 >> git tag v0.1.0
 >> git push origin v0.1.0
