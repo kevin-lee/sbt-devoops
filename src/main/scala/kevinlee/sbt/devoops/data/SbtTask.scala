@@ -17,6 +17,13 @@ object SbtTask {
 
   type Result[A] = EitherT[SbtTaskHistoryWriter, SbtTaskError, A]
 
+  def fromNonSbtTask[A](
+     a: Either[SbtTaskError, A])(
+     history: A => List[SbtTaskResult]
+   ): Result[A] = EitherT[SbtTaskHistoryWriter, SbtTaskError, A](
+      Writer(a.fold(_ => List.empty, aa => history(aa)), a)
+    )
+
   def fromGitTask[A](
     taskResult: => Git.CmdResult[A]
   ): Result[A] =

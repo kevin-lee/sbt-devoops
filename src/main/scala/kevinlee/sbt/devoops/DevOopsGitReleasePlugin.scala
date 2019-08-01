@@ -3,21 +3,15 @@ package kevinlee.sbt.devoops
 import java.io.FileInputStream
 
 import kevinlee.CommonPredef._
-
 import kevinlee.fp.Implicits._
-
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
-
 import kevinlee.github.data._
 import kevinlee.github.{GitHubApi, GitHubTask}
-
 import kevinlee.sbt.SbtCommon.messageOnlyException
-import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
+import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-
 import kevinlee.semver.SemanticVersion
-
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
@@ -143,12 +137,25 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitTagName := decideVersion(version.value, v => s"v${SemanticVersion.parseUnsafe(v).render}")
   , gitTagPushRepo := "origin"
   , gitTag := {
-      val basePath = baseDirectory.value
-      val tagFrom = BranchName(gitTagFrom.value)
-      val tagName = TagName(gitTagName.value)
-      val pushRepo = Repository(gitTagPushRepo.value)
+      lazy val basePath = baseDirectory.value
+      lazy val tagFrom = BranchName(gitTagFrom.value)
+      lazy val tagName = TagName(gitTagName.value)
+      lazy val pushRepo = Repository(gitTagPushRepo.value)
+      val projectVersion = version.value
+
       SbtTask.handleSbtTask(
         (for {
+          projectVersion <- SbtTask.fromNonSbtTask(
+              SemanticVersion.parse(projectVersion)
+                .leftMap(SbtTaskError.semVerFromProjectVersionParseError(projectVersion, _)))(
+              semVer => List(SbtTaskResult.nonSbtTaskResult(
+                s"The semantic version from the project version has been parsed. version: ${semVer.render}")
+              )
+            )
+          _ <- SbtTask.toLeftWhen(
+              projectVersion.pre.isDefined || projectVersion.buildMetadata.isDefined
+            , SbtTaskError.versionNotEligibleForTagging(projectVersion)
+            )
           currentBranchName <- SbtTask.fromGitTask(Git.currentBranchName(basePath))
           _ <- SbtTask.toLeftWhen(
               currentBranchName.value !== tagFrom.value
