@@ -3,21 +3,15 @@ package kevinlee.sbt.devoops
 import java.io.FileInputStream
 
 import kevinlee.CommonPredef._
-
 import kevinlee.fp.Implicits._
-
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
-
 import kevinlee.github.data._
 import kevinlee.github.{GitHubApi, GitHubTask}
-
 import kevinlee.sbt.SbtCommon.messageOnlyException
-import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError}
+import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-
 import kevinlee.semver.SemanticVersion
-
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
@@ -33,10 +27,10 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
   object autoImport {
     lazy val gitTagFrom: SettingKey[String] =
-      settingKey[String]("The name of branch to tag from. [Default: release]")
+      settingKey[String]("The name of branch to tag from. (Default: master)")
 
     lazy val gitTagDescription: SettingKey[Option[String]] =
-      settingKey[Option[String]]("description for git tagging [Default: None]")
+      settingKey[Option[String]]("description for git tagging (Default: None)")
 
     lazy val gitTagName: TaskKey[String] =
       taskKey[String]("""git tag name (default: parse the project version as semantic version and render with the prefix 'v'. e.g.) version := "1.0.0" / gitTagName := "v1.0.0"""")
@@ -50,8 +44,11 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
     lazy val devOopsCiDir: SettingKey[String] = settingKey[String]("The ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. (default: ci)")
 
+    lazy val devOopsPackagedArtifacts: TaskKey[List[String]] =
+      taskKey(s"""A list of packaged artifacts to be copied to PROJECT_HOME/$${devOopsCiDir.value}/dist (default: List(s"target/scala-*/$${name.value}*.jar") )""")
+
     lazy val devOopsCopyReleasePackages: TaskKey[Vector[File]] =
-      taskKey[Vector[File]](s"task to copy packaged artifacts to the location specified (default: target/scala-*/$${name.value}*.jar to PROJECT_HOME/$${devOopsCiDir.value}/dist")
+      taskKey[Vector[File]](s"task to copy packaged artifacts to the location specified (default: devOopsPackagedArtifacts.value to PROJECT_HOME/$${devOopsCiDir.value}/dist")
 
     lazy val changelogLocation: SettingKey[String] =
       settingKey[String]("The location of changelog file. (default: PROJECT_HOME/changelogs)")
@@ -134,18 +131,31 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    gitTagFrom := "release"
+    gitTagFrom := "master"
   , gitTagDescription := None
 
   , gitTagName := decideVersion(version.value, v => s"v${SemanticVersion.parseUnsafe(v).render}")
   , gitTagPushRepo := "origin"
   , gitTag := {
-      val basePath = baseDirectory.value
-      val tagFrom = BranchName(gitTagFrom.value)
-      val tagName = TagName(gitTagName.value)
-      val pushRepo = Repository(gitTagPushRepo.value)
+      lazy val basePath = baseDirectory.value
+      lazy val tagFrom = BranchName(gitTagFrom.value)
+      lazy val tagName = TagName(gitTagName.value)
+      lazy val pushRepo = Repository(gitTagPushRepo.value)
+      val projectVersion = version.value
+
       SbtTask.handleSbtTask(
         (for {
+          projectVersion <- SbtTask.fromNonSbtTask(
+              SemanticVersion.parse(projectVersion)
+                .leftMap(SbtTaskError.semVerFromProjectVersionParseError(projectVersion, _)))(
+              semVer => List(SbtTaskResult.nonSbtTaskResult(
+                s"The semantic version from the project version has been parsed. version: ${semVer.render}")
+              )
+            )
+          _ <- SbtTask.toLeftWhen(
+              projectVersion.pre.isDefined || projectVersion.buildMetadata.isDefined
+            , SbtTaskError.versionNotEligibleForTagging(projectVersion)
+            )
           currentBranchName <- SbtTask.fromGitTask(Git.currentBranchName(basePath))
           _ <- SbtTask.toLeftWhen(
               currentBranchName.value !== tagFrom.value
@@ -169,11 +179,12 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       )
     }
   , devOopsCiDir := "ci"
+  , devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar")
   , devOopsCopyReleasePackages := {
       val result: Vector[File] = copyFiles(
           CaseSensitivity.caseSensitive
         , baseDirectory.value
-        , List(s"target/scala-*/${name.value}*.jar")
+        , devOopsPackagedArtifacts.value
         , new File(new File(devOopsCiDir.value), "dist")
         ) match {
           case Left(error) =>

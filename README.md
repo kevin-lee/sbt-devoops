@@ -76,7 +76,7 @@ The name of the branch from which it tags. So if the current branch is not the s
 
 Default: 
 ```sbt
-gitTagFrom := "release"
+gitTagFrom := "master"
 ```
 
 ### `gitTagDescription` (Optional)
@@ -123,13 +123,15 @@ gitTagPushRepo := "origin"
 
 
 ### `gitTag`
-It is an sbt task to create a git tag from the branch set in `gitTagFrom`.
+It is an sbt task to create a git tag from the branch set in `gitTagFrom`. It may fail if the project version is no GA.
 
-e.g.)
+e.g.) 
+
+**Success Case**
 ```sbtshell
 sbt:test-project> gitTag
 task success>
->> git rev-parse --abbrev-ref HEAD => release
+>> git rev-parse --abbrev-ref HEAD => master
 >> git fetch --tags
 >> git tag v0.1.0
 >> git push origin v0.1.0
@@ -139,21 +141,53 @@ task success>
 [success] Total time: 10 s, completed 6 Apr. 2019, 11:08:03 pm
 ```
 
+**Failure Case**
+```sbtshell
+sbt:test-project> gitTag
+Failure]
+>> sbt task failed after finishing the following tasks
+task success>
+>> non sbt task success> The semantic version from the project version has been parsed. version: 0.1.0-SNAPSHOT
+
+  This version is not eligible for tagging. [version: 0.1.0-SNAPSHOT]
+  It should be GA version with any pre-release or meta-info suffix
+    e.g.)
+    * 1.0.0 (⭕️)
+    * 1.0.0-SNAPSHOT (❌)
+    * 1.0.0-beta (❌)
+    * 1.0.0+123 (❌)
+    * 1.0.0-beta+123 (❌)
+
+```
+
 
 ### `devOopsCiDir`
-`devOopsCiDir` is the ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. When running `devOopsCopyReleasePackages`, all the jar files with prefixed with the project name (`target/scala-*/${name.value}*.jar`) are copied to `${devOopsCiDir.value}/dist`.
+`devOopsCiDir` is the ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. When running `devOopsCopyReleasePackages`, all the jar files with prefixed with the project name (`devOopsPackagedArtifacts.value`) are copied to `${devOopsCiDir.value}/dist`.
 
 Default:
 ```sbt
 devOopsCiDir := "ci"
+// so the artifactsare copied to ci/dist
 ```
 
+### `devOopsPackagedArtifacts`
+A `List` of packaged artifacts to be copied to `PROJECT_HOME/${devOopsCiDir.value}/dist`.
+
+Default:
+```sbt
+devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar")
+```
+
+So for Java projects, change it to 
+```sbt
+devOopsPackagedArtifacts := List(s"target/${name.value}*.jar")
+```
 
 ### `devOopsCopyReleasePackages`
-It is an sbt task to copy packaged artifacts to the location specified (default: `target/scala-*/$${name.value}*.jar` to `PROJECT_HOME/$${devOopsCiDir.value}/dist`).
+It is an sbt task to copy packaged artifacts to the location specified (default: `devOopsPackagedArtifacts.value` to `PROJECT_HOME/${devOopsCiDir.value}/dist`).
 
 e.g.)
-```sbt
+```sbtshell
 sbt:test-project> devOopsCopyReleasePackages
 >> copyPackages - Files copied from:
   - /user/home/test-project/target/scala-2.12/test-project_2.12-0.1.0.jar
@@ -198,7 +232,7 @@ It does
 * Upload the packaged files and changelog to GitHub.
 
 e.g.)
-```sbt
+```sbtshell
 sbt:test-project> gitHubRelease
 >> copyPackages - Files copied from:
   - /user/home/test-project/target/scala-2.12/test-project_2.12-0.1.0.jar
@@ -212,7 +246,7 @@ sbt:test-project> gitHubRelease
 
 
 task success>
->> git rev-parse --abbrev-ref HEAD => release
+>> git rev-parse --abbrev-ref HEAD => master
 >> git fetch --tags
 >> git tag v0.1.0
 >> git push origin v0.1.0
