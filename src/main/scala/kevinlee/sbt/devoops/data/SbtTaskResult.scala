@@ -21,6 +21,9 @@ object SbtTaskResult {
   final case class TaskResult(result: Seq[String]) extends SbtTaskResult
 
   final case class SbtTaskResults(sbtTaskResults: List[SbtTaskResult]) extends SbtTaskResult
+  
+  final case class NonSbtTaskResult(result: String) extends SbtTaskResult
+  
 
   def gitCommandTaskResult(gitCmdAndResult: GitCmdAndResult): SbtTaskResult =
     GitCommandTaskResult(gitCmdAndResult)
@@ -30,6 +33,9 @@ object SbtTaskResult {
 
   def sbtTaskResults(sbtTaskResults: List[SbtTaskResult]): SbtTaskResult =
     SbtTaskResults(sbtTaskResults)
+
+  def nonSbtTaskResult(result: String): SbtTaskResult =
+    NonSbtTaskResult(result)
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def render(sbtTaskResult: SbtTaskResult): String = sbtTaskResult match {
@@ -56,6 +62,9 @@ object SbtTaskResult {
            |${results.map(render).mkString(delimiter, s"\n$delimiter", "")}
            |""".stripMargin
       }
+
+    case NonSbtTaskResult(result) =>
+      s"""non sbt task success> $result""".stripMargin
 
   }
 

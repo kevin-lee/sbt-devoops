@@ -3,6 +3,7 @@ package kevinlee.sbt.devoops.data
 import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
 import kevinlee.sbt.SbtCommon.messageOnlyException
+import kevinlee.semver.{ParseError, SemanticVersion}
 
 /**
   * @author Kevin Lee
@@ -17,6 +18,9 @@ object SbtTaskError {
   final case class GitTaskError(cause: String) extends SbtTaskError
   final case class GitHubTaskError(cause: GitHubError) extends SbtTaskError
   final case class NoFileFound(name: String, filePaths: List[String]) extends SbtTaskError
+  final case class SemVerFromProjectVersionParseError(projectVersion: String, parseError: ParseError) extends SbtTaskError
+  final case class VersionNotEligibleForTagging(semVer: SemanticVersion) extends SbtTaskError
+
 
   def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
     GitCommandTaskError(cause)
@@ -29,6 +33,12 @@ object SbtTaskError {
 
   def gitHubTaskError(cause: GitHubError): SbtTaskError =
     GitHubTaskError(cause)
+
+  def semVerFromProjectVersionParseError(projectVersion: String, parseError: ParseError): SbtTaskError =
+    SemVerFromProjectVersionParseError(projectVersion, parseError)
+
+  def versionNotEligibleForTagging(semVer: SemanticVersion): SbtTaskError =
+    VersionNotEligibleForTagging(semVer)
 
   def render(sbtTaskError: SbtTaskError): String = sbtTaskError match {
 
@@ -43,6 +53,20 @@ object SbtTaskError {
 
     case NoFileFound(name: String, filePaths) =>
       s"No file found for $name. Expected files: ${filePaths.mkString("[", ",", "]")}"
+
+    case SemVerFromProjectVersionParseError(projectVersion, parseError) =>
+      s"Parsing semantic version from project version failed. [projectVersion: $projectVersion, error: ${ParseError.render(parseError)}]"
+
+    case VersionNotEligibleForTagging(semVer) =>
+      s"""|  This version is not eligible for tagging. [version: ${semVer.render}]
+          |  It should be GA version with any pre-release or meta-info suffix
+          |    e.g.)
+          |    * 1.0.0 (⭕️)
+          |    * 1.0.0-SNAPSHOT (❌)
+          |    * 1.0.0-beta (❌)
+          |    * 1.0.0+123 (❌)
+          |    * 1.0.0-beta+123 (❌)
+          |""".stripMargin
 
   }
 

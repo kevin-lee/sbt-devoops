@@ -10,6 +10,7 @@ import kevinlee.github.data._
 import kevinlee.CommonPredef._
 import org.kohsuke.github.{GHRelease, GHRepository, GitHub}
 
+import kevinlee.fp.Implicits._
 
 /**
   * @author Kevin Lee
@@ -27,22 +28,22 @@ object GitHubApi {
     try {
       val github = GitHub.connectUsingOAuth(oAuthToken.token)
       if (github.isCredentialValid)
-        Right(github)
+        github.right
       else
-        Left(GitHubError.invalidCredential)
+        GitHubError.invalidCredential.left
     } catch {
       case _: IllegalStateException =>
-        Left(GitHubError.noCredential)
+        GitHubError.noCredential.left
       case ex: IOException =>
-        Left(GitHubError.connectionFailure(ex.getMessage))
+        GitHubError.connectionFailure(ex.getMessage).left
     }
 
   def getRepo(gitHub: GitHub, repo: Repo): Either[GitHubError, GHRepository] =
     try {
-      Right(gitHub.getRepository(Repo.repoNameString(repo)))
+      gitHub.getRepository(Repo.repoNameString(repo)).right
     } catch {
       case error: IOException =>
-        Left(GitHubError.gitHubServerError(error.getMessage))
+        GitHubError.gitHubServerError(error.getMessage).left
     }
 
   def releaseExists(gitHub: GitHub, repo: Repo, tagName: TagName): Boolean = {
@@ -61,10 +62,10 @@ object GitHubApi {
       .body(changelog.changelog)
       .name(tagName.value)
       .create()
-    Right(gHRelease)
+    gHRelease.right
   } catch {
     case throwable: Throwable =>
-      Left(GitHubError.releaseCreationError(throwable.getMessage))
+      GitHubError.releaseCreationError(throwable.getMessage).left
   }
 
   def release(
@@ -75,7 +76,7 @@ object GitHubApi {
     , assets: Seq[File]
   ): Either[GitHubError, GitHubRelease] =
     if (releaseExists(gitHub, repo, tagName)) {
-      Left(GitHubError.releaseAlreadyExists(tagName))
+      GitHubError.releaseAlreadyExists(tagName).left
     } else {
       for {
         gHRepository <- GitHubApi.getRepo(gitHub, repo).right
