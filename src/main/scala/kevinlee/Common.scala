@@ -1,7 +1,8 @@
 package kevinlee
 
 import scala.annotation.tailrec
-import CommonPredef._
+
+import kevinlee.fp.JustSyntax._
 
 /**
   * @author Kevin Lee

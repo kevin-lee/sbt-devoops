@@ -2,8 +2,7 @@ package kevinlee.sbt.devoops
 
 import java.io.FileInputStream
 
-import kevinlee.CommonPredef._
-import kevinlee.fp.Implicits._
+import kevinlee.fp.JustSyntax._
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
 import kevinlee.github.data._
