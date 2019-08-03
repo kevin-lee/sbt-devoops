@@ -2,7 +2,7 @@ package kevinlee.semver
 
 import hedgehog._
 
-import kevinlee.CommonPredef._
+import kevinlee.fp.JustSyntax._
 import kevinlee.GenPlus
 import kevinlee.semver.AdditionalInfo.{BuildMetaInfo, PreRelease}
 import kevinlee.semver.AlphaNumHyphen._

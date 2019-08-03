@@ -7,10 +7,9 @@ import javax.activation.MimetypesFileTypeMap
 import javax.net.ssl.HttpsURLConnection
 import kevinlee.git.Git.TagName
 import kevinlee.github.data._
-import kevinlee.CommonPredef._
 import org.kohsuke.github.{GHRelease, GHRepository, GitHub}
 
-import kevinlee.fp.Implicits._
+import kevinlee.fp.JustSyntax._
 
 /**
   * @author Kevin Lee

@@ -2,9 +2,8 @@ package kevinlee.git
 
 import java.io.File
 
-import kevinlee.CommonPredef._
 import kevinlee.fp._
-import kevinlee.fp.Implicits._
+import kevinlee.fp.JustSyntax._
 
 /**
   * @author Kevin Lee
