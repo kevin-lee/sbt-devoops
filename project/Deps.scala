@@ -15,10 +15,6 @@ object Deps {
     , "hedgehog" %% "hedgehog-sbt" % hedgehogVersion % Test
   )
 
-  val kevinsRepo: Resolver = "Kevin's Repo" at "https://dl.bintray.com/kevinlee/maven"
-
-  val justFp: ModuleID = "kevinlee" %% "just-fp" % "0.4.0"
-
   val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
 
   val wartRemover: ModuleID = "org.wartremover" % "sbt-wartremover" % "2.2.1"
