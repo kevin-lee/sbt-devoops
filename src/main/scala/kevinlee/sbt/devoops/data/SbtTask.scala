@@ -2,7 +2,7 @@ package kevinlee.sbt.devoops.data
 
 import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
 
-import kevinlee.fp.Implicits._
+import kevinlee.fp.JustSyntax._
 import kevinlee.fp._
 
 import kevinlee.git.Git

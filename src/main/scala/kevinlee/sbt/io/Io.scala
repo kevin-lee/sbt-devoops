@@ -2,7 +2,7 @@ package kevinlee.sbt.io
 
 import java.io.FileFilter
 
-import kevinlee.CommonPredef._
+import kevinlee.fp.JustSyntax._
 import kevinlee.sbt.SbtCommon.messageOnlyException
 
 import org.apache.commons.io.filefilter.WildcardFileFilter

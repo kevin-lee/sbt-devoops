@@ -3,7 +3,7 @@ package kevinlee.semver
 import hedgehog._
 import hedgehog.runner._
 
-import kevinlee.fp.Implicits._
+import kevinlee.fp.JustSyntax._
 
 import kevinlee.semver.AlphaNumHyphen.{alphabet, hyphen, num, numFromStringUnsafe}
 import kevinlee.semver.Gens._

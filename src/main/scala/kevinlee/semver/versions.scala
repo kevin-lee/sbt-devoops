@@ -1,13 +1,12 @@
 package kevinlee.semver
 
 import kevinlee.Common._
-import kevinlee.CommonPredef._
 import kevinlee.semver.AdditionalInfo.{BuildMetaInfo, PreRelease}
 
 import scala.annotation.tailrec
 import scala.util.matching.Regex
 
-import kevinlee.fp.Implicits._
+import kevinlee.fp.JustSyntax._
 
 /**
   * @author Kevin Lee
