@@ -1,6 +1,6 @@
 package kevinlee.fp
 
-import scala.concurrent.ExecutionContext
+import kevinlee.fp.compat.EitherCompat
 
 /**
   * @author Kevin Lee
@@ -28,26 +28,63 @@ trait Functor[F[_]] {
   def functorLaw: FunctorLaw = new FunctorLaw {}
 }
 
-object Functor extends ListFunctor with VectorFunctor with FutureFunctor
+object Functor extends FunctorInstances
 
-trait ListFunctor {
-  implicit val listFunctor: Functor[List] = new Functor[List] {
-    def map[A, B](fa: List[A])(f: A => B): List[B] = fa.map(f)
-  }
+private[fp] trait FunctorInstances
+  extends OptionFunctorInstance
+    with EitherFunctorInstance
+    with ListFunctorInstance
+    with VectorFunctorInstance
+    with FutureFunctorInstance
+
+private[fp] trait OptionFunctor extends Functor[Option] {
+  override def map[A, B](fa: Option[A])(f: A => B): Option[B] = fa.map(f)
 }
 
-trait VectorFunctor {
-  implicit val vectorFunctor: Functor[Vector] = new Functor[Vector] {
-    def map[A, B](fa: Vector[A])(f: A => B): Vector[B] = fa.map(f)
-  }
+private[fp] trait EitherFunctor[A] extends Functor[Either[A, *]] {
+  override def map[B, C](fa: Either[A, B])(f: B => C): Either[A, C] =
+    EitherCompat.map(fa)(f)
 }
 
-trait FutureFunctor {
-  import scala.concurrent.Future
+private[fp] trait ListFunctor extends Functor[List] {
+  override def map[A, B](fa: List[A])(f: A => B): List[B] = fa.map(f)
+}
+
+private[fp] trait VectorFunctor extends Functor[Vector] {
+  override def map[A, B](fa: Vector[A])(f: A => B): Vector[B] = fa.map(f)
+}
+
+import scala.concurrent.Future
+private[fp] trait FutureFunctor extends Functor[Future] {
+  import scala.concurrent.ExecutionContext
+  implicit def executor: ExecutionContext
+
+  override def map[A, B](fa: Future[A])(f: A => B): Future[B] =
+    fa.map(f)(executor)
+}
+
+private[fp] trait OptionFunctorInstance {
+  implicit val optionFunctor: Functor[Option] = new OptionFunctor {}
+}
+
+private[fp] trait EitherFunctorInstance {
+  implicit def eitherFunctor[A]: Functor[Either[A, *]] = new EitherFunctor[A] {}
+}
+
+private[fp] trait ListFunctorInstance {
+  implicit val listFunctor: Functor[List] = new ListFunctor {}
+}
+
+private[fp] trait VectorFunctorInstance {
+  implicit val vectorFunctor: Functor[Vector] = new VectorFunctor {}
+}
+
+private[fp] trait FutureFunctorInstance {
+  import scala.concurrent.ExecutionContext
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  implicit def futureFunctor(implicit ex: ExecutionContext): Functor[Future] =
-    new Functor[Future] {
-      def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
+  implicit def futureFunctor(implicit executor0: ExecutionContext): Functor[Future] =
+    new FutureFunctor {
+      override implicit def executor: ExecutionContext = executor0
     }
 }

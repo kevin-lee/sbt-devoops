@@ -1,5 +1,7 @@
 package kevinlee.fp
 
+import kevinlee.fp.compat.EitherCompat
+
 /**
   * @author Kevin Lee
   * @since 2019-03-16
@@ -39,48 +41,91 @@ trait Monad[M[_]] extends Applicative[M] {
   def monadLaw: MonadLaw = new MonadLaw {}
 }
 
-object Monad extends IdInstance with ListMonadInstance with VectorMonadInstance with FutureMonadInstance
+object Monad extends MonadInstances
 
-trait IdInstance {
+private[fp] trait MonadInstances
+  extends IdInstance
+    with OptionMonadInstance
+    with EitherMonadInstance
+    with ListMonadInstance
+    with VectorMonadInstance
+    with FutureMonadInstance
 
-  implicit val idMonad: Monad[Id] = new Monad[Id] {
+private[fp] trait IdInstance {
 
-    def flatMap[A, B](a: A)(f: A => B): B = f(a)
+  implicit val idInstance: Functor[Id] with Applicative[Id] with Monad[Id] =
+    new Functor[Id] with Applicative[Id] with Monad[Id] {
+      override def pure[A](a: => A): Id[A] = a
 
-    def pure[A](a: => A): A = a
-  }
-
+      override def flatMap[A, B](ma: Id[A])(f: A => Id[B]): Id[B] = f(ma)
+    }
 }
 
-trait ListMonadInstance {
-  implicit val listMonad: Monad[List] = new Monad[List] {
-    override def flatMap[A, B](ma: List[A])(f: A => List[B]): List[B] =
-      ma.flatMap(f)
+private[fp] trait OptionMonad extends Monad[Option] with OptionApplicative {
 
-    override def pure[A](a: => A): List[A] =
-      List(a)
-  }
+  override def flatMap[A, B](ma: Option[A])(f: A => Option[B]): Option[B] =
+    ma.flatMap(f)
+
+  override def pure[A](a: => A): Option[A] = Option(a)
 }
 
-trait VectorMonadInstance {
-  implicit val vectorMonad: Monad[Vector] = new Monad[Vector] {
-    override def flatMap[A, B](ma: Vector[A])(f: A => Vector[B]): Vector[B] =
-      ma.flatMap(f)
+private[fp] trait EitherMonad[A] extends Monad[Either[A, *]] with EitherApplicative[A] {
 
-    override def pure[A](a: => A): Vector[A] =
-      Vector(a)
-  }
+  override def flatMap[B, C](ma: Either[A, B])(f: B => Either[A, C]): Either[A, C] =
+    EitherCompat.flatMap(ma)(f)
+
+  override def pure[B](b: => B): Either[A, B] = Right(b)
 }
 
-trait FutureMonadInstance {
-  import scala.concurrent.{ExecutionContext, Future}
+private[fp] trait ListMonad extends Monad[List] with ListApplicative {
+  override def flatMap[A, B](ma: List[A])(f: A => List[B]): List[B] =
+    ma.flatMap(f)
+
+  override def pure[A](a: => A): List[A] = List(a)
+}
+
+private[fp] trait VectorMonad extends Monad[Vector] with VectorApplicative {
+
+  override def flatMap[A, B](ma: Vector[A])(f: A => Vector[B]): Vector[B] =
+    ma.flatMap(f)
+
+  override def pure[A](a: => A): Vector[A] = Vector(a)
+}
+
+import scala.concurrent.Future
+private[fp] trait FutureMonad extends Monad[Future] with FutureApplicative {
+  import scala.concurrent.ExecutionContext
+
+  override implicit def executor: ExecutionContext
+
+  override def flatMap[A, B](ma: Future[A])(f: A => Future[B]): Future[B] =
+    ma.flatMap(f)
+
+  override def pure[A](a: => A): Future[A] = Future(a)
+}
+
+private[fp] trait OptionMonadInstance extends OptionApplicativeInstance {
+  implicit val optionMonad: Monad[Option] = new OptionMonad {}
+}
+
+private[fp] trait EitherMonadInstance extends EitherApplicativeInstance {
+  implicit def eitherMonad[A]: Monad[Either[A, *]] = new EitherMonad[A] {}
+}
+
+private[fp] trait ListMonadInstance extends ListApplicativeInstance {
+  implicit val listMonad: Monad[List] = new ListMonad {}
+}
+
+private[fp] trait VectorMonadInstance extends VectorApplicativeInstance {
+  implicit val vectorMonad: Monad[Vector] = new VectorMonad {}
+}
+
+private[fp] trait FutureMonadInstance extends FutureApplicativeInstance {
+  import scala.concurrent.ExecutionContext
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  implicit def futureMonad(implicit ex: ExecutionContext): Monad[Future] = new Monad[Future] {
-    override def flatMap[A, B](ma: Future[A])(f: A => Future[B]): Future[B] =
-      ma.flatMap(f)
-
-    override def pure[A](a: => A): Future[A] =
-      Future(a)
-  }
+  implicit def futureMonad(implicit executor0: ExecutionContext): Monad[Future] =
+    new FutureMonad {
+      override implicit def executor: ExecutionContext = executor0
+    }
 }
