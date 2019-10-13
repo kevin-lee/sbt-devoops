@@ -18,7 +18,7 @@ lazy val root = (project in file("."))
     )
   , startYear := Some(2018)
   , sbtPlugin := true
-  , sbtVersion in Global := "1.2.6"
+  , sbtVersion in Global := "1.2.8"
   , scalaCompilerBridgeSource := {
       val sv = appConfiguration.value.provider.id.version
       ("org.scala-sbt" % "compiler-interface" % sv % "component").sources
