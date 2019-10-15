@@ -1,22 +1,16 @@
-Issue
-=====
-Summary 
--------
+# Task
+# Issue
+# Bug
 
-Project Details
----------------
+## Summary 
+
+## Project Details
 Version:
 
-Description
------------
+## Description
 
-Possible Cause
-==============
-Cause
-=====
+# Possible Cause
+# Cause
 
-Possible Solution
-=================
-Solution
-========
-
+# Possible Solution
+# Solution
