@@ -46,7 +46,7 @@ object GitHubError {
 
   def render(gitHubError: GitHubError): String = gitHubError match {
     case NoCredential =>
-      "No GitHub access credential found"
+      "No GitHub access credential found - Check out the document for GitHub Auth Token"
 
     case InvalidCredential =>
       "Invalid GitHub access credential"

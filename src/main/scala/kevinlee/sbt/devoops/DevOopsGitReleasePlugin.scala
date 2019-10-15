@@ -52,8 +52,11 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     lazy val changelogLocation: SettingKey[String] =
       settingKey[String]("The location of changelog file. (default: PROJECT_HOME/changelogs)")
 
-    lazy val gitHubAuthTokenFile: SettingKey[File] =
-      settingKey[File]("The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: $USER/.github) If you want to get the file in user's home, use new File(Io.getUserHome, \".github\")")
+    lazy val gitHubAuthTokenEnvVar: SettingKey[String] =
+      settingKey[String]("The environment variable name for GitHub auth token (default: GITHUB_TOKEN)")
+
+    lazy val gitHubAuthTokenFile: SettingKey[Option[File]] =
+      settingKey[Option[File]]("The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: Some($USER/.github)) If you want to get the file in user's home, do Some(new File(Io.getUserHome, \".github\"))")
 
     lazy val gitHubRelease: TaskKey[Unit] =
       taskKey[Unit]("Release the current version without creating a tag. It uploads the packaged files and changelog to GitHub.")
@@ -89,12 +92,16 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       }
     }
 
-    def readOAuthToken(file: File): Either[GitHubError, OAuthToken] = {
-      val props = new java.util.Properties()
-      props.load(new FileInputStream(file))
-      Option(props.getProperty("oauth"))
-        .fold[Either[GitHubError, OAuthToken]](GitHubError.noCredential.left)(token => OAuthToken(token).right)
-    }
+    def readOAuthToken(maybeFile: Option[File]): Either[GitHubError, OAuthToken] =
+      maybeFile match {
+        case Some(file) =>
+          val props = new java.util.Properties()
+          props.load(new FileInputStream(file))
+          Option(props.getProperty("oauth"))
+            .fold[Either[GitHubError, OAuthToken]](GitHubError.noCredential.left)(token => OAuthToken(token).right)
+        case None =>
+          GitHubError.noCredential.left
+      }
 
     def getRepoFromUrl(repoUrl: RepoUrl): Either[GitHubError, Repo] = {
       val names =
@@ -197,11 +204,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       result
     }
   , changelogLocation := "changelogs"
+  , gitHubAuthTokenEnvVar := "GITHUB_TOKEN"
   , gitHubAuthTokenFile :=
-      new File(Io.getUserHome, ".github")
+      Some(new File(Io.getUserHome, ".github"))
   , gitHubRelease := {
       val tagName = TagName(gitTagName.value)
       val assets = devOopsCopyReleasePackages.value
+      val authTokenEnvVar = gitHubAuthTokenEnvVar.value
+      val authTokenFile = gitHubAuthTokenFile.value
       SbtTask.handleSbtTask(
         (for {
           tags <- SbtTask.fromGitTask(Git.fetchTags(baseDirectory.value))
@@ -213,6 +223,11 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 assets.isEmpty
               , SbtTaskError.noFileFound("devOopsCopyReleasePackages", devOopsPackagedArtifacts.value)
               )
+          oauth <- SbtTask.eitherTWithWriter(
+              getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+                .leftMap(SbtTaskError.gitHubTaskError))(
+                _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
+              )
           _ <- SbtTask.handleGitHubTask(
               runGitHubRelease(
                   tagName
@@ -220,7 +235,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 , baseDirectory.value
                 , changelogLocation.value
                 , gitTagPushRepo.value
-                , gitHubAuthTokenFile.value
+                , oauth
                 )
             )
         } yield ()).run.run
@@ -229,12 +244,19 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitTagAndGitHubRelease := {
       val tagName = TagName(gitTagName.value)
       val assets = devOopsCopyReleasePackages.value
+      val authTokenEnvVar = gitHubAuthTokenEnvVar.value
+      val authTokenFile = gitHubAuthTokenFile.value
       SbtTask.handleSbtTask(
         (for {
           _ <- SbtTask.toLeftWhen(
               assets.isEmpty
             , SbtTaskError.noFileFound("devOopsCopyReleasePackages", devOopsPackagedArtifacts.value)
-          )
+            )
+          oauth <- SbtTask.eitherTWithWriter(
+              getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+                .leftMap(SbtTaskError.gitHubTaskError))(
+                _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
+              )
           _ = gitTag.value
           _ <-  SbtTask.handleGitHubTask(
               runGitHubRelease(
@@ -243,7 +265,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 , baseDirectory.value
                 , changelogLocation.value
                 , gitTagPushRepo.value
-                , gitHubAuthTokenFile.value
+                , oauth
                 )
             )
         } yield ()).run.run
@@ -251,34 +273,37 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     }
   )
 
+  private def getGitHubAuthToken(
+      envVarName: String
+    , authTokenFile: Option[File]
+    ): Either[GitHubError, OAuthToken] =
+      sys.env.get(envVarName)
+        .fold(readOAuthToken(authTokenFile))(token => OAuthToken(token).right)
+
   private def runGitHubRelease(
       tagName: TagName
     , assets: Vector[File]
     , baseDir: File
     , changelogLocation: String
     , gitTagPushRepo: String
-    , gitHubAuthTokenFile: File
+    , oAuthToken: OAuthToken
     ): GitHubTask.GitHubTaskResult[Unit] =
       for {
         changelog <- SbtTask.eitherTWithWriter(
-          getChangelog(new File(baseDir, changelogLocation), tagName))(
-          _ => List("Get changelog")
-        )
+            getChangelog(new File(baseDir, changelogLocation), tagName))(
+            _ => List("Get changelog")
+          )
         url <- GitHubTask.fromGitTask(
-          Git.getRemoteUrl(Repository(gitTagPushRepo), baseDir)
-        )
+            Git.getRemoteUrl(Repository(gitTagPushRepo), baseDir)
+          )
         repo <- SbtTask.eitherTWithWriter(
-          getRepoFromUrl(url))(
-          r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
-        )
-        oauth <- SbtTask.eitherTWithWriter(
-          readOAuthToken(gitHubAuthTokenFile))(
-          _ => List("Get GitHub OAuth token")
-        )
+            getRepoFromUrl(url))(
+            r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
+          )
         gitHub <- SbtTask.eitherTWithWriter(
-          GitHubApi.connectWithOAuth(oauth))(
-          _ => List("Connect GitHub with OAuth")
-        )
+            GitHubApi.connectWithOAuth(oAuthToken))(
+            _ => List("Connect GitHub with OAuth")
+          )
         gitHubRelease <- SbtTask.eitherTWithWriter(
           GitHubApi.release(
               gitHub
