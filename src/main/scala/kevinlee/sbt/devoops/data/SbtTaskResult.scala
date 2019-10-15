@@ -17,17 +17,22 @@ object SbtTaskResult {
   type SbtTaskHistoryWriter[A] = Writer[SbtTaskHistory, A]
 
   final case class GitCommandTaskResult(gitCmdAndResult: GitCmdAndResult) extends SbtTaskResult
+  
+  final case class GitHubTaskResult(gitHubTaskResult: String) extends SbtTaskResult
 
   final case class TaskResult(result: Seq[String]) extends SbtTaskResult
 
   final case class SbtTaskResults(sbtTaskResults: List[SbtTaskResult]) extends SbtTaskResult
-  
+
   final case class NonSbtTaskResult(result: String) extends SbtTaskResult
-  
+
 
   def gitCommandTaskResult(gitCmdAndResult: GitCmdAndResult): SbtTaskResult =
     GitCommandTaskResult(gitCmdAndResult)
 
+  def gitHubTaskResult(gitHubTaskResult: String): SbtTaskResult =
+    GitHubTaskResult(gitHubTaskResult)
+  
   def taskResult(result: Seq[String]): SbtTaskResult =
     TaskResult(result)
 
@@ -52,6 +57,11 @@ object SbtTaskResult {
            |${result.mkString(delimiter, s"\n$delimiter", "")}
            |""".stripMargin
       }
+
+    case GitHubTaskResult(result) =>
+      s"""task success>
+         |>> $result
+         |""".stripMargin
 
     case SbtTaskResults(results) =>
       if (results.isEmpty) {

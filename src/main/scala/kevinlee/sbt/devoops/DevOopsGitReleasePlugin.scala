@@ -202,30 +202,51 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitHubRelease := {
       val tagName = TagName(gitTagName.value)
       val assets = devOopsCopyReleasePackages.value
-      SbtTask.handleGitHubTask(
-        runGitHubRelease(
-            tagName
-          , assets
-          , baseDirectory.value
-          , changelogLocation.value
-          , gitTagPushRepo.value
-          , gitHubAuthTokenFile.value
-          )
+      SbtTask.handleSbtTask(
+        (for {
+          tags <- SbtTask.fromGitTask(Git.fetchTags(baseDirectory.value))
+          _ <- SbtTask.toLeftWhen(
+                !tags.contains(tagName.value)
+              , SbtTaskError.gitTaskError(s"tag ${tagName.value} does not exist.")
+              )
+          _ <- SbtTask.toLeftWhen(
+                assets.isEmpty
+              , SbtTaskError.noFileFound("devOopsCopyReleasePackages", devOopsPackagedArtifacts.value)
+              )
+          _ <- SbtTask.handleGitHubTask(
+              runGitHubRelease(
+                  tagName
+                , assets
+                , baseDirectory.value
+                , changelogLocation.value
+                , gitTagPushRepo.value
+                , gitHubAuthTokenFile.value
+                )
+            )
+        } yield ()).run.run
       )
     }
   , gitTagAndGitHubRelease := {
       val tagName = TagName(gitTagName.value)
       val assets = devOopsCopyReleasePackages.value
-      gitTag.value
-      SbtTask.handleGitHubTask(
-        runGitHubRelease(
-            tagName
-          , assets
-          , baseDirectory.value
-          , changelogLocation.value
-          , gitTagPushRepo.value
-          , gitHubAuthTokenFile.value
+      SbtTask.handleSbtTask(
+        (for {
+          _ <- SbtTask.toLeftWhen(
+              assets.isEmpty
+            , SbtTaskError.noFileFound("devOopsCopyReleasePackages", devOopsPackagedArtifacts.value)
           )
+          _ = gitTag.value
+          _ <-  SbtTask.handleGitHubTask(
+              runGitHubRelease(
+                  tagName
+                , assets
+                , baseDirectory.value
+                , changelogLocation.value
+                , gitTagPushRepo.value
+                , gitHubAuthTokenFile.value
+                )
+            )
+        } yield ()).run.run
       )
     }
   )
@@ -237,8 +258,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     , changelogLocation: String
     , gitTagPushRepo: String
     , gitHubAuthTokenFile: File
-    ): (List[String], Either[GitHubError, Unit]) =
-      (for {
+    ): GitHubTask.GitHubTaskResult[Unit] =
+      for {
         changelog <- SbtTask.eitherTWithWriter(
           getChangelog(new File(baseDir, changelogLocation), tagName))(
           _ => List("Get changelog")
@@ -260,7 +281,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         )
         gitHubRelease <- SbtTask.eitherTWithWriter(
           GitHubApi.release(
-            gitHub
+              gitHub
             , repo
             , tagName
             , changelog
@@ -273,7 +294,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                   , release.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
                   )
             )
-      } yield ()).run.run
+      } yield ()
 
   // $COVERAGE-ON$
 }
