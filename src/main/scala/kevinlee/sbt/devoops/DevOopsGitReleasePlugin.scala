@@ -233,8 +233,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                   tagName
                 , assets
                 , baseDirectory.value
-                , changelogLocation.value
-                , gitTagPushRepo.value
+                , ChangelogLocation(changelogLocation.value)
+                , Repository(gitTagPushRepo.value)
                 , oauth
                 )
             )
@@ -263,8 +263,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                   tagName
                 , assets
                 , baseDirectory.value
-                , changelogLocation.value
-                , gitTagPushRepo.value
+                , ChangelogLocation(changelogLocation.value)
+                , Repository(gitTagPushRepo.value)
                 , oauth
                 )
             )
@@ -284,17 +284,17 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       tagName: TagName
     , assets: Vector[File]
     , baseDir: File
-    , changelogLocation: String
-    , gitTagPushRepo: String
+    , changelogLocation: ChangelogLocation
+    , gitTagPushRepo: Repository
     , oAuthToken: OAuthToken
     ): GitHubTask.GitHubTaskResult[Unit] =
       for {
         changelog <- SbtTask.eitherTWithWriter(
-            getChangelog(new File(baseDir, changelogLocation), tagName))(
+            getChangelog(new File(baseDir, changelogLocation.changeLogLocation), tagName))(
             _ => List("Get changelog")
           )
         url <- GitHubTask.fromGitTask(
-            Git.getRemoteUrl(Repository(gitTagPushRepo), baseDir)
+            Git.getRemoteUrl(gitTagPushRepo, baseDir)
           )
         repo <- SbtTask.eitherTWithWriter(
             getRepoFromUrl(url))(
