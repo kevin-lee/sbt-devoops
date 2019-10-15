@@ -22,6 +22,7 @@ object Repo {
 }
 
 final case class Changelog(changelog: String) extends AnyVal
+final case class ChangelogLocation(changeLogLocation: String) extends AnyVal
 
 final case class GitHubRelease(
   tagName: TagName
