@@ -12,5 +12,7 @@ package object fp extends IdInstance {
 
   object Writer {
     def apply[W, A](w: W, a: A): WriterT[Id, W, A] = WriterT[Id, W, A]((w, a))
+
+    def writer[W, A](wa: (W, A)): Writer[W, A] = WriterT[Id, W, A](wa)
   }
 }

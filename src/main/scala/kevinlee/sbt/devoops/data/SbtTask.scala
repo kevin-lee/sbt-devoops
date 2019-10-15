@@ -6,7 +6,7 @@ import kevinlee.fp.JustSyntax._
 import kevinlee.fp._
 
 import kevinlee.git.Git
-import kevinlee.github.data.GitHubError
+import kevinlee.github.GitHubTask
 
 /**
   * @author Kevin Lee
@@ -76,23 +76,29 @@ object SbtTask {
         )
     }
 
-  def handleGitHubTask(gitHubTaskResult: (List[String], Either[GitHubError, Unit])): Unit =
-    gitHubTaskResult match {
-      case (history, Left(error)) =>
-        val gitHubTaskError = SbtTaskError.gitHubTaskError(error)
-        val message = if (history.isEmpty) "no task" else "the following tasks"
-        println(
-          s"""Failure]
-             |>> sbt task failed after finishing $message
-             |${SbtTaskResult.render(SbtTaskResult.taskResult(history))}
-             |${SbtTaskError.render(gitHubTaskError)}
-             |""".stripMargin
-        )
-        SbtTaskError.error(gitHubTaskError)
-      case (history, Right(())) =>
-        SbtTaskResult.consolePrintln(
-          SbtTaskResult.taskResult(history)
-        )
-    }
+  def handleGitHubTask(gitHubTaskResult: GitHubTask.GitHubTaskResult[Unit]): Result[Unit] =
+    EitherT[SbtTaskHistoryWriter, SbtTaskError, Unit](
+      gitHubTaskResult.leftMap(SbtTaskError.gitHubTaskError)
+        .run.mapWritten(_.map(SbtTaskResult.gitHubTaskResult))
+    )
+
+
+//    gitHubTaskResult.run.run match {
+//      case (history, Left(error)) =>
+//        val gitHubTaskError = SbtTaskError.gitHubTaskError(error)
+//        val message = if (history.isEmpty) "no task" else "the following tasks"
+//        println(
+//          s"""Failure]
+//             |>> sbt task failed after finishing $message
+//             |${SbtTaskResult.render(SbtTaskResult.taskResult(history))}
+//             |${SbtTaskError.render(gitHubTaskError)}
+//             |""".stripMargin
+//        )
+//        SbtTaskError.error(gitHubTaskError)
+//      case (history, Right(())) =>
+//        SbtTaskResult.consolePrintln(
+//          SbtTaskResult.taskResult(history)
+//        )
+//    }
 
 }
