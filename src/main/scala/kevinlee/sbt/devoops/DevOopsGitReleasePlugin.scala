@@ -56,7 +56,10 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       settingKey[File]("The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: $USER/.github) If you want to get the file in user's home, use new File(Io.getUserHome, \".github\")")
 
     lazy val gitHubRelease: TaskKey[Unit] =
-      taskKey[Unit]("Release the current version meaning upload the packaged files and changelog to GitHub.")
+      taskKey[Unit]("Release the current version without creating a tag. It uploads the packaged files and changelog to GitHub.")
+
+    lazy val gitTagAndGitHubRelease: TaskKey[Unit] =
+      taskKey[Unit]("Release the current version. It creates a tag with the project version and uploads the packaged files and changelog to GitHub.")
 
     def decideVersion(projectVersion: String, decide: String => String): String =
       decide(projectVersion)
@@ -199,48 +202,78 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitHubRelease := {
       val tagName = TagName(gitTagName.value)
       val assets = devOopsCopyReleasePackages.value
+      SbtTask.handleGitHubTask(
+        runGitHubRelease(
+            tagName
+          , assets
+          , baseDirectory.value
+          , changelogLocation.value
+          , gitTagPushRepo.value
+          , gitHubAuthTokenFile.value
+          )
+      )
+    }
+  , gitTagAndGitHubRelease := {
+      val tagName = TagName(gitTagName.value)
+      val assets = devOopsCopyReleasePackages.value
       gitTag.value
       SbtTask.handleGitHubTask(
-        (for {
-          changelog <- SbtTask.eitherTWithWriter(
-              getChangelog(new File(baseDirectory.value, changelogLocation.value), tagName))(
-              _ => List("Get changelog")
-            )
-          url <- GitHubTask.fromGitTask(
-              Git.getRemoteUrl(Repository(gitTagPushRepo.value), baseDirectory.value)
-            )
-          repo <- SbtTask.eitherTWithWriter(
-              getRepoFromUrl(url))(
-              r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
-            )
-          oauth <- SbtTask.eitherTWithWriter(
-              readOAuthToken(gitHubAuthTokenFile.value))(
-              _ => List("Get GitHub OAuth token")
-            )
-          gitHub <- SbtTask.eitherTWithWriter(
-              GitHubApi.connectWithOAuth(oauth))(
-              _ => List("Connect GitHub with OAuth")
-            )
-          gitHubRelease <- SbtTask.eitherTWithWriter(
-              GitHubApi.release(
-                gitHub
-              , repo
-              , tagName
-              , changelog
-              , assets
-              ))(
+        runGitHubRelease(
+            tagName
+          , assets
+          , baseDirectory.value
+          , changelogLocation.value
+          , gitTagPushRepo.value
+          , gitHubAuthTokenFile.value
+          )
+      )
+    }
+  )
+
+  private def runGitHubRelease(
+      tagName: TagName
+    , assets: Vector[File]
+    , baseDir: File
+    , changelogLocation: String
+    , gitTagPushRepo: String
+    , gitHubAuthTokenFile: File
+    ): (List[String], Either[GitHubError, Unit]) =
+      (for {
+        changelog <- SbtTask.eitherTWithWriter(
+          getChangelog(new File(baseDir, changelogLocation), tagName))(
+          _ => List("Get changelog")
+        )
+        url <- GitHubTask.fromGitTask(
+          Git.getRemoteUrl(Repository(gitTagPushRepo), baseDir)
+        )
+        repo <- SbtTask.eitherTWithWriter(
+          getRepoFromUrl(url))(
+          r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
+        )
+        oauth <- SbtTask.eitherTWithWriter(
+          readOAuthToken(gitHubAuthTokenFile))(
+          _ => List("Get GitHub OAuth token")
+        )
+        gitHub <- SbtTask.eitherTWithWriter(
+          GitHubApi.connectWithOAuth(oauth))(
+          _ => List("Connect GitHub with OAuth")
+        )
+        gitHubRelease <- SbtTask.eitherTWithWriter(
+          GitHubApi.release(
+            gitHub
+            , repo
+            , tagName
+            , changelog
+            , assets
+            ))(
               release =>
                 List[String](
                     s"GitHub release: ${release.tagName.value}"
                   , release.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
                   , release.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
-                )
+                  )
             )
-        } yield ()).run.run
-      )
-    }
-  )
+      } yield ()).run.run
 
   // $COVERAGE-ON$
-
 }
