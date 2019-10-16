@@ -265,7 +265,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       SbtTask.handleSbtTask(
         (for {
           _ <- SbtTask.toLeftWhen(
-              uploadArtifacts && assets.isEmpty
+                uploadArtifacts && assets.isEmpty
               , SbtTaskError.noFileFound(
                 "devOopsCopyReleasePackages (uploadArtifacts is true)"
                 , devOopsPackagedArtifacts.value
@@ -338,7 +338,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                       "No files to upload"
                     else
                       release.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
-                  , release.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
+                  , release.changelog.changelog.split("\n")
+                      .mkString("Changelog uploaded:\n    ", "\n    ", "\n")
                   )
             )
       } yield ()
