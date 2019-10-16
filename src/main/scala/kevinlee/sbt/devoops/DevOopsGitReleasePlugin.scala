@@ -63,7 +63,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     lazy val gitHubAuthTokenFile: SettingKey[Option[File]] =
       settingKey[Option[File]]("The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: Some($USER/.github)) If you want to get the file in user's home, do Some(new File(Io.getUserHome, \".github\"))")
 
-    lazy val gitHubReleaseWithArtifacts: SettingKey[Boolean] =
+    lazy val artifactsRequiredForGitHubRelease: SettingKey[Boolean] =
       settingKey[Boolean]("Option to upload artifacts to GitHub when doing GitHub release (default: true so upload the files)")
 
     lazy val gitHubRelease: TaskKey[Unit] =
@@ -189,14 +189,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitHubAuthTokenEnvVar := "GITHUB_TOKEN"
   , gitHubAuthTokenFile :=
       Some(new File(Io.getUserHome, ".github"))
-  , gitHubReleaseWithArtifacts := true
+  , artifactsRequiredForGitHubRelease := true
   , gitHubRelease := {
-      val tagName = TagName(gitTagName.value)
-      val uploadArtifacts = gitHubReleaseWithArtifacts.value
-      val assets = devOopsCopyReleasePackages.value
-      val authTokenEnvVar = gitHubAuthTokenEnvVar.value
-      val authTokenFile = gitHubAuthTokenFile.value
-      val baseDir = baseDirectory.value
+      lazy val tagName = TagName(gitTagName.value)
+      lazy val uploadArtifacts = artifactsRequiredForGitHubRelease.value
+      lazy val assets = devOopsCopyReleasePackages.value
+      lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
+      lazy val authTokenFile = gitHubAuthTokenFile.value
+      lazy val baseDir = baseDirectory.value
       SbtTask.handleSbtTask(
         (for {
           _ <- SbtTask.fromGitTask(Git.fetchTags(baseDir))
@@ -236,7 +236,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val tagName = TagName(gitTagName.value)
       lazy val tagDesc = gitTagDescription.value
       lazy val tagFrom = BranchName(gitTagFrom.value)
-      lazy val uploadArtifacts = gitHubReleaseWithArtifacts.value
+      lazy val uploadArtifacts = artifactsRequiredForGitHubRelease.value
       lazy val assets = devOopsCopyReleasePackages.value
       lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
       lazy val authTokenFile = gitHubAuthTokenFile.value
