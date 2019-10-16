@@ -128,6 +128,14 @@ object Git {
     )
   )
 
+  def getTag(baseDir: File): CmdResult[List[String]] = EitherT(
+    gitCmdSimpleWithWriter(
+      baseDir
+    , GitCmd.getTag
+    , identity
+    )
+  )
+
   def tag(tagName: TagName, baseDir: File): CmdResult[TagName] = EitherT(
     gitCmdSimpleWithWriter(
       baseDir
