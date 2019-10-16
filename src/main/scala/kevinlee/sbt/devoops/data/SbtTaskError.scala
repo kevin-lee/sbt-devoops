@@ -20,7 +20,7 @@ object SbtTaskError {
   final case class NoFileFound(name: String, filePaths: List[String]) extends SbtTaskError
   final case class SemVerFromProjectVersionParseError(projectVersion: String, parseError: ParseError) extends SbtTaskError
   final case class VersionNotEligibleForTagging(semVer: SemanticVersion) extends SbtTaskError
-
+  final case class IoError(name: String, throwable: Throwable) extends SbtTaskError
 
   def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
     GitCommandTaskError(cause)
@@ -39,6 +39,10 @@ object SbtTaskError {
 
   def versionNotEligibleForTagging(semVer: SemanticVersion): SbtTaskError =
     VersionNotEligibleForTagging(semVer)
+
+  def ioError(name: String, throwable: Throwable): SbtTaskError =
+    IoError(name, throwable)
+
 
   def render(sbtTaskError: SbtTaskError): String = sbtTaskError match {
 
@@ -68,6 +72,10 @@ object SbtTaskError {
           |    * 1.0.0-beta+123 (❌)
           |""".stripMargin
 
+    case IoError(name, throwable) =>
+      s"""IO Error for $name
+         |${throwable.getMessage}
+         |""".stripMargin
   }
 
   def error(sbtTaskError: SbtTaskError): Nothing =
