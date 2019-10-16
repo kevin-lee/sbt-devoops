@@ -58,6 +58,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     lazy val gitHubAuthTokenFile: SettingKey[Option[File]] =
       settingKey[Option[File]]("The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: Some($USER/.github)) If you want to get the file in user's home, do Some(new File(Io.getUserHome, \".github\"))")
 
+    lazy val gitHubReleaseWithArtifacts: SettingKey[Boolean] =
+      settingKey[Boolean]("Option to upload artifacts to GitHub when doing GitHub release (default: true so upload the files)")
+
     lazy val gitHubRelease: TaskKey[Unit] =
       taskKey[Unit]("Release the current version without creating a tag. It uploads the packaged files and changelog to GitHub.")
 
@@ -68,19 +71,18 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       decide(projectVersion)
 
     def copyFiles(
-      caseSensitivity: CaseSensitivity
+      taskName: String
+    , caseSensitivity: CaseSensitivity
     , projectBaseDir: File
     , filePaths: List[String]
     , targetDir: File
-    ): Either[SbtTaskError, Vector[File]] = {
-      val files = Io.findAllFiles(
+    ): Either[SbtTaskError, Vector[File]] =
+      scala.util.Try {
+        val files = Io.findAllFiles(
           caseSensitivity
-        , projectBaseDir
-        , filePaths
-      )
-      if (files.isEmpty) {
-        SbtTaskError.noFileFound("copying files", filePaths).left
-      } else {
+          , projectBaseDir
+          , filePaths
+        )
         val copied = Io.copy(files, targetDir)
         println(
           s""">> copyPackages - Files copied from:
@@ -88,9 +90,13 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
              |  to
              |${copied.mkString("  - ",  "\n  - ", "\n")}
              |""".stripMargin)
-        copied.right
+        copied
+      } match {
+        case scala.util.Success(files) =>
+          files.right
+        case scala.util.Failure(error) =>
+          SbtTaskError.ioError(taskName, error).left
       }
-    }
 
     def readOAuthToken(maybeFile: Option[File]): Either[GitHubError, OAuthToken] =
       maybeFile match {
@@ -191,7 +197,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar")
   , devOopsCopyReleasePackages := {
       val result: Vector[File] = copyFiles(
-          CaseSensitivity.caseSensitive
+          s"devOopsCopyReleasePackages"
+        , CaseSensitivity.caseSensitive
         , baseDirectory.value
         , devOopsPackagedArtifacts.value
         , new File(new File(devOopsCiDir.value), "dist")
@@ -207,8 +214,10 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitHubAuthTokenEnvVar := "GITHUB_TOKEN"
   , gitHubAuthTokenFile :=
       Some(new File(Io.getUserHome, ".github"))
+  , gitHubReleaseWithArtifacts := true
   , gitHubRelease := {
       val tagName = TagName(gitTagName.value)
+      val uploadArtifacts = gitHubReleaseWithArtifacts.value
       val assets = devOopsCopyReleasePackages.value
       val authTokenEnvVar = gitHubAuthTokenEnvVar.value
       val authTokenFile = gitHubAuthTokenFile.value
@@ -222,9 +231,12 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               , SbtTaskError.gitTaskError(s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}")
               )
           _ <- SbtTask.toLeftWhen(
-                assets.isEmpty
-              , SbtTaskError.noFileFound("devOopsCopyReleasePackages", devOopsPackagedArtifacts.value)
+              uploadArtifacts && assets.isEmpty
+            , SbtTaskError.noFileFound(
+                "devOopsCopyReleasePackages (uploadArtifacts is true)"
+              , devOopsPackagedArtifacts.value
               )
+            )
           oauth <- SbtTask.eitherTWithWriter(
               getGitHubAuthToken(authTokenEnvVar, authTokenFile)
                 .leftMap(SbtTaskError.gitHubTaskError))(
@@ -245,6 +257,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     }
   , gitTagAndGitHubRelease := {
       val tagName = TagName(gitTagName.value)
+      val uploadArtifacts = gitHubReleaseWithArtifacts.value
       val assets = devOopsCopyReleasePackages.value
       val authTokenEnvVar = gitHubAuthTokenEnvVar.value
       val authTokenFile = gitHubAuthTokenFile.value
@@ -252,14 +265,17 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       SbtTask.handleSbtTask(
         (for {
           _ <- SbtTask.toLeftWhen(
-              assets.isEmpty
-            , SbtTaskError.noFileFound("devOopsCopyReleasePackages", devOopsPackagedArtifacts.value)
+              uploadArtifacts && assets.isEmpty
+              , SbtTaskError.noFileFound(
+                "devOopsCopyReleasePackages (uploadArtifacts is true)"
+                , devOopsPackagedArtifacts.value
+              )
             )
           oauth <- SbtTask.eitherTWithWriter(
-              getGitHubAuthToken(authTokenEnvVar, authTokenFile)
-                .leftMap(SbtTaskError.gitHubTaskError))(
-                _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
-              )
+            getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+              .leftMap(SbtTaskError.gitHubTaskError))(
+              _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
+            )
           _ = gitTag.value
           _ <-  SbtTask.handleGitHubTask(
               runGitHubRelease(
@@ -318,7 +334,10 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               release =>
                 List[String](
                     s"GitHub release: ${release.tagName.value}"
-                  , release.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
+                  , if (release.releasedFiles.isEmpty)
+                      "No files to upload"
+                    else
+                      release.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
                   , release.changelog.changelog.split("\n").mkString("Changelog uploaded:\n    ", "\n    ", "\n")
                   )
             )
