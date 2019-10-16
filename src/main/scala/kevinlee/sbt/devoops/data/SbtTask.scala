@@ -33,13 +33,14 @@ object SbtTask {
         .mapWritten(_.map(SbtTaskResult.gitCommandTaskResult))
     )
 
-  def toLeftWhen[A](condition: => Boolean, whenFalse: => A): EitherT[SbtTaskHistoryWriter, A, Unit] = EitherT[SbtTaskHistoryWriter, A, Unit] {
-    val aOrB = if (condition) whenFalse.left else ().right
-    Writer(
-      List.empty[SbtTaskResult]
-    , aOrB
-    )
-  }
+  def toLeftWhen[A](condition: => Boolean, whenFalse: => A): EitherT[SbtTaskHistoryWriter, A, Unit] =
+    EitherT[SbtTaskHistoryWriter, A, Unit] {
+      val aOrB = if (condition) whenFalse.left else ().right
+      Writer(
+        List.empty[SbtTaskResult]
+      , aOrB
+      )
+    }
 
 
   def eitherTWithWriter[W: Monoid, A, B](
