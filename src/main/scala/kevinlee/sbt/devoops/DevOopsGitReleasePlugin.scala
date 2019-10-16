@@ -3,14 +3,19 @@ package kevinlee.sbt.devoops
 import java.io.FileInputStream
 
 import kevinlee.fp.JustSyntax._
+
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
+
 import kevinlee.github.data._
 import kevinlee.github.{GitHubApi, GitHubTask}
+
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
+
 import kevinlee.semver.SemanticVersion
+
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
@@ -155,42 +160,12 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val basePath = baseDirectory.value
       lazy val tagFrom = BranchName(gitTagFrom.value)
       lazy val tagName = TagName(gitTagName.value)
+      lazy val tagDesc = gitTagDescription.value
       lazy val pushRepo = Repository(gitTagPushRepo.value)
-      val projectVersion = version.value
+      lazy val projectVersion = version.value
 
       SbtTask.handleSbtTask(
-        (for {
-          projectVersion <- SbtTask.fromNonSbtTask(
-              SemanticVersion.parse(projectVersion)
-                .leftMap(SbtTaskError.semVerFromProjectVersionParseError(projectVersion, _)))(
-              semVer => List(SbtTaskResult.nonSbtTaskResult(
-                s"The semantic version from the project version has been parsed. version: ${semVer.render}")
-              )
-            )
-          _ <- SbtTask.toLeftWhen(
-              projectVersion.pre.isDefined || projectVersion.buildMetadata.isDefined
-            , SbtTaskError.versionNotEligibleForTagging(projectVersion)
-            )
-          currentBranchName <- SbtTask.fromGitTask(Git.currentBranchName(basePath))
-          _ <- SbtTask.toLeftWhen(
-              currentBranchName.value !== tagFrom.value
-            , SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom")
-            )
-          fetchResult <- SbtTask.fromGitTask(Git.fetchTags(basePath))
-          tagResult <- SbtTask.fromGitTask(
-              gitTagDescription.value
-                .fold(
-                  Git.tag(tagName, basePath)
-                ) { desc =>
-                  Git.tagWithDescription(
-                      tagName
-                    , Git.Description(desc)
-                    , baseDirectory.value
-                  )
-                }
-            )
-          pushResult <- SbtTask.fromGitTask(Git.pushTag(pushRepo, tagName, basePath))
-        } yield ()).run.run
+        getTagVersion(basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion).run.run
       )
     }
   , devOopsCiDir := "ci"
@@ -228,7 +203,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           tags <- SbtTask.fromGitTask(Git.getTag(baseDir))
           _ <- SbtTask.toLeftWhen(
                 !tags.contains(tagName.value)
-              , SbtTaskError.gitTaskError(s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}")
+              , SbtTaskError.gitTaskError(
+                  s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}"
+                )
               )
           _ <- SbtTask.toLeftWhen(
               uploadArtifacts && assets.isEmpty
@@ -256,12 +233,17 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       )
     }
   , gitTagAndGitHubRelease := {
-      val tagName = TagName(gitTagName.value)
-      val uploadArtifacts = gitHubReleaseWithArtifacts.value
-      val assets = devOopsCopyReleasePackages.value
-      val authTokenEnvVar = gitHubAuthTokenEnvVar.value
-      val authTokenFile = gitHubAuthTokenFile.value
-      val baseDir = baseDirectory.value
+      lazy val tagName = TagName(gitTagName.value)
+      lazy val tagDesc = gitTagDescription.value
+      lazy val tagFrom = BranchName(gitTagFrom.value)
+      lazy val uploadArtifacts = gitHubReleaseWithArtifacts.value
+      lazy val assets = devOopsCopyReleasePackages.value
+      lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
+      lazy val authTokenFile = gitHubAuthTokenFile.value
+      lazy val baseDir = baseDirectory.value
+      lazy val pushRepo = Repository(gitTagPushRepo.value)
+      lazy val projectVersion = version.value
+
       SbtTask.handleSbtTask(
         (for {
           _ <- SbtTask.toLeftWhen(
@@ -276,14 +258,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               .leftMap(SbtTaskError.gitHubTaskError))(
               _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
             )
-          _ = gitTag.value
+          _ <- getTagVersion(baseDir, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
           _ <-  SbtTask.handleGitHubTask(
               runGitHubRelease(
                   tagName
                 , assets
                 , baseDir
                 , ChangelogLocation(changelogLocation.value)
-                , Repository(gitTagPushRepo.value)
+                , pushRepo
                 , oauth
                 )
             )
@@ -291,6 +273,48 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       )
     }
   )
+
+  private def getTagVersion(
+      basePath: File
+    , tagFrom: BranchName
+    , tagName: TagName
+    , gitTagDescription: Option[String]
+    , pushRepo: Repository
+    , projectVersion: String
+    ): SbtTask.Result[Unit] = {
+      for {
+        projectVersion <- SbtTask.fromNonSbtTask(
+          SemanticVersion.parse(projectVersion)
+            .leftMap(SbtTaskError.semVerFromProjectVersionParseError(projectVersion, _)))(
+          semVer => List(SbtTaskResult.nonSbtTaskResult(
+            s"The semantic version from the project version has been parsed. version: ${semVer.render}")
+          )
+        )
+        _ <- SbtTask.toLeftWhen(
+          projectVersion.pre.isDefined || projectVersion.buildMetadata.isDefined
+          , SbtTaskError.versionNotEligibleForTagging(projectVersion)
+        )
+        currentBranchName <- SbtTask.fromGitTask(Git.currentBranchName(basePath))
+        _ <- SbtTask.toLeftWhen(
+          currentBranchName.value !== tagFrom.value
+          , SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom")
+        )
+        fetchResult <- SbtTask.fromGitTask(Git.fetchTags(basePath))
+        tagResult <- SbtTask.fromGitTask(
+          gitTagDescription
+            .fold(
+              Git.tag(tagName, basePath)
+            ) { desc =>
+              Git.tagWithDescription(
+                tagName
+                , Git.Description(desc)
+                , basePath
+              )
+            }
+        )
+        pushResult <- SbtTask.fromGitTask(Git.pushTag(pushRepo, tagName, basePath))
+      } yield ()
+  }
 
   private def getGitHubAuthToken(
       envVarName: String
