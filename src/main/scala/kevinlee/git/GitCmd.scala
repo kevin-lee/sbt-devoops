@@ -12,6 +12,7 @@ object GitCmd {
   final case object CurrentBranchName extends GitCmd
   final case class Checkout(branchName: BranchName) extends GitCmd
   final case object FetchTags extends GitCmd
+  final case object GetTag extends GitCmd
   final case class Tag(tagName: TagName) extends GitCmd
   final case class TagWithDescription(tagName: TagName, description: Description) extends GitCmd
   final case class Push(repository: Repository, tagName: TagName) extends GitCmd
@@ -22,6 +23,8 @@ object GitCmd {
   def checkout(branchName: BranchName): GitCmd = Checkout(branchName)
 
   def fetchTags: GitCmd = FetchTags
+
+  def getTag: GitCmd = GetTag
 
   def tag(tagName: TagName): GitCmd = Tag(tagName)
 
@@ -43,6 +46,9 @@ object GitCmd {
 
     case FetchTags =>
       List("fetch", "--tags")
+
+    case GetTag =>
+      List("tag")
 
     case Tag(tagName) =>
       List("tag", tagName.value)

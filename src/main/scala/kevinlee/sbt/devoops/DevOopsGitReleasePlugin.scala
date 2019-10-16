@@ -212,12 +212,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val assets = devOopsCopyReleasePackages.value
       val authTokenEnvVar = gitHubAuthTokenEnvVar.value
       val authTokenFile = gitHubAuthTokenFile.value
+      val baseDir = baseDirectory.value
       SbtTask.handleSbtTask(
         (for {
-          tags <- SbtTask.fromGitTask(Git.fetchTags(baseDirectory.value))
+          _ <- SbtTask.fromGitTask(Git.fetchTags(baseDir))
+          tags <- SbtTask.fromGitTask(Git.getTag(baseDir))
           _ <- SbtTask.toLeftWhen(
                 !tags.contains(tagName.value)
-              , SbtTaskError.gitTaskError(s"tag ${tagName.value} does not exist.")
+              , SbtTaskError.gitTaskError(s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}")
               )
           _ <- SbtTask.toLeftWhen(
                 assets.isEmpty
@@ -232,7 +234,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               runGitHubRelease(
                   tagName
                 , assets
-                , baseDirectory.value
+                , baseDir
                 , ChangelogLocation(changelogLocation.value)
                 , Repository(gitTagPushRepo.value)
                 , oauth
@@ -246,6 +248,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       val assets = devOopsCopyReleasePackages.value
       val authTokenEnvVar = gitHubAuthTokenEnvVar.value
       val authTokenFile = gitHubAuthTokenFile.value
+      val baseDir = baseDirectory.value
       SbtTask.handleSbtTask(
         (for {
           _ <- SbtTask.toLeftWhen(
@@ -262,7 +265,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               runGitHubRelease(
                   tagName
                 , assets
-                , baseDirectory.value
+                , baseDir
                 , ChangelogLocation(changelogLocation.value)
                 , Repository(gitTagPushRepo.value)
                 , oauth
