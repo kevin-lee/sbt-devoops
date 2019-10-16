@@ -8,7 +8,7 @@ SBT Plugin to help CI and CD
 # Get sbt-devoops
 In the `project/plugins.sbt`, add the following line,
 ```sbt
-addSbtPlugin("kevinlee" % "sbt-devoops" % "0.3.1")
+addSbtPlugin("kevinlee" % "sbt-devoops" % "1.0.0")
 ```
 
 # DevOopsScalaPlugin
@@ -129,6 +129,7 @@ e.g.)
 ```sbtshell
 sbt:test-project> gitTag
 task success>
+>> non sbt task success> The semantic version from the project version has been parsed. version: 0.1.0
 >> git rev-parse --abbrev-ref HEAD => master
 >> git fetch --tags
 >> git tag v0.1.0
@@ -136,7 +137,7 @@ task success>
   |  To github.com:Kevin-Lee/test-project.git
   |   * [new tag]         v0.1.0 -> v0.1.0
 
-[success] Total time: 10 s, completed 6 Apr. 2019, 11:08:03 pm
+[success] Total time: 7 s, completed 16 Oct. 2019, 5:19:31 pm
 ```
 
 **Failure Case**
@@ -157,7 +158,19 @@ task success>
     * 1.0.0-beta+123 (❌)
 
 ```
+or
+```sbtshell
+sbt:test-project> gitTag
+Failure]
+>> sbt task failed after finishing the following tasks
+task success>
+>> non sbt task success> The semantic version from the project version has been parsed. version: 0.1.0
+>> git rev-parse --abbrev-ref HEAD => master
+>> git fetch --tags
+  | => root / gitTag 2s
+>> [cmd: git tag v0.1.0], [code: 128], [errors: fatal: tag 'v0.1.0' already exists]
 
+```
 
 ### `devOopsCiDir`
 `devOopsCiDir` is the ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. When running `devOopsCopyReleasePackages`, all the jar files with prefixed with the project name (`devOopsPackagedArtifacts.value`) are copied to `${devOopsCiDir.value}/dist`.
@@ -212,38 +225,240 @@ Default:
 changelogLocation := "changelogs"
 ```
 
-
-### `gitHubAuthTokenFile`
-The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: `$USER/.github`) If you want to have a different filename in user's home, use `new File(Io.getUserHome, "your_filename")`.
+### `gitHubAuthTokenEnvVar`
+The name of environment variable to get the GitHub auth token. It is required to do GitHub release. If the envvar is not found, it will try to read the auth token file set in `gitHubAuthTokenFile`.
 
 Default:
 ```sbt
-gitHubAuthTokenFile := new File(Io.getUserHome, ".github")
+gitHubAuthTokenEnvVar := "GITHUB_TOKEN"
+```
+
+### `gitHubAuthTokenFile`
+The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: `Some($USER/.github)`) If you want to have a different filename in user's home, do `Some(new File(Io.getUserHome, "your_filename"))`.
+
+Default:
+```sbt
+gitHubAuthTokenFile := Some(new File(Io.getUserHome, ".github"))
+```
+**NOTE: This is optional and if there's a value for the environment variable set in `gitHubAuthTokenEnvVar`, The envvar will be used instead of using the value from the auth token file. It will not even try to read the file if the envvar is set.**
+
+### `artifactsRequiredForGitHubRelease`
+A setting to decide whether to upload the packaged artifacts to GitHub when doing GitHub release.
+
+If it's `false`, no files are uploaded yet the changelog is still uploaded to GitHub.
+
+Default:
+```sbt
+artifactsRequiredForGitHubRelease := true
+```
+
+### `gitHubRelease`
+Is it an sbt task to release the current version by uploading the packaged files and changelog to GitHub.
+It does
+* Copy packaged files (`devOopsCopyReleasePackages`)
+* Upload the packaged files (if `artifactsRequiredForGitHubRelease` is `true`) and changelog to GitHub.
+
+**NOTE: It does not create any tag and if the tag with the project version (e.g. version: 1.0.0 => tag: v1.0.0) does not exist, `gitHubRelease` fails**
+
+e.g.) `gitHubRelease` with uploading artifacts (`artifactsRequiredForGitHubRelease := true`)
+```sbtshell
+sbt:test-project> gitHubRelease
+>> copyPackages - Files copied from:
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0.jar
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-sources.jar
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-javadoc.jar
+
+  to
+  - ci/dist/test-project_2.13-0.1.0-javadoc.jar
+  - ci/dist/test-project_2.13-0.1.0-sources.jar
+  - ci/dist/test-project_2.13-0.1.0.jar
+
+
+task success>
+>> git fetch --tags
+>> git tag
+  |  v0.1.0
+  |  v0.1.0-SNAPSHOT
+>> task success>
+>> Get GitHub OAuth tokense 7s
+
+>> task success>
+>> Get changelog
+
+>> task success>
+>> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
+
+>> task success>
+>> Get GitHub repo org and name: Kevin-Lee/test-project
+
+>> task success>
+>> Connect GitHub with OAuth
+
+>> task success>
+>> GitHub release: v0.1.0
+
+>> task success>
+>> Files uploaded:
+    - ci/dist/test-project_2.13-0.1.0-javadoc.jar
+    - ci/dist/test-project_2.13-0.1.0-sources.jar
+    - ci/dist/test-project_2.13-0.1.0.jar
+
+>> task success>
+>> Changelog uploaded:
+    # 0.1.0 - 2019-10-16
+
+    Test Release
+
+[success] Total time: 8 s, completed 16 Oct. 2019, 5:23:06 pm
+```
+
+e.g.) `gitHubRelease` without uploading artifacts (`artifactsRequiredForGitHubRelease := false`)
+```sbtshell
+```sbtshell
+sbt:test-project> gitHubRelease
+>> copyPackages - Files copied from:
+  -
+
+  to
+  -
+  | => root / devOopsPackagedArtifacts 0s
+
+task success>
+>> git fetch --tags
+>> git tag
+  |  v0.1.0
+  |  v0.1.0-SNAPSHOT
+>> task success>tHubRelease 4s
+>> Get GitHub OAuth token
+
+>> task success>
+>> Get changelog
+
+>> task success>
+>> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
+
+>> task success>
+>> Get GitHub repo org and name: Kevin-Lee/test-project
+
+>> task success>
+>> Connect GitHub with OAuth
+
+>> task success>
+>> GitHub release: v0.1.0
+
+>> task success>
+>> No files to upload
+
+>> task success>
+>> Changelog uploaded:
+    # 0.1.0 - 2019-10-16
+
+    Test Release
+
+[success] Total time: 5 s, completed 16 Oct. 2019, 5:09:42 pm
+```
+
+e.g.) When there's no tag with the current version.
+```sbtshell
+>> copyPackages - Files copied from:
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0.jar
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-sources.jar
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-javadoc.jar
+
+  to=> root / gitTagPushRepo 0s
+  - ci/dist/test-project_2.13-0.1.0-javadoc.jar
+  - ci/dist/test-project_2.13-0.1.0-sources.jar
+  - ci/dist/test-project_2.13-0.1.0.jar
+
+
+Failure]
+>> sbt task failed after finishing the following tasks
+task success>
+>> git fetch --tags
+>> git tag => v0.1.0-SNAPSHOT
+  | => root / gitHubRelease 2s
+task failed> git command: tag v0.1.0 does not exist. tags: [v0.1.0-SNAPSHOT]
+
+[error] task failed> git command: tag v0.1.0 does not exist. tags: [v0.1.0-SNAPSHOT]
+[error] (gitHubRelease) task failed> git command: tag v0.1.0 does not exist. tags: [v0.1.0-SNAPSHOT]
+[error] Total time: 2 s, completed 16 Oct. 2019, 5:18:05 pm
 ```
 
 
-### `gitHubRelease`
+### `gitTagAndGitHubRelease`
 Is it an sbt task to release the current version by uploading the packaged files and changelog to GitHub after git tagging.
 It does
 * Copy packaged files (`devOopsCopyReleasePackages`)
 * Git tag with the current version (`gitTag`)
-* Upload the packaged files and changelog to GitHub.
+* Upload the packaged files (if `artifactsRequiredForGitHubRelease` is `true`) and changelog to GitHub.
 
-e.g.)
+e.g.) `gitTagAndGitHubRelease` with uploading artifacts (`artifactsRequiredForGitHubRelease := true`)
 ```sbtshell
-sbt:test-project> gitHubRelease
+sbt:test-project> gitTagAndGitHubRelease
 >> copyPackages - Files copied from:
-  - /user/home/test-project/target/scala-2.12/test-project_2.12-0.1.0.jar
-  - /user/home/test-project/target/scala-2.12/test-project_2.12-0.1.0-sources.jar
-  - /user/home/test-project/target/scala-2.12/test-project_2.12-0.1.0-javadoc.jar
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0.jar
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-sources.jar
+  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-javadoc.jar
 
-  to
-  - ci/dist/test-project_2.12-0.1.0-javadoc.jar
-  - ci/dist/test-project_2.12-0.1.0-sources.jar
-  - ci/dist/test-project_2.12-0.1.0.jar
+  to=> root / devOopsPackagedArtifacts 0s
+  - ci/dist/test-project_2.13-0.1.0-javadoc.jar
+  - ci/dist/test-project_2.13-0.1.0-sources.jar
+  - ci/dist/test-project_2.13-0.1.0.jar
 
 
 task success>
+>> task success>
+>> Get GitHub OAuth token
+
+>> non sbt task success> The semantic version from the project version has been parsed. version: 0.1.0
+>> git rev-parse --abbrev-ref HEAD => master
+>> git fetch --tags
+>> git tag v0.1.0
+>> git push origin v0.1.0
+  |  To github.com:Kevin-Lee/test-project.git
+  |   * [new tag]         v0.1.0 -> v0.1.0
+>> task success>
+>> Get changelog
+
+>> task success>
+>> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
+
+>> task success>
+>> Get GitHub repo org and name: Kevin-Lee/test-project
+
+>> task success>
+>> Connect GitHub with OAuth
+
+>> task success>
+>> GitHub release: v0.1.0
+
+>> task success>
+>> Files uploaded:
+    - ci/dist/test-project_2.13-0.1.0-javadoc.jar
+    - ci/dist/test-project_2.13-0.1.0-sources.jar
+    - ci/dist/test-project_2.13-0.1.0.jar
+
+>> task success>
+>> Changelog uploaded:
+    # 0.1.0 - 2019-10-16
+
+    Test Release
+
+[success] Total time: 12 s, completed 16 Oct. 2019, 5:28:00 pm
+```
+
+e.g.) `gitTagAndGitHubRelease` without uploading artifacts (`artifactsRequiredForGitHubRelease := false`)
+```sbtshell
+sbt:test-project> gitTagAndGitHubRelease
+>> copyPackages - Files copied from:
+  -
+
+  to
+  -
+  | => root / gitTagName 0s
+  | => root / devOopsPackagedArtifacts 0s
+task success>
+>> non sbt task success> The semantic version from the project version has been parsed. version: 0.1.0
 >> git rev-parse --abbrev-ref HEAD => master
 >> git fetch --tags
 >> git tag v0.1.0
@@ -251,25 +466,33 @@ task success>
   |  To github.com:Kevin-Lee/test-project.git
   |   * [new tag]         v0.1.0 -> v0.1.0
 
-
-task success> GitHub task
->> Get changelog
->> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
->> Get GitHub repo org and name: Kevin-Lee/test-project
+task success>
+>> task success>
 >> Get GitHub OAuth token
+
+>> task success>
+>> Get changelog
+  | => root / gitTagAndGitHubRelease 2s
+>> task success>
+>> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
+
+>> task success>
+>> Get GitHub repo org and name: Kevin-Lee/test-project
+
+>> task success>
 >> Connect GitHub with OAuth
+
+>> task success>
 >> GitHub release: v0.1.0
->> Files uploaded:
-    - ci/dist/test-project_2.12-0.1.0-javadoc.jar
-    - ci/dist/test-project_2.12-0.1.0-sources.jar
-    - ci/dist/test-project_2.12-0.1.0.jar
+
+>> task success>
+>> No files to upload
+
+>> task success>
 >> Changelog uploaded:
-    # v0.1.0
+    # 0.1.0 - 2019-10-16
 
-    ## Test
+    Test Release
 
-    Blah blah Test
-
-
-[success] Total time: 18 s, completed 6 Apr. 2019, 11:42:09 pm
+[success] Total time: 10 s, completed 16 Oct. 2019, 1:18:15 pm
 ```
