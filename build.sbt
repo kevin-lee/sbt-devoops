@@ -8,7 +8,7 @@ lazy val writeVersion = inputKey[Unit]("Write Version in File'")
 
 lazy val root = (project in file("."))
   .settings(
-    organization := "kevinlee"
+    organization := "io.kevinlee"
   , name         := "sbt-devoops"
   , scalaVersion := ProjectScalaVersion
   , version      := ProjectVersion
