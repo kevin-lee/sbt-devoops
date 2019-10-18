@@ -2,7 +2,7 @@ package kevinlee.sbt.devoops
 
 import java.io.FileInputStream
 
-import kevinlee.fp.JustSyntax._
+import just.fp.syntax._
 
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}

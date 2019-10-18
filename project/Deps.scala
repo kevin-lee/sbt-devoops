@@ -15,6 +15,8 @@ object Deps {
     , "hedgehog" %% "hedgehog-sbt" % hedgehogVersion % Test
   )
 
+  val justFp: ModuleID = "io.kevinlee" %% "just-fp" % "1.3.4"
+
   val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
 
   val wartRemover: ModuleID = "org.wartremover" % "sbt-wartremover" % "2.2.1"

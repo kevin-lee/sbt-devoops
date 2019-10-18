@@ -6,7 +6,7 @@ import kevinlee.semver.AdditionalInfo.{BuildMetaInfo, PreRelease}
 import scala.annotation.tailrec
 import scala.util.matching.Regex
 
-import kevinlee.fp.JustSyntax._
+import just.fp.syntax._
 
 /**
   * @author Kevin Lee

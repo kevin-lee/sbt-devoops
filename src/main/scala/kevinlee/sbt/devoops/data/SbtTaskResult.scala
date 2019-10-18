@@ -1,6 +1,6 @@
 package kevinlee.sbt.devoops.data
 
-import kevinlee.fp._
+import just.fp._
 import kevinlee.git.{GitCmd, GitCmdAndResult, GitCommandResult}
 
 /**

@@ -1,6 +1,6 @@
 package kevinlee.github
 
-import kevinlee.fp._
+import just.fp._
 import kevinlee.git.{Git, GitCmdAndResult}
 import kevinlee.github.data.GitHubError
 
