@@ -46,7 +46,7 @@ lazy val root = (project in file("."))
   , libraryDependencies ++=
       crossVersionProps(
           Seq(
-            Deps.commonsIo, Deps.githubApi
+            Deps.commonsIo, Deps.githubApi, Deps.justFp
           ) ++ Deps.hedgehogLibs
         , scalaVersion.value
       ) {

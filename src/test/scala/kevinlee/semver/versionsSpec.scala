@@ -2,9 +2,7 @@ package kevinlee.semver
 
 import hedgehog._
 import hedgehog.runner._
-
-import kevinlee.fp.JustSyntax._
-
+import just.fp.syntax.EitherSyntax
 import kevinlee.semver.AlphaNumHyphen.{alphabet, hyphen, num, numFromStringUnsafe}
 import kevinlee.semver.Gens._
 
@@ -12,7 +10,7 @@ import kevinlee.semver.Gens._
   * @author Kevin Lee
   * @since 2018-11-04
   */
-object SemanticVersionMajorSpec extends Properties {
+object SemanticVersionMajorSpec extends Properties with EitherSyntax {
 
   override def tests: List[Test] = List(
     property("Two SemanticVersions with the same Major and the rest are equal then it should be equal", testSameMajors)
@@ -98,7 +96,7 @@ object SemanticVersionMajorSpec extends Properties {
 
 }
 
-object SemanticVersionMinorSpec extends Properties {
+object SemanticVersionMinorSpec extends Properties with EitherSyntax {
 
   override def tests: List[Test] = List(
     property("Two SemanticVersions with the same Minor and the rest are equal then it should be equal", testSameMinors)
@@ -325,7 +323,7 @@ object AlphaNumHyphenSpec extends Properties {
 
 }
 
-object SemanticVersionSpec extends Properties {
+object SemanticVersionSpec extends Properties with EitherSyntax {
   override def tests: List[Test] = List(
       example("""SemanticVersion.parse("1.0.5") should return SementicVersion(Major(1), Minor(0), Patch(5), None, None)""", parseExample1)
     , example("""SemanticVersion.parse("1.0.5-beta") should return SementicVersion(Major(1), Minor(0), Patch(5), Some(with pre-release info), None)""", parseExamplePre1)

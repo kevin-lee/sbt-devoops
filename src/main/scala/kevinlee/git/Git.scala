@@ -2,8 +2,8 @@ package kevinlee.git
 
 import java.io.File
 
-import kevinlee.fp._
-import kevinlee.fp.JustSyntax._
+import just.fp._
+import just.fp.syntax._
 
 /**
   * @author Kevin Lee

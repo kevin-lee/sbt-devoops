@@ -9,7 +9,7 @@ import kevinlee.git.Git.TagName
 import kevinlee.github.data._
 import org.kohsuke.github.{GHRelease, GHRepository, GitHub}
 
-import kevinlee.fp.JustSyntax._
+import just.fp.syntax._
 
 /**
   * @author Kevin Lee

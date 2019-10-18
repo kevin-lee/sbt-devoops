@@ -2,8 +2,8 @@ package kevinlee.sbt.devoops.data
 
 import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
 
-import kevinlee.fp.JustSyntax._
-import kevinlee.fp._
+import just.fp.syntax._
+import just.fp._
 
 import kevinlee.git.Git
 import kevinlee.github.GitHubTask

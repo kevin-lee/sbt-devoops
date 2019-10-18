@@ -2,7 +2,7 @@ package kevinlee
 
 import scala.annotation.tailrec
 
-import kevinlee.fp.JustSyntax._
+import just.fp.syntax._
 
 /**
   * @author Kevin Lee
