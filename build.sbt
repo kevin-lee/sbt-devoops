@@ -1,7 +1,6 @@
 import BuildTools._
 import ProjectInfo._
-import sbt.Path
-
+import sbt.{Path, ScmInfo}
 import org.scoverage.coveralls.Imports.CoverallsKeys._
 
 lazy val writeVersion = inputKey[Unit]("Write Version in File'")
@@ -16,6 +15,13 @@ lazy val root = (project in file("."))
   , developers   := List(
       Developer("Kevin-Lee", "Kevin Lee", "kevin.code@kevinlee.io", url("https://github.com/Kevin-Lee"))
     )
+  , homepage := Some(url("https://github.com/Kevin-Lee/sbt-devoops"))
+  , scmInfo :=
+      Some(ScmInfo(
+      url("https://github.com/Kevin-Lee/sbt-devoops")
+      , "git@github.com:Kevin-Lee/sbt-devoops.git"
+    ))
+
   , startYear := Some(2018)
   , sbtPlugin := true
   , sbtVersion in Global := "1.2.8"
