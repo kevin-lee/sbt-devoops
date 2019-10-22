@@ -31,13 +31,16 @@ object DevOopsScalaPlugin extends AutoPlugin {
     , "-Xfatal-warnings"                  // Fail the compilation if there are any warnings.
     )
 
-    val defaultOptionsBefore2_13: Seq[String] = Seq(
+    val defaultOptions2_10: Seq[String] = Seq(
       "-Ywarn-dead-code"                  // Warn when dead code is identified.
     , "-Ywarn-value-discard"              // Warn when non-Unit expression results are unused.
     , "-Yno-adapted-args"                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
     , "-Ywarn-inaccessible"               // Warn about inaccessible types in method signatures.
     , "-Ywarn-nullary-override"           // Warn when non-nullary `def f()' overrides nullary `def f'.
-    , "-Ywarn-numeric-widen"              // Warn when numerics are widened.
+    )
+
+    val defaultOptionsBefore2_13: Seq[String] = defaultOptions2_10 ++ Seq(
+      "-Ywarn-numeric-widen"              // Warn when numerics are widened.
     )
 
     val defaultOptions2_13: Seq[String] = Seq(
@@ -146,7 +149,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
   def versionSpecificScalacOptions(useAggressiveScalacOptions: Boolean): PartialFunction[(Major, Minor), Seq[String]] = {
       case (Major(2), Minor(10)) =>
-        defaultOptionsBefore2_13
+        defaultOptions2_10
 
       case (Major(2), Minor(11)) =>
         if (useAggressiveScalacOptions) {
