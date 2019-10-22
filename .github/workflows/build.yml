@@ -1,0 +1,21 @@
+name: Build All
+
+on: [push]
+
+jobs:
+
+  build_scala2_10:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build for Scala 2.10
+        run: .github/workflows/sbt-build-simple.sh 0.13.17
+
+  build_scala2_12:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build for Scala 2.12
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        run: .github/workflows/sbt-build.sh 1.2.8

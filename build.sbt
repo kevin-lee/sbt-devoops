@@ -42,7 +42,7 @@ lazy val root = (project in file("."))
   , wartremoverErrors in (Compile, compile) ++= commonWarts
   , wartremoverErrors in (Test, compile) ++= commonWarts
   , resolvers += Deps.hedgehogRepo
-  , addCompilerPlugin("org.typelevel" % "kind-projector" % "0.10.1" cross CrossVersion.binary)
+  , addCompilerPlugin("org.typelevel" % "kind-projector" % "0.10.3" cross CrossVersion.binary)
   , libraryDependencies ++=
       crossVersionProps(
           Seq(
@@ -57,9 +57,6 @@ lazy val root = (project in file("."))
       }
   , testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework"))
 
-//  , addSbtPlugin(Deps.wartRemover)
-//  , addSbtPlugin(Deps.scoverage)
-//  , addSbtPlugin(Deps.bintray)
   , licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
   , publishMavenStyle := false
 
