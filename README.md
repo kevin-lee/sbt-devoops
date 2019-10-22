@@ -1,6 +1,7 @@
 # sbt DevOops
 
-[![Build Status](https://semaphoreci.com/api/v1/kevin-lee/sbt-devoops/branches/master/badge.svg)](https://semaphoreci.com/kevin-lee/sbt-devoops)
+[![Build Status](https://github.com/Kevin-Lee/sbt-devoops/workflows/Build%20All/badge.svg)](https://github.com/Kevin-Lee/sbt-devoops/actions?workflow=Build+All)
+[![Release Status](https://github.com/Kevin-Lee/sbt-devoops/workflows/Release/badge.svg)](https://github.com/Kevin-Lee/sbt-devoops/actions?workflow=Release)
 [ ![Download](https://api.bintray.com/packages/kevinlee/sbt-plugins/sbt-devoops/images/download.svg) ](https://bintray.com/kevinlee/sbt-plugins/sbt-devoops/_latestVersion)
 
 SBT Plugin to help CI and CD
@@ -8,7 +9,7 @@ SBT Plugin to help CI and CD
 # Get sbt-devoops
 In the `project/plugins.sbt`, add the following line,
 ```sbt
-addSbtPlugin("io.kevinlee" % "sbt-devoops" % "1.0.1")
+addSbtPlugin("io.kevinlee" % "sbt-devoops" % "1.0.2")
 ```
 
 # DevOopsScalaPlugin
