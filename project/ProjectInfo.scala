@@ -11,7 +11,7 @@ object ProjectInfo {
 
   val CrossSbtVersions: Seq[String] = Seq("0.13.17", "1.2.8")
 
-  val ProjectVersion: String = "1.0.1"
+  val ProjectVersion: String = "1.0.2"
 
   val commonScalacOptions: Seq[String] = Seq(
       "-deprecation"
