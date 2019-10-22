@@ -1,13 +1,10 @@
 import sbt._
 
 object Deps {
-  val hedgehogVersion: String = "f120baa58d2362761de3d03512ccd5d0199f07fc"
+  val hedgehogVersion: String = "6dba7c9ba065e423000e9aa2b6981ce3d70b74cb"
 
   val hedgehogRepo: Resolver =
-    Resolver.url(
-      "bintray-scala-hedgehog",
-      url("https://dl.bintray.com/hedgehogqa/scala-hedgehog")
-    )(Resolver.ivyStylePatterns)
+      "bintray-scala-hedgehog" at "https://dl.bintray.com/hedgehogqa/scala-hedgehog"
 
   val hedgehogLibs: Seq[ModuleID] = Seq(
       "hedgehog" %% "hedgehog-core" % hedgehogVersion % Test
@@ -18,12 +15,6 @@ object Deps {
   val justFp: ModuleID = "io.kevinlee" %% "just-fp" % "1.3.4"
 
   val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
-
-  val wartRemover: ModuleID = "org.wartremover" % "sbt-wartremover" % "2.2.1"
-
-  val scoverage: ModuleID = "org.scoverage" % "sbt-scoverage" % "1.5.1"
-
-  val bintray: ModuleID = "org.foundweekends" % "sbt-bintray" % "0.5.4"
 
   val githubApi: ModuleID = "org.kohsuke" % "github-api" % "1.95"
 
