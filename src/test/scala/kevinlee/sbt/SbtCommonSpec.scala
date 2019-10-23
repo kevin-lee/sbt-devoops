@@ -3,7 +3,7 @@ package kevinlee.sbt
 import hedgehog._
 import hedgehog.runner._
 
-import kevinlee.semver.Gens
+import kevinlee.Gens
 
 /**
   * @author Kevin Lee
@@ -18,7 +18,7 @@ object SbtCommonSpec extends Properties {
   )
 
   def testNoMatchingVersion: Property = for {
-    semVers <- Gens.genMinMaxSemanticVersions.log("(semVer1, semVer2)")
+    semVers <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
     (semVer1, semVer2) = semVers
     ss1 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss1")
     ss2 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
@@ -34,7 +34,7 @@ object SbtCommonSpec extends Properties {
   }
 
   def testNoMatchingVersionNonExhaustiveCase: Property = for {
-    semVers <- Gens.genMinMaxSemanticVersions.log("(semVer1, semVer2)")
+    semVers <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
     (semVer1, semVer2) = semVers
     ss1 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss1")
     ss2 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
@@ -52,7 +52,7 @@ object SbtCommonSpec extends Properties {
   }
 
   def testMatchingVersion: Property = for {
-    semVer <- Gens.genSemanticVersion.log("semVer")
+    semVer <- Gens.genSemVer.log("semVer")
     ss1 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss1")
     ss2 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
   } yield {
@@ -65,7 +65,7 @@ object SbtCommonSpec extends Properties {
   }
 
   def testOneOfTwoVersionsMatches: Property = for {
-    semVers <- Gens.genMinMaxSemanticVersions.log("(semVer1, semVer2)")
+    semVers <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
     (semVer1, semVer2) = semVers
     ss1 <- Gens.genAlphabetString(10).list(Range.linear(1, 7)).log("ss1")
     ss2 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")

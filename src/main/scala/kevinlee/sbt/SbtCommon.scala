@@ -1,6 +1,8 @@
 package kevinlee.sbt
 
-import kevinlee.semver.{Major, Minor, SemanticVersion}
+import just.semver.SemVer
+import just.semver.SemVer.{Major, Minor}
+
 import sbt.MessageOnlyException
 
 /**
@@ -11,7 +13,7 @@ object SbtCommon {
 
   def crossVersionProps[T](
     commonProps: Seq[T]
-  , version: SemanticVersion)(
+  , version: SemVer)(
     versionSpecific: PartialFunction[(Major, Minor), Seq[T]]
   ): Seq[T] =
     commonProps ++ versionSpecific((version.major, version.minor))

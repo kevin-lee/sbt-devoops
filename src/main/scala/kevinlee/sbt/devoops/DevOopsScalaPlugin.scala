@@ -1,7 +1,9 @@
 package kevinlee.sbt.devoops
 
 import kevinlee.sbt.SbtCommon._
-import kevinlee.semver.{Major, Minor, SemanticVersion}
+
+import just.semver.SemVer
+import just.semver.SemVer.{Major, Minor}
 
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
@@ -184,7 +186,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
       useAggressiveScalacOptions := false
     , scalacOptions ++= crossVersionProps(
         essentialOptions ++ defaultOptions
-      , SemanticVersion.parseUnsafe(scalaVersion.value)
+      , SemVer.parseUnsafe(scalaVersion.value)
       )(versionSpecificScalacOptions(useAggressiveScalacOptions.value))
     , scalacOptions in (Compile, console) := essentialOptions
     , updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error)
