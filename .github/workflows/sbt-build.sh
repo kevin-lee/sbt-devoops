@@ -16,11 +16,11 @@ else
   echo ""
   if [[ "$CI_BRANCH" == "master" || "$CI_BRANCH" == "release" ]]
   then
-    sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; clean; coverage; test; coverageReport; coverageAggregate; packagedArtifacts"
+    sbt -J-Xmx2048m "; ++${SCALA_VERSION}!; ^^${SBT_VERSION}; clean; coverage; test; coverageReport; coverageAggregate; packagedArtifacts"
   else
-    sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; clean; coverage; test; coverageReport; coverageAggregate; package"
+    sbt -J-Xmx2048m "; ++${SCALA_VERSION}!; ^^${SBT_VERSION}; clean; coverage; test; coverageReport; coverageAggregate; package"
   fi
-  sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; coveralls"
+  sbt -J-Xmx2048m "; ++${SCALA_VERSION}!; ^^${SBT_VERSION}; coveralls"
 
 
   echo "============================================"

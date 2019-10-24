@@ -17,9 +17,9 @@ else
   CURRENT_BRANCH_NAME="${GITHUB_REF#refs/heads/}"
   if [[ "$CURRENT_BRANCH_NAME" == "master" || "$CURRENT_BRANCH_NAME" == "release" ]]
   then
-    sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; clean; test; packagedArtifacts"
+    sbt -J-Xmx2048m "; ++${SCALA_VERSION}!; ^^${SBT_VERSION}; clean; test; packagedArtifacts"
   else
-    sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; clean; test; package"
+    sbt -J-Xmx2048m "; ++${SCALA_VERSION}!; ^^${SBT_VERSION}; clean; test; package"
   fi
 
   echo "============================================"

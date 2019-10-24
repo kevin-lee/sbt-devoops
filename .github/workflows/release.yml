@@ -14,16 +14,16 @@ jobs:
     - name: sbt test and packagedArtifacts for Scala 2.10 and sbt 0.13.x
       run: |
         echo "Run] sbt packagedArtifacts"
-        echo 'sbt -J-Xmx2048m "++2.10.7" "^^0.13.17" clean test packagedArtifacts'
-        sbt -J-Xmx2048m "++2.10.7" "^^0.13.17" clean test packagedArtifacts
+        echo 'sbt -J-Xmx2048m "++2.10.7!" "^^0.13.17" clean test packagedArtifacts'
+        sbt -J-Xmx2048m "++2.10.7!" "^^0.13.17" clean test packagedArtifacts
     - name: sbt Publish for Scala 2.10 and sbt 0.13.x
       env:
         BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
         BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
       run: |
         echo "Run] sbt publish"
-        echo 'sbt -J-Xmx2048m "++2.10.7" "^^0.13.17" clean publish'
-        sbt -J-Xmx2048m "++2.10.7" "^^0.13.17" clean publish
+        echo 'sbt -J-Xmx2048m "++2.10.7!" "^^0.13.17" clean publish'
+        sbt -J-Xmx2048m "++2.10.7!" "^^0.13.17" clean publish
 
   build_sbt_1_0:
     runs-on: ubuntu-latest
@@ -33,13 +33,13 @@ jobs:
     - name: sbt test and packagedArtifacts for Scala 2.12 and sbt 1.x
       run: |
         echo "Run] sbt packagedArtifacts"
-        echo 'sbt -J-Xmx2048m "++2.12.10" "^^1.3.3" clean test packagedArtifacts'
-        sbt -J-Xmx2048m "++2.12.10" "^^1.3.3" clean test packagedArtifacts
+        echo 'sbt -J-Xmx2048m "++2.12.10!" "^^1.3.3" clean test packagedArtifacts'
+        sbt -J-Xmx2048m "++2.12.10!" "^^1.3.3" clean test packagedArtifacts
     - name: sbt Publish for Scala 2.12 and sbt 1.x
       env:
         BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
         BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
       run: |
         echo "Run] sbt publish"
-        echo 'sbt -J-Xmx2048m "++2.12.10" "^^1.3.3" clean publish'
-        sbt -J-Xmx2048m "++2.12.10" "^^1.3.3" clean publish
+        echo 'sbt -J-Xmx2048m "++2.12.10!" "^^1.3.3" clean publish'
+        sbt -J-Xmx2048m "++2.12.10!" "^^1.3.3" clean publish
