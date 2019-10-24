@@ -2,10 +2,11 @@
 
 set -x
 
-if [ "$#" -eq 2 ]
+if [ "$#" -ne 2 ]
   then
     echo "Scala version and sbt version are missing. Please enter the Scala and sbt versions."
     echo "sbt-build.sh 2.12.10 1.3.3"
+    exit 1
 else
   SCALA_VERSION=$1
   SBT_VERSION=$2
