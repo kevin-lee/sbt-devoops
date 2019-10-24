@@ -18,13 +18,13 @@ lazy val root = (project in file("."))
   , homepage := Some(url("https://github.com/Kevin-Lee/sbt-devoops"))
   , scmInfo :=
       Some(ScmInfo(
-      url("https://github.com/Kevin-Lee/sbt-devoops")
+        url("https://github.com/Kevin-Lee/sbt-devoops")
       , "git@github.com:Kevin-Lee/sbt-devoops.git"
     ))
 
   , startYear := Some(2018)
   , sbtPlugin := true
-  , sbtVersion in Global := "1.2.8"
+  , sbtVersion in Global := "1.3.3"
   , scalaCompilerBridgeSource := {
       val sv = appConfiguration.value.provider.id.version
       ("org.scala-sbt" % "compiler-interface" % sv % "component").sources
@@ -74,7 +74,6 @@ lazy val root = (project in file("."))
       case _ =>
         true
     })
-  , coverallsTokenFile := Option(s"""${Path.userHome.absolutePath}/.coveralls-credentials""")
 
 // set up 'scripted; sbt plugin for testing sbt plugins
 //  , scriptedLaunchOpts ++=

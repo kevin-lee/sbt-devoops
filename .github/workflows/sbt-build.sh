@@ -2,27 +2,24 @@
 
 set -x
 
-if [ -z "$1" ]
+if [ "$#" -eq 2 ]
   then
-    echo "Scala version is missing. Please enter the Scala version."
-    echo "sbt-build.sh 2.11.12"
+    echo "Scala version and sbt version are missing. Please enter the Scala and sbt versions."
+    echo "sbt-build.sh 2.12.10 1.3.3"
 else
-  sbt_version=$1
+  SCALA_VERSION=$1
+  SBT_VERSION=$2
   echo "============================================"
   echo "Build projects"
   echo "--------------------------------------------"
   echo ""
-  CURRENT_BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-  export CI_BRANCH=$CURRENT_BRANCH_NAME
-  if [[ "$CURRENT_BRANCH_NAME" == "master" || "$CURRENT_BRANCH_NAME" == "release" ]]
+  if [[ "$CI_BRANCH" == "master" || "$CI_BRANCH" == "release" ]]
   then
-    sbt -J-Xmx2048m "; ^^ ${sbt_version}; clean; coverage; test; coverageReport; coverageAggregate"
-    sbt -J-Xmx2048m "; ^^ ${sbt_version}; coveralls"
-    sbt -J-Xmx2048m "; ^^ ${sbt_version}; clean; packagedArtifacts"
+    sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; clean; coverage; test; coverageReport; coverageAggregate; packagedArtifacts"
   else
-    sbt -J-Xmx2048m "; ^^ ${sbt_version}; clean; coverage; test; coverageReport; coverageAggregate; package"
-    sbt -J-Xmx2048m "; ^^ ${sbt_version}; coveralls"
+    sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; clean; coverage; test; coverageReport; coverageAggregate; package"
   fi
+  sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; coveralls"
 
 
   echo "============================================"

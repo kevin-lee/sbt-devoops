@@ -2,12 +2,13 @@
 
 set -x
 
-if [ -z "$1" ]
+if [ "$#" -eq 2 ]
   then
     echo "Scala version is missing. Please enter the Scala version."
     echo "sbt-build-simple.sh 2.11.12"
 else
-  sbt_version=$1
+  SCALA_VERSION=$1
+  SBT_VERSION=$2
   echo "============================================"
   echo "Build projects (Simple)"
   echo "--------------------------------------------"
@@ -15,9 +16,9 @@ else
   CURRENT_BRANCH_NAME="${GITHUB_REF#refs/heads/}"
   if [[ "$CURRENT_BRANCH_NAME" == "master" || "$CURRENT_BRANCH_NAME" == "release" ]]
   then
-    sbt -J-Xmx2048m "; ^^ ${sbt_version}; clean; test; packagedArtifacts"
+    sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; clean; test; packagedArtifacts"
   else
-    sbt -J-Xmx2048m "; ^^ ${sbt_version}; clean; test; package"
+    sbt -J-Xmx2048m "; ++${SCALA_VERSION}; ^^${SBT_VERSION}; clean; test; package"
   fi
 
   echo "============================================"
