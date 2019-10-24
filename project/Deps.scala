@@ -14,6 +14,8 @@ object Deps {
 
   val justFp: ModuleID = "io.kevinlee" %% "just-fp" % "1.3.4"
 
+  val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
+
   val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
 
   val githubApi: ModuleID = "org.kohsuke" % "github-api" % "1.95"

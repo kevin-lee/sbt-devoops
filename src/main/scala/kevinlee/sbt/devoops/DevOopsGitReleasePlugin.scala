@@ -4,6 +4,8 @@ import java.io.FileInputStream
 
 import just.fp.syntax._
 
+import just.semver.SemVer
+
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
 
@@ -13,8 +15,6 @@ import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-
-import kevinlee.semver.SemanticVersion
 
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
@@ -154,7 +154,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     gitTagFrom := "master"
   , gitTagDescription := None
 
-  , gitTagName := decideVersion(version.value, v => s"v${SemanticVersion.parseUnsafe(v).render}")
+  , gitTagName := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}")
   , gitTagPushRepo := "origin"
   , gitTag := {
       lazy val basePath = baseDirectory.value
@@ -284,10 +284,10 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     ): SbtTask.Result[Unit] = {
       for {
         projectVersion <- SbtTask.fromNonSbtTask(
-          SemanticVersion.parse(projectVersion)
+          SemVer.parse(projectVersion)
             .leftMap(SbtTaskError.semVerFromProjectVersionParseError(projectVersion, _)))(
           semVer => List(SbtTaskResult.nonSbtTaskResult(
-            s"The semantic version from the project version has been parsed. version: ${semVer.render}")
+            s"The semantic version from the project version has been parsed. version: ${SemVer.render(semVer)}")
           )
         )
         _ <- SbtTask.toLeftWhen(

@@ -3,7 +3,8 @@ package kevinlee.sbt.devoops.data
 import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
 import kevinlee.sbt.SbtCommon.messageOnlyException
-import kevinlee.semver.{ParseError, SemanticVersion}
+
+import just.semver.{ParseError, SemVer}
 
 /**
   * @author Kevin Lee
@@ -19,7 +20,7 @@ object SbtTaskError {
   final case class GitHubTaskError(cause: GitHubError) extends SbtTaskError
   final case class NoFileFound(name: String, filePaths: List[String]) extends SbtTaskError
   final case class SemVerFromProjectVersionParseError(projectVersion: String, parseError: ParseError) extends SbtTaskError
-  final case class VersionNotEligibleForTagging(semVer: SemanticVersion) extends SbtTaskError
+  final case class VersionNotEligibleForTagging(semVer: SemVer) extends SbtTaskError
   final case class IoError(name: String, throwable: Throwable) extends SbtTaskError
 
   def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
@@ -37,7 +38,7 @@ object SbtTaskError {
   def semVerFromProjectVersionParseError(projectVersion: String, parseError: ParseError): SbtTaskError =
     SemVerFromProjectVersionParseError(projectVersion, parseError)
 
-  def versionNotEligibleForTagging(semVer: SemanticVersion): SbtTaskError =
+  def versionNotEligibleForTagging(semVer: SemVer): SbtTaskError =
     VersionNotEligibleForTagging(semVer)
 
   def ioError(name: String, throwable: Throwable): SbtTaskError =
@@ -62,7 +63,7 @@ object SbtTaskError {
       s"Parsing semantic version from project version failed. [projectVersion: $projectVersion, error: ${ParseError.render(parseError)}]"
 
     case VersionNotEligibleForTagging(semVer) =>
-      s"""|  This version is not eligible for tagging. [version: ${semVer.render}]
+      s"""|  This version is not eligible for tagging. [version: ${SemVer.render(semVer)}]
           |  It should be GA version with any pre-release or meta-info suffix
           |    e.g.)
           |    * 1.0.0 (⭕️)
