@@ -1,7 +1,6 @@
 import BuildTools._
 import ProjectInfo._
-import sbt.{Path, ScmInfo}
-import org.scoverage.coveralls.Imports.CoverallsKeys._
+import sbt.ScmInfo
 
 lazy val writeVersion = inputKey[Unit]("Write Version in File'")
 
