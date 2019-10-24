@@ -24,10 +24,6 @@ lazy val root = (project in file("."))
   , startYear := Some(2018)
   , sbtPlugin := true
   , sbtVersion in Global := "1.3.3"
-  , scalaCompilerBridgeSource := {
-      val sv = appConfiguration.value.provider.id.version
-      ("org.scala-sbt" % "compiler-interface" % sv % "component").sources
-    }
   , crossSbtVersions := CrossSbtVersions
   , scalacOptions ++= crossVersionProps(commonScalacOptions, scalaVersion.value) {
         case Some((2, 12)) =>
@@ -73,9 +69,5 @@ lazy val root = (project in file("."))
       case _ =>
         true
     })
-
-// set up 'scripted; sbt plugin for testing sbt plugins
-//  , scriptedLaunchOpts ++=
-//      Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
 
 )

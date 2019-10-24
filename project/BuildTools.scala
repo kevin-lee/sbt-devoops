@@ -8,7 +8,7 @@ import sbt.{CrossVersion, IO, _}
   */
 object BuildTools {
 
-  type VersionSpecificFunction[T] = PartialFunction[Option[(Int, Int)], T]
+  type VersionSpecificFunction[T] = PartialFunction[Option[(Long, Long)], T]
 
   def envVar: String => Option[String] = sys.env.get
 
