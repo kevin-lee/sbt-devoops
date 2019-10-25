@@ -41,9 +41,11 @@ object DevOopsJavaPlugin extends AutoPlugin {
 
   , javacOptions ++= Seq(
       "-source", javaVersion.value
-    , "-target", javaVersion.value
-    , "-Xlint:unchecked"
     , "-encoding", "UTF-8"
+    )
+  , javacOptions in (Compile, compile) ++= Seq(
+      "-target", javaVersion.value
+    , "-Xlint:unchecked"
     )
   )
 
