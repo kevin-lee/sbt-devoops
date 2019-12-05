@@ -9,7 +9,7 @@ SBT Plugin to help CI and CD
 # Get sbt-devoops
 In the `project/plugins.sbt`, add the following line,
 ```sbt
-addSbtPlugin("io.kevinlee" % "sbt-devoops" % "1.0.2")
+addSbtPlugin("io.kevinlee" % "sbt-devoops" % "1.0.3")
 ```
 
 # DevOopsScalaPlugin
