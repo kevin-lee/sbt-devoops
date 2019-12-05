@@ -2,6 +2,43 @@ import BuildTools._
 import ProjectInfo._
 import sbt.ScmInfo
 
+val ProjectScalaVersion: String = "2.12.10"
+val CrossScalaVersions: Seq[String] = Seq("2.10.7", ProjectScalaVersion)
+
+val GlobalSbtVersion: String = "1.3.4"
+
+val CrossSbtVersions: Seq[String] = Seq("0.13.17", GlobalSbtVersion)
+
+val hedgehogVersion: String = "64eccc9ca7dbe7a369208a14a97a25d7ccbbda67"
+
+val hedgehogRepo: Resolver =
+  "bintray-scala-hedgehog" at "https://dl.bintray.com/hedgehogqa/scala-hedgehog"
+
+val hedgehogLibs: Seq[ModuleID] = Seq(
+    "qa.hedgehog" %% "hedgehog-core" % hedgehogVersion % Test
+  , "qa.hedgehog" %% "hedgehog-runner" % hedgehogVersion % Test
+  , "qa.hedgehog" %% "hedgehog-sbt" % hedgehogVersion % Test
+  )
+
+val justFp: ModuleID = "io.kevinlee" %% "just-fp" % "1.3.5"
+
+val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
+
+val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
+
+val githubApi: ModuleID = "org.kohsuke" % "github-api" % "1.95"
+
+val javaxActivation210: List[ModuleID] = List(
+  "javax.activation" % "activation" % "1.1.1"
+  , "javax.activation" % "javax.activation-api" % "1.2.0"
+  , "com.google.code.findbugs" % "jsr305" % "3.0.2"
+  )
+
+val javaxActivation212: List[ModuleID] = List(
+  "javax.activation" % "activation" % "1.1.1"
+  , "javax.activation" % "javax.activation-api" % "1.2.0"
+  )
+
 lazy val writeVersion = inputKey[Unit]("Write Version in File'")
 
 lazy val root = (project in file("."))
@@ -23,7 +60,7 @@ lazy val root = (project in file("."))
 
   , startYear := Some(2018)
   , sbtPlugin := true
-  , sbtVersion in Global := "1.3.3"
+  , sbtVersion in Global := GlobalSbtVersion
   , crossSbtVersions := CrossSbtVersions
   , scalacOptions ++= crossVersionProps(commonScalacOptions, scalaVersion.value) {
         case Some((2, 12)) =>
@@ -36,19 +73,19 @@ lazy val root = (project in file("."))
   , scalacOptions in (Compile, console) := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings")
   , wartremoverErrors in (Compile, compile) ++= commonWarts
   , wartremoverErrors in (Test, compile) ++= commonWarts
-  , resolvers += Deps.hedgehogRepo
+  , resolvers += hedgehogRepo
   , addCompilerPlugin("org.typelevel" % "kind-projector" % "0.10.3" cross CrossVersion.binary)
   , libraryDependencies ++=
       crossVersionProps(
           Seq(
-            Deps.commonsIo, Deps.githubApi, Deps.justFp, Deps.semVer
-          ) ++ Deps.hedgehogLibs
+            commonsIo, githubApi, justFp, semVer
+          ) ++ hedgehogLibs
         , scalaVersion.value
       ) {
         case Some((2, 12)) =>
-          Deps.javaxActivation212
+          javaxActivation212
         case Some((2, 10)) =>
-          Deps.javaxActivation210
+          javaxActivation210
       }
   , testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework"))
 
