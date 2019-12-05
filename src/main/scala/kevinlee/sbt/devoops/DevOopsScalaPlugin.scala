@@ -1,13 +1,11 @@
 package kevinlee.sbt.devoops
 
+import just.semver.SemVer.{Major, Minor, Patch}
+import just.semver.{ParseError, SemVer}
 import kevinlee.sbt.SbtCommon._
-
-import just.semver.SemVer
-import just.semver.SemVer.{Major, Minor}
-
 import sbt.Keys._
 import sbt.plugins.JvmPlugin
-import sbt.{AutoPlugin, CircularDependencyLevel, Compile, PluginTrigger, Setting, SettingKey, plugins, settingKey}
+import sbt.{AutoPlugin, CircularDependencyLevel, Compile, PluginTrigger, Setting, SettingKey, plugins, settingKey, _}
 
 /**
   * @author Kevin Lee
@@ -89,6 +87,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
       , "-Xlint:unsound-match"              // Pattern match may not be typesafe.
       , "-Ywarn-unused-import"
       , "-Xlint:constant"                   // Evaluation of a constant arithmetic expression results in an error.
+      , "-Ypartial-unification"
     )
 
     val scalacOptions2_11: Seq[String] = Seq(
@@ -109,6 +108,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
     , "-Xlint:type-parameter-shadow"      // A local type parameter shadows a type already in scope.
     , "-Xlint:unsound-match"              // Pattern match may not be typesafe.
     , "-Ywarn-unused-import"
+    , "-Ypartial-unification"
     )
 
     val aggressiveScalacOptions2_13: Seq[String] = Seq(
@@ -140,6 +140,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
     , "-Ywarn-unused:patvars"             // Warn if a variable bound in a pattern is unused.
     , "-Ywarn-unused:privates"            // Warn if a private member is unused.
     , "-Ywarn-unused-import"
+    , "-Ypartial-unification"
     )
 
     val aggressiveScalacOptions2_12: Seq[String] = aggressiveScalacOptions2_11
@@ -190,7 +191,19 @@ object DevOopsScalaPlugin extends AutoPlugin {
       )(versionSpecificScalacOptions(useAggressiveScalacOptions.value))
     , scalacOptions in (Compile, console) := essentialOptions
     , updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error)
-
+    , libraryDependencies ++=
+      (SemVer.parse(scalaVersion.value) match {
+        case Right(SemVer(Major(2), Minor(10), Patch(7), _, _)) =>
+          Seq("com.milessabin" % "si2712fix-plugin_2.10.7" % "1.2.0" % "plugin->default(compile)")
+        case Right(_: SemVer) =>
+          Seq.empty
+        case Left(error) =>
+          sLog.value.warn(
+            "Parsing scalaVersion failed when setting up partial-unification\n" +
+            s"Parse failure info: ${ParseError.render(error)}"
+          )
+          Seq.empty
+      })
   )
 
   // $COVERAGE-ON$
