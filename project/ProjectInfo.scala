@@ -6,11 +6,6 @@ import wartremover.{Wart, Warts}
   */
 object ProjectInfo {
 
-  val ProjectScalaVersion: String = "2.12.10"
-  val CrossScalaVersions: Seq[String] = Seq("2.10.7", ProjectScalaVersion)
-
-  val CrossSbtVersions: Seq[String] = Seq("0.13.17", "1.3.3")
-
   val ProjectVersion: String = "1.0.2"
 
   val commonScalacOptions: Seq[String] = Seq(
