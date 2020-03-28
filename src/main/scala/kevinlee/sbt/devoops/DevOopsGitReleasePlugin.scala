@@ -172,7 +172,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar")
   , devOopsCopyReleasePackages := {
       val result: Vector[File] = copyFiles(
-          s"devOopsCopyReleasePackages"
+          "devOopsCopyReleasePackages"
         , CaseSensitivity.caseSensitive
         , baseDirectory.value
         , devOopsPackagedArtifacts.value
