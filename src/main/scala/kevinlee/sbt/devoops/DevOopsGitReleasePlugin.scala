@@ -3,19 +3,15 @@ package kevinlee.sbt.devoops
 import java.io.FileInputStream
 
 import just.fp.syntax._
-
 import just.semver.SemVer
-
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
-
+import kevinlee.github.GitHubApi.ReleaseType
 import kevinlee.github.data._
 import kevinlee.github.{GitHubApi, GitHubTask}
-
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
@@ -65,6 +61,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
     lazy val artifactsRequiredForGitHubRelease: SettingKey[Boolean] =
       settingKey[Boolean]("Option to upload artifacts to GitHub when doing GitHub release (default: true so upload the files)")
+
+    lazy val isDraftGitHubRelease: SettingKey[Boolean] =
+      settingKey[Boolean]("Option to do a draft GitHub release (default: false).")
 
     lazy val gitHubRelease: TaskKey[Unit] =
       taskKey[Unit]("Release the current version without creating a tag. It uploads the packaged files and changelog to GitHub.")
@@ -190,8 +189,10 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   , gitHubAuthTokenFile :=
       Some(new File(Io.getUserHome, ".github"))
   , artifactsRequiredForGitHubRelease := true
+  , isDraftGitHubRelease := false
   , gitHubRelease := {
       lazy val tagName = TagName(gitTagName.value)
+      lazy val releaseTye = ReleaseType.trueToDraft(isDraftGitHubRelease.value)
       lazy val uploadArtifacts = artifactsRequiredForGitHubRelease.value
       lazy val assets = devOopsCopyReleasePackages.value
       lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
@@ -222,6 +223,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           _ <- SbtTask.handleGitHubTask(
               runGitHubRelease(
                   tagName
+                , releaseTye
                 , assets
                 , baseDir
                 , ChangelogLocation(changelogLocation.value)
@@ -236,6 +238,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val tagName = TagName(gitTagName.value)
       lazy val tagDesc = gitTagDescription.value
       lazy val tagFrom = BranchName(gitTagFrom.value)
+      lazy val releaseTye = ReleaseType.trueToDraft(isDraftGitHubRelease.value)
       lazy val uploadArtifacts = artifactsRequiredForGitHubRelease.value
       lazy val assets = devOopsCopyReleasePackages.value
       lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
@@ -262,6 +265,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           _ <-  SbtTask.handleGitHubTask(
               runGitHubRelease(
                   tagName
+                , releaseTye
                 , assets
                 , baseDir
                 , ChangelogLocation(changelogLocation.value)
@@ -325,6 +329,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
   private def runGitHubRelease(
       tagName: TagName
+    , releaseType: ReleaseType
     , assets: Vector[File]
     , baseDir: File
     , changelogLocation: ChangelogLocation
@@ -352,6 +357,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               gitHub
             , repo
             , tagName
+            , releaseType
             , changelog
             , assets
             ))(
