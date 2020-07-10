@@ -6,40 +6,51 @@ on:
       - '*'
 
 jobs:
-  build_sbt_0_13:
+
+  publish:
+#    needs: build
+
     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v1
-    - name: sbt test and packagedArtifacts for Scala 2.10 and sbt 0.13.x
-      run: |
-        echo "Run] sbt packagedArtifacts"
-        echo 'sbt -J-Xmx2048m "++2.10.7!" "^^0.13.17" clean test packagedArtifacts'
-        sbt -J-Xmx2048m "++2.10.7!" "^^0.13.17" clean test packagedArtifacts
-    - name: sbt Publish for Scala 2.10 and sbt 0.13.x
-      env:
-        BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-        BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
-      run: |
-        echo "Run] sbt publish"
-        echo 'sbt -J-Xmx2048m "++2.10.7!" "^^0.13.17" clean publish'
-        sbt -J-Xmx2048m "++2.10.7!" "^^0.13.17" clean publish
-
-  build_sbt_1_0:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scala:
+          - { version: "2.10.7", binary-version: "2.10", java-version: "8", sbt-version: "0.13.18" }
+          - { version: "2.12.11", binary-version: "2.12", java-version: "11", sbt-version: "1.3.13" }
 
     steps:
-    - uses: actions/checkout@v1
-    - name: sbt test and packagedArtifacts for Scala 2.12 and sbt 1.x
-      run: |
-        echo "Run] sbt packagedArtifacts"
-        echo 'sbt -J-Xmx2048m "++2.12.10!" "^^1.3.4" clean test packagedArtifacts'
-        sbt -J-Xmx2048m "++2.12.10!" "^^1.3.4" clean test packagedArtifacts
-    - name: sbt Publish for Scala 2.12 and sbt 1.x
-      env:
-        BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-        BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
-      run: |
-        echo "Run] sbt publish"
-        echo 'sbt -J-Xmx2048m "++2.12.10!" "^^1.3.4" clean publish'
-        sbt -J-Xmx2048m "++2.12.10!" "^^1.3.4" clean publish
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.scala.java-version }}
+
+      - name: Cache Coursier
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-coursier-scala-${{ matrix.scala.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-coursier-scala-${{ matrix.scala.binary-version }}-
+
+      - name: Cache Ivy
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/cache
+          key: ${{ runner.os }}-ivy-scala-${{ matrix.scala.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-ivy-scala-${{ matrix.scala.binary-version }}-
+
+      - name: sbt Publish
+        env:
+          BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+          BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
+        run: |
+          echo "Run] sbt publish for Scala ${{ matrix.scala.version }}"
+          echo 'sbt -J-Xmx2048m ++${{ matrix.scala.version }}! ^^${{ matrix.scala.sbt-version }} -v clean publish"'
+          sbt -J-Xmx2048m \
+            ++${{ matrix.scala.version }}! \
+            ^^${{ matrix.scala.sbt-version }} \
+            -v \
+            clean \
+            publish
+          echo "====================="
