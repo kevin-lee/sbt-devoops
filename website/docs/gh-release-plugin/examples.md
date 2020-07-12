@@ -117,6 +117,11 @@ jobs:
 
 ```
 
+If you want to manually run it, you need run at least the following two tasks.
+```bash
+sbt packagedArtifacts gitHubRelease
+```
+
 ## A Project with Multiple Sub-projects
 :::caution NOTE:
 To be added...

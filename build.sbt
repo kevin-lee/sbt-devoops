@@ -41,21 +41,25 @@ val javaxActivation212: List[ModuleID] = List(
 
 lazy val writeVersion = inputKey[Unit]("Write Version in File'")
 
+val GitHubUsername: String = "Kevin-Lee"
+val ProjectName: String = "sbt-devoops"
+
 lazy val root = (project in file("."))
+  .enablePlugins(DocusaurPlugin)
   .settings(
     organization := "io.kevinlee"
-  , name         := "sbt-devoops"
+  , name         := ProjectName
   , scalaVersion := ProjectScalaVersion
   , version      := ProjectVersion
   , description  := "DevOops - DevOps tool for GitHub"
   , developers   := List(
-      Developer("Kevin-Lee", "Kevin Lee", "kevin.code@kevinlee.io", url("https://github.com/Kevin-Lee"))
+      Developer(GitHubUsername, "Kevin Lee", "kevin.code@kevinlee.io", url(s"https://github.com/$GitHubUsername"))
     )
-  , homepage := Some(url("https://github.com/Kevin-Lee/sbt-devoops"))
+  , homepage := Some(url(s"https://github.com/$GitHubUsername/$ProjectName"))
   , scmInfo :=
       Some(ScmInfo(
-        url("https://github.com/Kevin-Lee/sbt-devoops")
-      , "git@github.com:Kevin-Lee/sbt-devoops.git"
+        url(s"https://github.com/$GitHubUsername/$ProjectName")
+      , s"git@github.com:$GitHubUsername/$ProjectName.git"
     ))
 
   , startYear := Some(2018)
@@ -93,7 +97,7 @@ lazy val root = (project in file("."))
   , publishMavenStyle := false
 
   , bintrayPackageLabels := Seq("sbt", "plugin")
-  , bintrayVcsUrl := Some("""git@github.com:Kevin-Lee/sbt-devoops.git""")
+  , bintrayVcsUrl := Some(s"""git@github.com:$GitHubUsername/$ProjectName.git""")
   , bintrayRepository := "sbt-plugins"
 
   , initialCommands in console := """import kevinlee.sbt._"""
@@ -106,5 +110,10 @@ lazy val root = (project in file("."))
       case _ =>
         true
     })
+  , docusaurDir := (ThisBuild / baseDirectory).value / "website"
+  , docusaurBuildDir := docusaurDir.value / "build"
 
-)
+  , gitHubPagesOrgName := GitHubUsername
+  , gitHubPagesRepoName := ProjectName
+
+  )
