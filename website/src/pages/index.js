@@ -12,7 +12,7 @@ const features = [
     imageUrl: 'img/gear.svg',
     description: (
       <>
-        The only requirement is the GitHub access token
+        The only requirement to use sbt-devoops is the GitHub access token
         with <code>public_repo</code> scope.
       </>
     ),
