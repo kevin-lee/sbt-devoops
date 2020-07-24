@@ -52,8 +52,8 @@ const websiteConfig = {
               to: 'docs/',
             },
             {
-              label: 'Config',
-              to: 'docs/config/',
+              label: 'DevOops - GitHub Release Plugin',
+              to: 'docs/gh-release-plugin/config-and-run',
             },
           ],
         },
