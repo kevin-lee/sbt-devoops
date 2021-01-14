@@ -15,7 +15,7 @@ import cats.implicits._
   * @author Kevin Lee
   * @since 2019-03-09
   */
-object GitHubApi {
+object OldGitHubApi {
   val contentTypeMap: MimetypesFileTypeMap = {
     val map = new javax.activation.MimetypesFileTypeMap()
     map.addMimeTypes("application/zip jar zip")
@@ -78,7 +78,7 @@ object GitHubApi {
       GitHubError.releaseAlreadyExists(tagName).asLeft
     } else {
       for {
-        gHRepository <- GitHubApi.getRepo(gitHub, repo)
+        gHRepository <- OldGitHubApi.getRepo(gitHub, repo)
         release <- createGHRelease(gHRepository, tagName, changelog)
       } yield GitHubRelease(
           tagName

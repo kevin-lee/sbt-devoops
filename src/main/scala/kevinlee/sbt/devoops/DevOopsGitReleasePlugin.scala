@@ -12,7 +12,7 @@ import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
 
 import kevinlee.github.data._
-import kevinlee.github.{GitHubApi, GitHubTask}
+import kevinlee.github.{OldGitHubApi, GitHubTask}
 
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
@@ -347,11 +347,11 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
             r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
           )
         gitHub <- SbtTask.eitherTWithWriter(
-            GitHubApi.connectWithOAuth(oAuthToken))(
+            OldGitHubApi.connectWithOAuth(oAuthToken))(
             _ => List("Connect GitHub with OAuth")
           )
         gitHubRelease <- SbtTask.eitherTWithWriter(
-          GitHubApi.release(
+          OldGitHubApi.release(
               gitHub
             , repo
             , tagName
