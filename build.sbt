@@ -40,14 +40,14 @@ lazy val root = (project in file("."))
   , libraryDependencies ++=
       crossVersionProps(
           Seq(
-            libs.commonsIo, libs.githubApi, libs.justFp, libs.semVer
+            libs.commonsIo, libs.githubApi, libs.semVer
           ) ++ libs.hedgehogLibs
         , scalaVersion.value
       ) {
         case Some((2, 12)) =>
-          libs.javaxActivation212
+          libs.javaxActivation212 ++ List(libs.cats)
         case Some((2, 10)) =>
-          libs.javaxActivation210
+          libs.javaxActivation210 ++ List(libs.cats1)
       }
   , testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework"))
 
@@ -82,7 +82,7 @@ lazy val props = new {
   val ProjectName: String = "sbt-devoops"
 
   val ProjectScalaVersion: String = "2.12.10"
-  val CrossScalaVersions: Seq[String] = Seq("2.10.7", ProjectScalaVersion)
+  val CrossScalaVersions: Seq[String] = Seq("2.10.7", ProjectScalaVersion).distinct
 
   val GlobalSbtVersion: String = "1.3.4"
 
@@ -103,7 +103,9 @@ lazy val libs = new {
     , "qa.hedgehog" %% "hedgehog-sbt" % props.hedgehogVersion % Test
   )
 
-  val justFp: ModuleID = "io.kevinlee" %% "just-fp" % "1.3.5"
+  val cats1: ModuleID = "org.typelevel" %% "cats-core" % "1.2.0"
+
+  val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.3.1"
 
   val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
 

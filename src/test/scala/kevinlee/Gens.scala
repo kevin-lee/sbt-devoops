@@ -8,7 +8,7 @@ import just.semver.SemVer.{Major, Minor, Patch}
 
 import scala.annotation.tailrec
 
-import just.fp._, syntax._
+import cats.implicits._
 
 /**
   * @author Kevin Lee
@@ -43,7 +43,7 @@ object Gens {
     y <- genNonNegativeInt
   } yield {
     val z =
-      if (x !== y) y
+      if (x =!= y) y
       else if (y === Int.MaxValue) 0
       else y + 1
     (x, z)

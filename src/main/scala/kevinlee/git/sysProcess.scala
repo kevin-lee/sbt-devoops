@@ -2,7 +2,7 @@ package kevinlee.git
 
 import java.io.File
 
-import just.fp.syntax._
+import cats.implicits._
 
 import scala.sys.process.ProcessLogger
 
