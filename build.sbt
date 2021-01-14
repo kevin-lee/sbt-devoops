@@ -47,7 +47,7 @@ lazy val root = (project in file("."))
         case Some((2, 12)) =>
           libs.javaxActivation212 ++ List(libs.cats)
         case Some((2, 10)) =>
-          libs.javaxActivation210 ++ List(libs.cats1)
+          Seq.empty
       }
   , testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework"))
 
@@ -82,11 +82,11 @@ lazy val props = new {
   val ProjectName: String = "sbt-devoops"
 
   val ProjectScalaVersion: String = "2.12.10"
-  val CrossScalaVersions: Seq[String] = Seq("2.10.7", ProjectScalaVersion).distinct
+  val CrossScalaVersions: Seq[String] = Seq(ProjectScalaVersion).distinct
 
   val GlobalSbtVersion: String = "1.3.4"
 
-  val CrossSbtVersions: Seq[String] = Seq("0.13.17", GlobalSbtVersion)
+  val CrossSbtVersions: Seq[String] = Seq(GlobalSbtVersion).distinct
 
   val hedgehogVersion: String = "64eccc9ca7dbe7a369208a14a97a25d7ccbbda67"
 
@@ -103,8 +103,6 @@ lazy val libs = new {
     , "qa.hedgehog" %% "hedgehog-sbt" % props.hedgehogVersion % Test
   )
 
-  val cats1: ModuleID = "org.typelevel" %% "cats-core" % "1.2.0"
-
   val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.3.1"
 
   val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
@@ -112,12 +110,6 @@ lazy val libs = new {
   val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
 
   val githubApi: ModuleID = "org.kohsuke" % "github-api" % "1.95"
-
-  val javaxActivation210: List[ModuleID] = List(
-    "javax.activation" % "activation" % "1.1.1"
-    , "javax.activation" % "javax.activation-api" % "1.2.0"
-    , "com.google.code.findbugs" % "jsr305" % "3.0.2"
-  )
 
   val javaxActivation212: List[ModuleID] = List(
     "javax.activation" % "activation" % "1.1.1"
