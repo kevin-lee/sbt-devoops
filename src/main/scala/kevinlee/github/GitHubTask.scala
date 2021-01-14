@@ -1,6 +1,6 @@
 package kevinlee.github
 
-import just.fp._
+import cats.data._
 import kevinlee.git.{Git, GitCmdAndResult}
 import kevinlee.github.data.GitHubError
 
@@ -19,7 +19,7 @@ object GitHubTask {
   ): GitHubTaskResult[A] =
     EitherT[GitHubTaskHistoryWriter, GitHubError, A](
       taskResult.leftMap(GitHubError.causedByGitCommandError)
-        .run
+        .value
         .mapWritten(_.map(GitCmdAndResult.render))
     )
 }

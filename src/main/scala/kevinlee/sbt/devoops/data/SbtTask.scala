@@ -2,8 +2,9 @@ package kevinlee.sbt.devoops.data
 
 import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
 
-import just.fp.syntax._
-import just.fp._
+import cats._
+import cats.data._
+import cats.implicits._
 
 import kevinlee.git.Git
 import kevinlee.github.GitHubTask
@@ -29,13 +30,13 @@ object SbtTask {
   ): Result[A] =
     EitherT[SbtTaskHistoryWriter, SbtTaskError, A](
       taskResult.leftMap(SbtTaskError.gitCommandTaskError)
-        .run
+        .value
         .mapWritten(_.map(SbtTaskResult.gitCommandTaskResult))
     )
 
   def toLeftWhen[A](condition: => Boolean, whenFalse: => A): EitherT[SbtTaskHistoryWriter, A, Unit] =
     EitherT[SbtTaskHistoryWriter, A, Unit] {
-      val aOrB = if (condition) whenFalse.left else ().right
+      val aOrB = if (condition) whenFalse.asLeft else ().asRight
       Writer(
         List.empty[SbtTaskResult]
       , aOrB
@@ -49,7 +50,7 @@ object SbtTask {
   ): EitherT[Writer[W, ?], A, B] = EitherT[Writer[W, ?], A, B] {
     val w = r match {
       case Left(a) =>
-        implicitly[Monoid[W]].zero
+        implicitly[Monoid[W]].empty
       case Right(b) =>
         fw(b)
     }
@@ -80,7 +81,7 @@ object SbtTask {
   def handleGitHubTask(gitHubTaskResult: GitHubTask.GitHubTaskResult[Unit]): Result[Unit] =
     EitherT[SbtTaskHistoryWriter, SbtTaskError, Unit](
       gitHubTaskResult.leftMap(SbtTaskError.gitHubTaskError)
-        .run.mapWritten(_.map(SbtTaskResult.gitHubTaskResult))
+        .value.mapWritten(_.map(SbtTaskResult.gitHubTaskResult))
     )
 
 

@@ -2,8 +2,9 @@ package kevinlee.git
 
 import java.io.File
 
-import just.fp._
-import just.fp.syntax._
+import cats._
+import cats.data._
+import cats.implicits._
 
 /**
   * @author Kevin Lee
@@ -31,10 +32,10 @@ object Git {
   , errorHandler: (GitCmd, Int, List[String]) => GitCommandError
   ): PartialFunction[ProcessResult, Either[GitCommandError, (GitCommandResult, A)]] = {
       case ProcessResult.Success(outputs) =>
-        (GitCommandResult.genericResult(outputs), successHandler(outputs)).right
+        (GitCommandResult.genericResult(outputs), successHandler(outputs)).asRight
 
       case ProcessResult.Failure(code, errors) =>
-        errorHandler(gitCmd, code, errors).left
+        errorHandler(gitCmd, code, errors).asLeft
     }
 
   def git(baseDir: File, commandAndArgs: List[String]): ProcessResult =
@@ -91,9 +92,9 @@ object Git {
   , r: Either[GitCommandError, (GitCommandResult, A)]
   ): CmdHistoryWriter[Either[GitCommandError, A]] = r match {
     case Left(error) =>
-      Writer(List.empty, error.left)
+      Writer(List.empty, error.asLeft)
     case Right((cmdResult, a)) =>
-      Writer(List(GitCmdAndResult(gitCmd, cmdResult)), a.right)
+      Writer(List(GitCmdAndResult(gitCmd, cmdResult)), a.asRight)
   }
 
   def currentBranchName(baseDir: File): CmdResult[BranchName] = EitherT(

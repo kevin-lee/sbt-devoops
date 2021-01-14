@@ -2,7 +2,9 @@ package kevinlee.sbt.devoops
 
 import java.io.FileInputStream
 
-import just.fp.syntax._
+import cats.syntax.either._
+import cats.syntax.eq._
+import cats.instances.all._
 
 import just.semver.SemVer
 
@@ -98,9 +100,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         copied
       } match {
         case scala.util.Success(files) =>
-          files.right
+          files.asRight
         case scala.util.Failure(error) =>
-          SbtTaskError.ioError(taskName, error).left
+          SbtTaskError.ioError(taskName, error).asLeft
       }
 
     def readOAuthToken(maybeFile: Option[File]): Either[GitHubError, OAuthToken] =
@@ -109,9 +111,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           val props = new java.util.Properties()
           props.load(new FileInputStream(file))
           Option(props.getProperty("oauth"))
-            .fold[Either[GitHubError, OAuthToken]](GitHubError.noCredential.left)(token => OAuthToken(token).right)
+            .fold[Either[GitHubError, OAuthToken]](GitHubError.noCredential.asLeft)(token => OAuthToken(token).asRight)
         case None =>
-          GitHubError.noCredential.left
+          GitHubError.noCredential.asLeft
       }
 
     def getRepoFromUrl(repoUrl: RepoUrl): Either[GitHubError, Repo] = {
@@ -122,9 +124,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           repoUrl.repoUrl.split(":").last.split("/")
       names.takeRight(2) match {
         case Array(org, name) =>
-          Repo(RepoOrg(org), RepoName(name.stripSuffix(".git"))).right
+          Repo(RepoOrg(org), RepoName(name.stripSuffix(".git"))).asRight
         case _ =>
-          GitHubError.invalidGitHubRepoUrl(repoUrl).left
+          GitHubError.invalidGitHubRepoUrl(repoUrl).asLeft
       }
     }
 
@@ -133,12 +135,12 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       // baseDirectory.value, changelogLocation.value)
       val changelog = new File(dir, changelogName)
       if (!changelog.exists) {
-        GitHubError.changelogNotFound(changelog.getCanonicalPath, tagName).left
+        GitHubError.changelogNotFound(changelog.getCanonicalPath, tagName).asLeft
       } else {
         lazy val changelogSource = scala.io.Source.fromFile(changelog)
         try {
           val log = changelogSource.getLines().mkString("\n")
-          Changelog(log).right
+          Changelog(log).asRight
         } finally {
           changelogSource.close()
         }
@@ -165,7 +167,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val projectVersion = version.value
 
       SbtTask.handleSbtTask(
-        getTagVersion(basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion).run.run
+        getTagVersion(basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion).value.run
       )
     }
   , devOopsCiDir := "ci"
@@ -197,6 +199,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
       lazy val authTokenFile = gitHubAuthTokenFile.value
       lazy val baseDir = baseDirectory.value
+      lazy val artifacts = devOopsPackagedArtifacts.value
       SbtTask.handleSbtTask(
         (for {
           _ <- SbtTask.fromGitTask(Git.fetchTags(baseDir))
@@ -211,7 +214,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               uploadArtifacts && assets.isEmpty
             , SbtTaskError.noFileFound(
                 "devOopsCopyReleasePackages (uploadArtifacts is true)"
-              , devOopsPackagedArtifacts.value
+              , artifacts
               )
             )
           oauth <- SbtTask.eitherTWithWriter(
@@ -229,7 +232,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 , oauth
                 )
             )
-        } yield ()).run.run
+        } yield ()).value.run
       )
     }
   , gitTagAndGitHubRelease := {
@@ -269,7 +272,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 , oauth
                 )
             )
-        } yield ()).run.run
+        } yield ()).value.run
       )
     }
   )
@@ -296,7 +299,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         )
         currentBranchName <- SbtTask.fromGitTask(Git.currentBranchName(basePath))
         _ <- SbtTask.toLeftWhen(
-          currentBranchName.value !== tagFrom.value
+          currentBranchName.value =!= tagFrom.value
           , SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom")
         )
         fetchResult <- SbtTask.fromGitTask(Git.fetchTags(basePath))
@@ -321,7 +324,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     , authTokenFile: Option[File]
     ): Either[GitHubError, OAuthToken] =
       sys.env.get(envVarName)
-        .fold(readOAuthToken(authTokenFile))(token => OAuthToken(token).right)
+        .fold(readOAuthToken(authTokenFile))(token => OAuthToken(token).asRight)
 
   private def runGitHubRelease(
       tagName: TagName

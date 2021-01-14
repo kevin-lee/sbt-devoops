@@ -9,7 +9,7 @@ import kevinlee.git.Git.TagName
 import kevinlee.github.data._
 import org.kohsuke.github.{GHRelease, GHRepository, GitHub}
 
-import just.fp.syntax._
+import cats.implicits._
 
 /**
   * @author Kevin Lee
@@ -27,22 +27,22 @@ object GitHubApi {
     try {
       val github = GitHub.connectUsingOAuth(oAuthToken.token)
       if (github.isCredentialValid)
-        github.right
+        github.asRight
       else
-        GitHubError.invalidCredential.left
+        GitHubError.invalidCredential.asLeft
     } catch {
       case _: IllegalStateException =>
-        GitHubError.noCredential.left
+        GitHubError.noCredential.asLeft
       case ex: IOException =>
-        GitHubError.connectionFailure(ex.getMessage).left
+        GitHubError.connectionFailure(ex.getMessage).asLeft
     }
 
   def getRepo(gitHub: GitHub, repo: Repo): Either[GitHubError, GHRepository] =
     try {
-      gitHub.getRepository(Repo.repoNameString(repo)).right
+      gitHub.getRepository(Repo.repoNameString(repo)).asRight
     } catch {
       case error: IOException =>
-        GitHubError.gitHubServerError(error.getMessage).left
+        GitHubError.gitHubServerError(error.getMessage).asLeft
     }
 
   def releaseExists(gitHub: GitHub, repo: Repo, tagName: TagName): Boolean = {
@@ -61,10 +61,10 @@ object GitHubApi {
       .body(changelog.changelog)
       .name(tagName.value)
       .create()
-    gHRelease.right
+    gHRelease.asRight
   } catch {
     case throwable: Throwable =>
-      GitHubError.releaseCreationError(throwable.getMessage).left
+      GitHubError.releaseCreationError(throwable.getMessage).asLeft
   }
 
   def release(
@@ -75,11 +75,11 @@ object GitHubApi {
     , assets: Seq[File]
   ): Either[GitHubError, GitHubRelease] =
     if (releaseExists(gitHub, repo, tagName)) {
-      GitHubError.releaseAlreadyExists(tagName).left
+      GitHubError.releaseAlreadyExists(tagName).asLeft
     } else {
       for {
-        gHRepository <- GitHubApi.getRepo(gitHub, repo).right
-        release <- createGHRelease(gHRepository, tagName, changelog).right
+        gHRepository <- GitHubApi.getRepo(gitHub, repo)
+        release <- createGHRelease(gHRepository, tagName, changelog)
       } yield GitHubRelease(
           tagName
         , changelog
