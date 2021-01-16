@@ -6,84 +6,48 @@ import cats._
 import cats.data._
 import cats.implicits._
 
+import effectie.cats._
+import effectie.cats.Effectful._
+
 import kevinlee.git.Git
 import kevinlee.github.GitHubTask
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-01-06
   */
-object SbtTask {
+trait SbtTask[F[_]] {
   // $COVERAGE-OFF$
 
-  type Result[A] = EitherT[SbtTaskHistoryWriter, SbtTaskError, A]
+  import SbtTask._
 
-  def fromNonSbtTask[A](
-     a: Either[SbtTaskError, A])(
-     history: A => List[SbtTaskResult]
-   ): Result[A] = EitherT[SbtTaskHistoryWriter, SbtTaskError, A](
-      Writer(a.fold(_ => List.empty, aa => history(aa)), a)
-    )
+  def fromNonSbtTask[A](fa: F[Either[SbtTaskError, A]])(
+    history: A => List[SbtTaskResult]
+  ): Result[F, A]
 
   def fromGitTask[A](
-    taskResult: => Git.CmdResult[A]
-  ): Result[A] =
-    EitherT[SbtTaskHistoryWriter, SbtTaskError, A](
-      taskResult.leftMap(SbtTaskError.gitCommandTaskError)
-        .value
-        .mapWritten(_.map(SbtTaskResult.gitCommandTaskResult))
-    )
+    taskResult: Git.CmdResult[F, A]
+  ): Result[F, A]
 
-  def toLeftWhen[A](condition: => Boolean, whenFalse: => A): EitherT[SbtTaskHistoryWriter, A, Unit] =
-    EitherT[SbtTaskHistoryWriter, A, Unit] {
-      val aOrB = if (condition) whenFalse.asLeft else ().asRight
-      Writer(
-        List.empty[SbtTaskResult]
-      , aOrB
-      )
-    }
+  def toLeftWhen[A](
+    condition: => Boolean,
+    whenFalse: => A
+  ): EitherT[SbtTaskHistoryWriter[F, *], A, Unit]
 
-
-  def eitherTWithWriter[W: Monoid, A, B](
-    r: Either[A, B])(
+  def eitherTWithWriter0[W: Monoid, A, B](r: Either[A, B])(
     fw: B => W
-  ): EitherT[Writer[W, ?], A, B] = EitherT[Writer[W, ?], A, B] {
-    val w = r match {
-      case Left(a) =>
-        implicitly[Monoid[W]].empty
-      case Right(b) =>
-        fw(b)
-    }
-    Writer(w, r)
-  }
+  ): EitherT[Writer[W, *], A, B]
 
+  def eitherTWithWriter[W: Monoid, A, B](r: F[Either[A, B]])(
+    fw: B => W
+  ): EitherT[WriterT[F, W, *], A, B]
 
   def handleSbtTask(
-    sbtTaskResult: (SbtTaskHistory, Either[SbtTaskError, Unit])
-  ): Unit =
-    sbtTaskResult match {
-      case (history, Left(error)) =>
-        val message = if (history.isEmpty) "no task" else "the following tasks"
-        println(
-          s"""Failure]
-             |>> sbt task failed after finishing $message
-             |${SbtTaskResult.render(SbtTaskResult.sbtTaskResults(history))}
-             |${SbtTaskError.render(error)}
-             |""".stripMargin
-        )
-        SbtTaskError.error(error)
-      case (history, Right(())) =>
-        SbtTaskResult.consolePrintln(
-          SbtTaskResult.sbtTaskResults(history)
-        )
-    }
+    sbtTaskResult: F[(SbtTaskHistory, Either[SbtTaskError, Unit])]
+  ): F[Unit]
 
-  def handleGitHubTask(gitHubTaskResult: GitHubTask.GitHubTaskResult[Unit]): Result[Unit] =
-    EitherT[SbtTaskHistoryWriter, SbtTaskError, Unit](
-      gitHubTaskResult.leftMap(SbtTaskError.gitHubTaskError)
-        .value.mapWritten(_.map(SbtTaskResult.gitHubTaskResult))
-    )
-
+  def handleGitHubTask(
+    gitHubTaskResult: GitHubTask.GitHubTaskResult[F, Unit]
+  ): Result[F, Unit]
 
 //    gitHubTaskResult.run.run match {
 //      case (history, Left(error)) =>
@@ -103,4 +67,138 @@ object SbtTask {
 //        )
 //    }
 
+}
+
+object SbtTask {
+  // $COVERAGE-OFF$
+  type Result[F[_], A] = EitherT[SbtTaskHistoryWriter[F, *], SbtTaskError, A]
+
+  def apply[F[_]: SbtTask]: SbtTask[F] = implicitly[SbtTask[F]]
+
+  implicit def sbtTaskF[F[_]: EffectConstructor: CanCatch: Monad]: SbtTask[F] = new SbtTaskF[F]
+
+  final class SbtTaskF[F[_]: EffectConstructor: CanCatch: Monad] extends SbtTask[F] {
+
+    def fromNonSbtTask[A](fa: F[Either[SbtTaskError, A]])(
+      history: A => List[SbtTaskResult]
+    ): Result[F, A] = EitherT {
+      WriterT(
+        fa.map(orA => (orA.fold(_ => List.empty, aa => history(aa)), orA))
+      )
+    }
+
+    def fromGitTask[A](
+      taskResult: Git.CmdResult[F, A]
+    ): Result[F, A] =
+      EitherT(
+        taskResult
+          .leftMap(SbtTaskError.gitCommandTaskError)
+          .value
+          .mapWritten(_.map(SbtTaskResult.gitCommandTaskResult))
+      )
+
+    def toLeftWhen[A](
+      condition: => Boolean,
+      whenFalse: => A
+    ): EitherT[SbtTaskHistoryWriter[F, *], A, Unit] =
+      EitherT[SbtTaskHistoryWriter[F, *], A, Unit] {
+        val aOrB =
+          if (condition)
+            whenFalse.asLeft
+          else
+            ().asRight
+        WriterT(
+          pureOf(
+            (List.empty[SbtTaskResult], aOrB)
+          )
+        )
+      }
+
+    def eitherTWithWriter0[W: Monoid, A, B](r: Either[A, B])(
+      fw: B => W
+    ): EitherT[Writer[W, ?], A, B] =
+      EitherT[Writer[W, ?], A, B] {
+        val w =
+          r match {
+            case Left(a)  =>
+              implicitly[Monoid[W]].empty
+            case Right(b) =>
+              fw(b)
+          }
+        Writer(w, r)
+      }
+
+    def eitherTWithWriter[W: Monoid, A, B](r: F[Either[A, B]])(
+      fw: B => W
+    ): EitherT[WriterT[F, W, *], A, B] =
+      EitherT {
+        val wf: F[(W, Either[A, B])] = r.map { eth =>
+          val w =
+            eth match {
+              case Left(a)  =>
+                implicitly[Monoid[W]].empty
+              case Right(b) =>
+                fw(b)
+            }
+          (w, eth)
+        }
+        WriterT(wf)
+      }
+
+    def handleSbtTask(
+      sbtTaskResult: F[(SbtTaskHistory, Either[SbtTaskError, Unit])]
+    ): F[Unit] =
+      sbtTaskResult.flatMap {
+        case (history, Left(error)) =>
+          val message =
+            if (history.isEmpty)
+              "no task"
+            else
+              "the following tasks"
+          effectOf(
+            println(
+              s"""Failure]
+                 |>> sbt task failed after finishing $message
+                 |${SbtTaskResult.render(SbtTaskResult.sbtTaskResults(history))}
+                 |${SbtTaskError.render(error)}
+                 |""".stripMargin
+            )
+          )
+          SbtTaskError.error(error)
+        case (history, Right(()))   =>
+          effectOf(
+            SbtTaskResult.consolePrintln(
+              SbtTaskResult.sbtTaskResults(history)
+            )
+          )
+      }
+
+    def handleGitHubTask(
+      gitHubTaskResult: GitHubTask.GitHubTaskResult[F, Unit]
+    ): Result[F, Unit] =
+      EitherT[SbtTaskHistoryWriter[F, *], SbtTaskError, Unit](
+        gitHubTaskResult
+          .leftMap(SbtTaskError.gitHubTaskError)
+          .value
+          .mapWritten(_.map(SbtTaskResult.gitHubTaskResult))
+      )
+
+    //    gitHubTaskResult.run.run match {
+    //      case (history, Left(error)) =>
+    //        val gitHubTaskError = SbtTaskError.gitHubTaskError(error)
+    //        val message = if (history.isEmpty) "no task" else "the following tasks"
+    //        println(
+    //          s"""Failure]
+    //             |>> sbt task failed after finishing $message
+    //             |${SbtTaskResult.render(SbtTaskResult.taskResult(history))}
+    //             |${SbtTaskError.render(gitHubTaskError)}
+    //             |""".stripMargin
+    //        )
+    //        SbtTaskError.error(gitHubTaskError)
+    //      case (history, Right(())) =>
+    //        SbtTaskResult.consolePrintln(
+    //          SbtTaskResult.taskResult(history)
+    //        )
+    //    }
+  }
 }

@@ -1,31 +1,32 @@
 package kevinlee.sbt.devoops
 
-import java.io.FileInputStream
-
-import cats.syntax.either._
-import cats.syntax.eq._
+import cats._
+import cats.effect.IO
 import cats.instances.all._
-
+import cats.syntax.all._
+import effectie.cats.Effectful._
+import effectie.cats._
 import just.semver.SemVer
-
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
-
 import kevinlee.github.data._
-import kevinlee.github.{OldGitHubApi, GitHubTask}
-
+import kevinlee.github.{GitHubTask, OldGitHubApi}
 import kevinlee.sbt.SbtCommon.messageOnlyException
+import kevinlee.sbt.devoops.data.SbtTaskResult.SbtTaskHistory
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
+
+import java.io.FileInputStream
 
 /**
   * @author Kevin Lee
   * @since 2019-01-01
   */
 object DevOopsGitReleasePlugin extends AutoPlugin {
+
+  def TheGitHubApi[F[_]: EffectConstructor: CanCatch: Monad]: OldGitHubApi[F] = OldGitHubApi[F]
 
   // $COVERAGE-OFF$
   override def requires: Plugins = empty
@@ -166,9 +167,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val pushRepo = Repository(gitTagPushRepo.value)
       lazy val projectVersion = version.value
 
-      SbtTask.handleSbtTask(
-        getTagVersion(basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion).value.run
-      )
+      val run1: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] =
+        getTagVersion[IO](basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
+        .value
+        .run
+
+      SbtTask[IO].handleSbtTask(run1)
+        .unsafeRunSync()
+
     }
   , devOopsCiDir := "ci"
   , devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar")
@@ -200,40 +206,47 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val authTokenFile = gitHubAuthTokenFile.value
       lazy val baseDir = baseDirectory.value
       lazy val artifacts = devOopsPackagedArtifacts.value
-      SbtTask.handleSbtTask(
-        (for {
-          _ <- SbtTask.fromGitTask(Git.fetchTags(baseDir))
-          tags <- SbtTask.fromGitTask(Git.getTag(baseDir))
-          _ <- SbtTask.toLeftWhen(
-                !tags.contains(tagName.value)
-              , SbtTaskError.gitTaskError(
-                  s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}"
-                )
+      val git = Git[IO]
+      val sbtTask = SbtTask[IO]
+      val rslt: SbtTask.Result[IO, Unit] = for {
+        _ <- sbtTask.fromGitTask(git.fetchTags(baseDir))
+        tags <- sbtTask.fromGitTask(git.getTag(baseDir))
+        _ <- sbtTask.toLeftWhen(
+          !tags.contains(tagName.value)
+          , SbtTaskError.gitTaskError(
+            s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}"
+          )
+        )
+        _ <- sbtTask.toLeftWhen(
+          uploadArtifacts && assets.isEmpty
+          , SbtTaskError.noFileFound(
+            "devOopsCopyReleasePackages (uploadArtifacts is true)"
+            , artifacts
+          )
+        )
+        oauth <- sbtTask.eitherTWithWriter(
+          effectOf[IO](
+            getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+              .leftMap(SbtTaskError.gitHubTaskError
               )
-          _ <- SbtTask.toLeftWhen(
-              uploadArtifacts && assets.isEmpty
-            , SbtTaskError.noFileFound(
-                "devOopsCopyReleasePackages (uploadArtifacts is true)"
-              , artifacts
-              )
-            )
-          oauth <- SbtTask.eitherTWithWriter(
-              getGitHubAuthToken(authTokenEnvVar, authTokenFile)
-                .leftMap(SbtTaskError.gitHubTaskError))(
-                _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
-              )
-          _ <- SbtTask.handleGitHubTask(
-              runGitHubRelease(
-                  tagName
-                , assets
-                , baseDir
-                , ChangelogLocation(changelogLocation.value)
-                , Repository(gitTagPushRepo.value)
-                , oauth
-                )
-            )
-        } yield ()).value.run
-      )
+          )
+        )(
+          _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
+        )
+        _ <- sbtTask.handleGitHubTask(
+          runGitHubRelease(
+            tagName
+            , assets
+            , baseDir
+            , ChangelogLocation(changelogLocation.value)
+            , Repository(gitTagPushRepo.value)
+            , oauth
+          )
+        )
+      } yield ()
+      sbtTask.handleSbtTask(
+        rslt.value.run
+      ).unsafeRunSync()
     }
   , gitTagAndGitHubRelease := {
       lazy val tagName = TagName(gitTagName.value)
@@ -247,22 +260,23 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val pushRepo = Repository(gitTagPushRepo.value)
       lazy val projectVersion = version.value
 
-      SbtTask.handleSbtTask(
+      SbtTask[IO].handleSbtTask(
         (for {
-          _ <- SbtTask.toLeftWhen(
+          _ <- SbtTask[IO].toLeftWhen(
                 uploadArtifacts && assets.isEmpty
               , SbtTaskError.noFileFound(
                 "devOopsCopyReleasePackages (uploadArtifacts is true)"
                 , devOopsPackagedArtifacts.value
               )
             )
-          oauth <- SbtTask.eitherTWithWriter(
-            getGitHubAuthToken(authTokenEnvVar, authTokenFile)
-              .leftMap(SbtTaskError.gitHubTaskError))(
+          oauth <- SbtTask[IO].eitherTWithWriter(
+            effectOf[IO](getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+              .leftMap(SbtTaskError.gitHubTaskError))
+            )(
               _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
             )
-          _ <- getTagVersion(baseDir, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
-          _ <-  SbtTask.handleGitHubTask(
+          _ <- getTagVersion[IO](baseDir, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
+          _ <-  SbtTask[IO].handleGitHubTask(
               runGitHubRelease(
                   tagName
                 , assets
@@ -273,51 +287,51 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 )
             )
         } yield ()).value.run
-      )
+      ).unsafeRunSync()
     }
   )
 
-  private def getTagVersion(
+  private def getTagVersion[F[_]: EffectConstructor: CanCatch: Monad](
       basePath: File
     , tagFrom: BranchName
     , tagName: TagName
     , gitTagDescription: Option[String]
     , pushRepo: Repository
     , projectVersion: String
-    ): SbtTask.Result[Unit] = {
+    ): SbtTask.Result[F, Unit] =
       for {
-        projectVersion <- SbtTask.fromNonSbtTask(
-          SemVer.parse(projectVersion)
-            .leftMap(SbtTaskError.semVerFromProjectVersionParseError(projectVersion, _)))(
+        projectVersion <- SbtTask[F].fromNonSbtTask(
+          effectOf(SemVer.parse(projectVersion)
+            .leftMap(SbtTaskError.semVerFromProjectVersionParseError(projectVersion, _)))
+        )(
           semVer => List(SbtTaskResult.nonSbtTaskResult(
             s"The semantic version from the project version has been parsed. version: ${SemVer.render(semVer)}")
           )
         )
-        _ <- SbtTask.toLeftWhen(
+        _ <- SbtTask[F].toLeftWhen(
           projectVersion.pre.isDefined || projectVersion.buildMetadata.isDefined
           , SbtTaskError.versionNotEligibleForTagging(projectVersion)
         )
-        currentBranchName <- SbtTask.fromGitTask(Git.currentBranchName(basePath))
-        _ <- SbtTask.toLeftWhen(
+        currentBranchName <- SbtTask[F].fromGitTask(Git[F].currentBranchName(basePath))
+        _ <- SbtTask[F].toLeftWhen(
           currentBranchName.value =!= tagFrom.value
           , SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom")
         )
-        fetchResult <- SbtTask.fromGitTask(Git.fetchTags(basePath))
-        tagResult <- SbtTask.fromGitTask(
+        fetchResult <- SbtTask[F].fromGitTask(Git[F].fetchTags(basePath))
+        tagResult <- SbtTask[F].fromGitTask(
           gitTagDescription
             .fold(
-              Git.tag(tagName, basePath)
+              Git[F].tag(tagName, basePath)
             ) { desc =>
-              Git.tagWithDescription(
+              Git[F].tagWithDescription(
                 tagName
                 , Git.Description(desc)
                 , basePath
               )
             }
         )
-        pushResult <- SbtTask.fromGitTask(Git.pushTag(pushRepo, tagName, basePath))
+        pushResult <- SbtTask[F].fromGitTask(Git[F].pushTag(pushRepo, tagName, basePath))
       } yield ()
-  }
 
   private def getGitHubAuthToken(
       envVarName: String
@@ -326,32 +340,35 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       sys.env.get(envVarName)
         .fold(readOAuthToken(authTokenFile))(token => OAuthToken(token).asRight)
 
-  private def runGitHubRelease(
+  private def runGitHubRelease[F[_]: EffectConstructor: CanCatch: Monad](
       tagName: TagName
     , assets: Vector[File]
     , baseDir: File
     , changelogLocation: ChangelogLocation
     , gitTagPushRepo: Repository
     , oAuthToken: OAuthToken
-    ): GitHubTask.GitHubTaskResult[Unit] =
+    ): GitHubTask.GitHubTaskResult[F, Unit] =
       for {
-        changelog <- SbtTask.eitherTWithWriter(
-            getChangelog(new File(baseDir, changelogLocation.changeLogLocation), tagName))(
+        changelog <- SbtTask[F].eitherTWithWriter(
+            effectOf[F](getChangelog(new File(baseDir, changelogLocation.changeLogLocation), tagName))
+        )(
             _ => List("Get changelog")
           )
-        url <- GitHubTask.fromGitTask(
-            Git.getRemoteUrl(gitTagPushRepo, baseDir)
+        url <- GitHubTask[F].fromGitTask(
+            Git[F].getRemoteUrl(gitTagPushRepo, baseDir)
           )
-        repo <- SbtTask.eitherTWithWriter(
-            getRepoFromUrl(url))(
+        repo <- SbtTask[F].eitherTWithWriter(
+            effectOf(getRepoFromUrl(url))
+          )(
             r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
           )
-        gitHub <- SbtTask.eitherTWithWriter(
-            OldGitHubApi.connectWithOAuth(oAuthToken))(
+        gitHub <- SbtTask[F].eitherTWithWriter(
+            TheGitHubApi[F].connectWithOAuth(oAuthToken)
+          )(
             _ => List("Connect GitHub with OAuth")
           )
-        gitHubRelease <- SbtTask.eitherTWithWriter(
-          OldGitHubApi.release(
+        gitHubRelease <- SbtTask[F].eitherTWithWriter(
+          TheGitHubApi[F].release(
               gitHub
             , repo
             , tagName
