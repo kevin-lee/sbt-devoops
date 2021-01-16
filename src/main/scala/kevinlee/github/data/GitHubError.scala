@@ -3,24 +3,26 @@ package kevinlee.github.data
 import kevinlee.git.Git.{RepoUrl, TagName}
 import kevinlee.git.GitCommandError
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-03-09
   */
 sealed trait GitHubError
 
 object GitHubError {
-  final case object NoCredential extends GitHubError
-  final case object InvalidCredential extends GitHubError
-  final case class ConnectionFailure(error: String) extends GitHubError
-  final case class GitHubServerError(error: String) extends GitHubError
-  final case class ReleaseAlreadyExists(tagName: TagName) extends GitHubError
-  final case class ReleaseCreationError(message: String) extends  GitHubError
-  final case class InvalidGitHubRepoUrl(repoUrl: RepoUrl) extends GitHubError
+  final case object NoCredential                                                  extends GitHubError
+  final case object InvalidCredential                                             extends GitHubError
+  final case class MalformedURL(url: String, errorMessage: Option[String])        extends GitHubError
+  final case class ConnectionFailure(error: String)                               extends GitHubError
+  final case class GitHubServerError(error: String)                               extends GitHubError
+  final case class ReleaseAlreadyExists(tagName: TagName)                         extends GitHubError
+  final case class ReleaseCreationError(message: String)                          extends GitHubError
+  final case class InvalidGitHubRepoUrl(repoUrl: RepoUrl)                         extends GitHubError
   final case class ChangelogNotFound(changelogLocation: String, tagName: TagName) extends GitHubError
-  final case class CausedByGitCommandError(cause: GitCommandError) extends GitHubError
+  final case class CausedByGitCommandError(cause: GitCommandError)                extends GitHubError
 
   def noCredential: GitHubError = NoCredential
+
+  def malformedURL(url: String, errorMessage: Option[String]): GitHubError = MalformedURL(url, errorMessage)
 
   def invalidCredential: GitHubError = InvalidCredential
 
@@ -51,13 +53,16 @@ object GitHubError {
     case InvalidCredential =>
       "Invalid GitHub access credential"
 
+    case MalformedURL(url, errorMessage) =>
+      s"The given GitHub URL is malformed. URL: ${url.toString} - error: $errorMessage"
+
     case ConnectionFailure(error) =>
       s"GitHub API connection failed - error: $error"
 
     case GitHubServerError(error) =>
       s"GitHub server error - error: $error"
 
-    case ReleaseAlreadyExists(tagName)  =>
+    case ReleaseAlreadyExists(tagName) =>
       s"Error] The release with the given tag name (${tagName.value}) already exists on GitHub."
 
     case ReleaseCreationError(message) =>

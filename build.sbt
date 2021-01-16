@@ -45,7 +45,7 @@ lazy val root = (project in file("."))
         , scalaVersion.value
       ) {
         case Some((2, 12)) =>
-          libs.javaxActivation212 ++ List(libs.cats)
+          libs.javaxActivation212 ++ List(libs.cats, libs.catsEffect, libs.effectie)
         case Some((2, 10)) =>
           Seq.empty
       }
@@ -104,6 +104,10 @@ lazy val libs = new {
   )
 
   val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.3.1"
+
+  val catsEffect: ModuleID = "org.typelevel" %% "cats-effect" % "2.3.1"
+
+  val effectie: ModuleID = "io.kevinlee" %% "effectie-cats-effect" % "1.7.0"
 
   val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
 

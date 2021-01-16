@@ -14,7 +14,7 @@ object SbtTaskResult {
 
   type SbtTaskHistory = List[SbtTaskResult]
 
-  type SbtTaskHistoryWriter[A] = Writer[SbtTaskHistory, A]
+  type SbtTaskHistoryWriter[F[_], A] = WriterT[F, SbtTaskHistory, A]
 
   final case class GitCommandTaskResult(gitCmdAndResult: GitCmdAndResult) extends SbtTaskResult
   

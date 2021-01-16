@@ -1,25 +1,39 @@
 package kevinlee.github
 
+import cats._
 import cats.data._
 import kevinlee.git.{Git, GitCmdAndResult}
+import kevinlee.github.GitHubTask.GitHubTaskResult
 import kevinlee.github.data.GitHubError
 
 /**
   * @author Kevin Lee
   * @since 2019-03-31
   */
+trait GitHubTask[F[_]] {
+  def fromGitTask[A](
+    taskResult: Git.CmdResult[F, A]
+  ): GitHubTaskResult[F, A]
+}
+
 object GitHubTask {
 
-  type GitHubTaskHistoryWriter[A] = Writer[List[String], A]
+  type GitHubTaskHistoryWriter[F[_], A] = WriterT[F, List[String], A]
 
-  type GitHubTaskResult[A] = EitherT[GitHubTaskHistoryWriter, GitHubError, A]
+  type GitHubTaskResult[F[_], A] = EitherT[GitHubTaskHistoryWriter[F, *], GitHubError, A]
 
-  def fromGitTask[A](
-    taskResult: Git.CmdResult[A]
-  ): GitHubTaskResult[A] =
-    EitherT[GitHubTaskHistoryWriter, GitHubError, A](
-      taskResult.leftMap(GitHubError.causedByGitCommandError)
-        .value
-        .mapWritten(_.map(GitCmdAndResult.render))
-    )
+  def apply[F[_]: GitHubTask]: GitHubTask[F] = implicitly[GitHubTask[F]]
+
+  implicit def gitHubTaskF[F[_]: Monad]: GitHubTask[F] = new GitHubTaskF[F]
+
+  final class GitHubTaskF[F[_]: Monad] extends GitHubTask[F] {
+    def fromGitTask[A](
+      taskResult: Git.CmdResult[F, A]
+    ): GitHubTaskResult[F, A] =
+      EitherT[GitHubTaskHistoryWriter[F, *], GitHubError, A](
+        taskResult.leftMap(GitHubError.causedByGitCommandError)
+          .value
+          .mapWritten(_.map(GitCmdAndResult.render))
+      )
+  }
 }
