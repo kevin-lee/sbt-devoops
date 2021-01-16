@@ -24,6 +24,7 @@ lazy val root = (project in file("."))
   , sbtPlugin := true
   , sbtVersion in Global := props.GlobalSbtVersion
   , crossSbtVersions := props.CrossSbtVersions
+  , addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   , scalacOptions ++= crossVersionProps(commonScalacOptions, scalaVersion.value) {
         case Some((2, 12)) =>
           Seq("-Ywarn-unused-import", "-Ywarn-numeric-widen")
@@ -45,7 +46,16 @@ lazy val root = (project in file("."))
         , scalaVersion.value
       ) {
         case Some((2, 12)) =>
-          libs.javaxActivation212 ++ List(libs.cats, libs.catsEffect, libs.effectie)
+          libs.javaxActivation212 ++
+            List(
+              libs.newtype,
+              libs.cats,
+              libs.catsEffect,
+              libs.effectie,
+              libs.github4s,
+              libs.http4sDsl,
+              libs.http4sClient
+            )
         case Some((2, 10)) =>
           Seq.empty
       }
@@ -103,11 +113,19 @@ lazy val libs = new {
     , "qa.hedgehog" %% "hedgehog-sbt" % props.hedgehogVersion % Test
   )
 
+  val newtype: ModuleID = "io.estatico" %% "newtype" % "0.4.4"
+
   val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.3.1"
 
   val catsEffect: ModuleID = "org.typelevel" %% "cats-effect" % "2.3.1"
 
   val effectie: ModuleID = "io.kevinlee" %% "effectie-cats-effect" % "1.7.0"
+
+  val http4sVersion: String = "0.21.15"
+  val http4sDsl: ModuleID = "org.http4s" %% "http4s-dsl" % http4sVersion
+  val http4sClient: ModuleID = "org.http4s" %% "http4s-blaze-client" % http4sVersion
+
+  val github4s: ModuleID = "com.47deg" %% "github4s" % "0.27.1"
 
   val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
 
