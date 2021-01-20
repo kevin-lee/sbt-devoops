@@ -27,7 +27,7 @@ lazy val root = (project in file("."))
   , addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   , scalacOptions ++= crossVersionProps(commonScalacOptions, scalaVersion.value) {
         case Some((2, 12)) =>
-          Seq("-Ywarn-unused-import", "-Ywarn-numeric-widen")
+          Seq("-Ywarn-unused-import", "-Ywarn-numeric-widen", "-language:implicitConversions")
         case Some((2, 11)) =>
           Seq("-Ywarn-numeric-widen")
         case _ =>
@@ -38,24 +38,26 @@ lazy val root = (project in file("."))
   , wartremoverErrors in (Test, compile) ++= commonWarts
   , resolvers += props.hedgehogRepo
   , addCompilerPlugin("org.typelevel" % "kind-projector" % "0.10.3" cross CrossVersion.binary)
+  , addCompilerPlugin("com.olegpy"   %% "better-monadic-for" % "0.3.1")
   , libraryDependencies ++=
-      crossVersionProps(
-          Seq(
-            libs.commonsIo, libs.githubApi, libs.semVer
-          ) ++ libs.hedgehogLibs
+      crossVersionProps(List(
+            libs.commonsIo,
+            libs.githubApi,
+            libs.semVer,
+            libs.newtype,
+            libs.cats,
+            libs.catsEffect,
+            libs.effectie,
+            "io.kevinlee" %% "logger-f-slf4j" % "1.7.0" % Test
+          ) ++
+            libs.hedgehogLibs ++
+            libs.loggerF ++
+            libs.http4sClient ++
+            libs.circe
         , scalaVersion.value
       ) {
         case Some((2, 12)) =>
-          libs.javaxActivation212 ++
-            List(
-              libs.newtype,
-              libs.cats,
-              libs.catsEffect,
-              libs.effectie,
-              libs.github4s,
-              libs.http4sDsl,
-              libs.http4sClient
-            )
+          libs.javaxActivation212
         case Some((2, 10)) =>
           Seq.empty
       }
@@ -88,22 +90,37 @@ lazy val root = (project in file("."))
 
 lazy val props = new {
 
-  val GitHubUsername: String = "Kevin-Lee"
-  val ProjectName: String = "sbt-devoops"
+    val GitHubUsername: String = "Kevin-Lee"
+    val ProjectName: String = "sbt-devoops"
 
-  val ProjectScalaVersion: String = "2.12.10"
-  val CrossScalaVersions: Seq[String] = Seq(ProjectScalaVersion).distinct
+    val ProjectScalaVersion: String = "2.12.10"
+    val CrossScalaVersions: Seq[String] = Seq(ProjectScalaVersion).distinct
 
-  val GlobalSbtVersion: String = "1.3.4"
+    val GlobalSbtVersion: String = "1.3.4"
 
-  val CrossSbtVersions: Seq[String] = Seq(GlobalSbtVersion).distinct
+    val CrossSbtVersions: Seq[String] = Seq(GlobalSbtVersion).distinct
 
-  val hedgehogVersion: String = "64eccc9ca7dbe7a369208a14a97a25d7ccbbda67"
+    val hedgehogVersion: String = "0.6.1"
 
-  val hedgehogRepo: Resolver =
-    "bintray-scala-hedgehog" at "https://dl.bintray.com/hedgehogqa/scala-hedgehog"
+    val hedgehogRepo: Resolver =
+      "bintray-scala-hedgehog" at "https://dl.bintray.com/hedgehogqa/scala-hedgehog"
 
-}
+    val catsVersion = "2.3.1"
+
+    val catsEffectVersion = "2.3.1"
+
+    val effectieVersion = "1.8.0"
+
+    val loggerFVersion = "1.7.0"
+
+    val refinedVersion = "0.9.19"
+
+    val circeVersion = "0.13.0"
+
+    val http4sVersion   = "0.21.15"
+
+    val IncludeTest: String = "compile->compile;test->test"
+  }
 
 lazy val libs = new {
 
@@ -115,17 +132,34 @@ lazy val libs = new {
 
   val newtype: ModuleID = "io.estatico" %% "newtype" % "0.4.4"
 
-  val cats: ModuleID = "org.typelevel" %% "cats-core" % "2.3.1"
+  lazy val refined  = Seq(
+    "eu.timepit" %% "refined" % props.refinedVersion,
+    "eu.timepit" %% "refined-cats" % props.refinedVersion,
+  )
 
-  val catsEffect: ModuleID = "org.typelevel" %% "cats-effect" % "2.3.1"
+  val cats: ModuleID = "org.typelevel" %% "cats-core" % props.catsVersion
 
-  val effectie: ModuleID = "io.kevinlee" %% "effectie-cats-effect" % "1.7.0"
+  val catsEffect: ModuleID = "org.typelevel" %% "cats-effect" % props.catsEffectVersion
 
-  val http4sVersion: String = "0.21.15"
-  val http4sDsl: ModuleID = "org.http4s" %% "http4s-dsl" % http4sVersion
-  val http4sClient: ModuleID = "org.http4s" %% "http4s-blaze-client" % http4sVersion
+  val effectie: ModuleID = "io.kevinlee" %% "effectie-cats-effect" % props.effectieVersion
 
-  val github4s: ModuleID = "com.47deg" %% "github4s" % "0.27.1"
+  val loggerF: List[ModuleID] = List(
+      "io.kevinlee" %% "logger-f-cats-effect" % props.loggerFVersion,
+      "io.kevinlee" %% "logger-f-sbt-logging" % props.loggerFVersion
+    )
+
+  lazy val http4sClient: List[ModuleID] = List(
+    "org.http4s" %% "http4s-dsl"          % props.http4sVersion,
+    "org.http4s" %% "http4s-blaze-client" % props.http4sVersion,
+    "org.http4s" %% "http4s-circe"        % props.http4sVersion,
+  )
+
+  lazy val circe: List[ModuleID] = List(
+    "io.circe" %% "circe-generic" % props.circeVersion,
+    "io.circe" %% "circe-parser" % props.circeVersion,
+    "io.circe" %% "circe-literal" % props.circeVersion,
+    "io.circe" %% "circe-refined" % props.circeVersion
+  )
 
   val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
 
@@ -134,8 +168,8 @@ lazy val libs = new {
   val githubApi: ModuleID = "org.kohsuke" % "github-api" % "1.95"
 
   val javaxActivation212: List[ModuleID] = List(
-    "javax.activation" % "activation" % "1.1.1"
-    , "javax.activation" % "javax.activation-api" % "1.2.0"
+    "javax.activation" % "activation" % "1.1.1",
+    "javax.activation" % "javax.activation-api" % "1.2.0"
   )
 
 }
