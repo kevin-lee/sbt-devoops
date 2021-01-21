@@ -41,7 +41,7 @@ trait OldGitHubApi[F[_]] {
     tagName: TagName,
     changelog: Changelog,
     assets: Seq[File]
-  ): F[Either[GitHubError, GitHubRelease]]
+  ): F[Either[GitHubError, OldGitHubRelease]]
 }
 
 object OldGitHubApi {
@@ -127,16 +127,16 @@ object OldGitHubApi {
       tagName: TagName,
       changelog: Changelog,
       assets: Seq[File]
-    ): F[Either[GitHubError, GitHubRelease]] = (for {
+    ): F[Either[GitHubError, OldGitHubRelease]] = (for {
       exists        <- EitherT(releaseExists(gitHub, repo, tagName))
       gitHubRelease <-
         if (exists) {
-          eitherTLeftPure[GitHubRelease](GitHubError.releaseAlreadyExists(tagName))
+          eitherTLeftPure[OldGitHubRelease](GitHubError.releaseAlreadyExists(tagName))
         } else {
           for {
             gHRepository <- EitherT(this.getRepo(gitHub, repo))
             release      <- EitherT(createGHRelease(gHRepository, tagName, changelog))
-          } yield GitHubRelease(
+          } yield OldGitHubRelease(
             tagName,
             changelog,
             assets.map { file =>

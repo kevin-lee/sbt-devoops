@@ -1,13 +1,14 @@
 package kevinlee.git
 
-import java.io.File
-
 import cats._
 import cats.data._
 import cats.implicits._
-
-import effectie.cats._
 import effectie.cats.Effectful._
+import effectie.cats._
+import io.circe.{Decoder, Encoder}
+import io.estatico.newtype.macros.newtype
+
+import java.io.File
 
 /** @author Kevin Lee
   * @since 2019-01-01
@@ -80,6 +81,14 @@ trait Git[F[_]] {
 
 }
 
+@SuppressWarnings(
+  Array(
+    "org.wartremover.warts.ExplicitImplicitTypes",
+    "org.wartremover.warts.ImplicitConversion",
+    "org.wartremover.warts.ImplicitParameter",
+    "org.wartremover.warts.PublicInference",
+  )
+)
 object Git {
   // $COVERAGE-OFF$
 
@@ -89,12 +98,19 @@ object Git {
 
   type CmdResult[F[_], A] = EitherT[CmdHistoryWriter[F, *], GitCommandError, A]
 
-  final case class BranchName(value: String)      extends AnyVal
-  final case class TagName(value: String)         extends AnyVal
-  final case class Repository(value: String)      extends AnyVal
+  @newtype case class BranchName(value: String)
+  @newtype case class TagName(value: String)
+  object TagName {
+    implicit val encoder: Encoder[TagName] = deriving
+    implicit val decoder: Decoder[TagName] = deriving
+  }
+  final case class Repository(value: String) extends AnyVal
   final case class RemoteName(remoteName: String) extends AnyVal
   final case class RepoUrl(repoUrl: String)       extends AnyVal
   final case class Description(value: String)     extends AnyVal
+
+  @newtype case class TagMessage(tagMessage: String)
+  @newtype case class HashObject(hashObject: String)
 
   def apply[F[_]: Git]: Git[F] = implicitly[Git[F]]
 
@@ -170,15 +186,17 @@ object Git {
     ): CmdResult[F, A] =
       EitherT {
         val fOf = r.map { eth =>
-          val w: CmdHistory = eth match {
-            case Left(error) =>
-              List.empty[GitCmdAndResult]
-            case Right((cmdResult, a)) =>
-              List(GitCmdAndResult(gitCmd, cmdResult))
-          }
-          val eth2: Either[GitCommandError, A] = eth.map {
-              case (_, a) => a
+          val w: CmdHistory                    =
+            eth match {
+              case Left(error)           =>
+                List.empty[GitCmdAndResult]
+              case Right((cmdResult, a)) =>
+                List(GitCmdAndResult(gitCmd, cmdResult))
             }
+          val eth2: Either[GitCommandError, A] = eth.map {
+            case (_, a) =>
+              a
+          }
           (w, eth2)
         }
         WriterT(fOf)
@@ -188,7 +206,7 @@ object Git {
       gitCmdSimpleWithWriter[BranchName](
         baseDir,
         GitCmd.currentBranchName,
-        xs => BranchName(xs.mkString.trim)
+        xs => BranchName(xs.mkString.trim),
       )
 
     override def checkIfCurrentBranchIsSame(
