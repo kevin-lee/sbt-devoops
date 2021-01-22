@@ -4,6 +4,7 @@ import io.estatico.newtype.macros.newtype
 
 import java.io.File
 import kevinlee.git.Git.TagName
+import kevinlee.http.HttpRequest
 import org.kohsuke.github.GHRelease
 
 /** @author Kevin Lee
@@ -60,6 +61,17 @@ object GitHubRepoWithAuth {
 
   final case class AccessToken(accessToken: String) {
     override val toString: String = "***Protected***"
+  }
+
+  implicit final class AccessTokenOps(val maybeAccessToken: Option[AccessToken]) extends AnyVal {
+    def toHeaderList: List[HttpRequest.Header] =
+      maybeAccessToken
+        .toList
+        .map(token =>
+          HttpRequest.Header(
+            "Authorization" -> s"token ${token.accessToken}"
+          )
+        )
   }
 
 }
