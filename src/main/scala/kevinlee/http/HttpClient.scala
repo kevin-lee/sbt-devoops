@@ -125,6 +125,9 @@ object HttpClient {
             maybeBody.map(HttpResponse.Body.apply),
           )
           failedResponse.status.code match {
+            case Status.NotFound.code =>
+              HttpError.notFound(httpRequest, httpResponse).asLeft[A]
+
             case Status.BadRequest.code =>
               HttpError.badRequest(httpRequest, httpResponse).asLeft[A]
 

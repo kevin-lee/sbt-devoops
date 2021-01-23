@@ -3,6 +3,7 @@ package kevinlee.github
 import cats.Monad
 import cats.syntax.all._
 import io.circe._
+import kevinlee.git.Git
 import kevinlee.github.data._
 import kevinlee.http.{HttpClient, HttpRequest}
 
@@ -10,6 +11,12 @@ import kevinlee.http.{HttpClient, HttpRequest}
   * @since 2021-01-14
   */
 trait GitHubApi[F[_]] {
+
+  def findReleaseByTagName(
+    tagName: Git.TagName,
+    repo: GitHubRepoWithAuth,
+  ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
+
   def createRelease(
     params: GitHubRelease.RequestParams,
     repo: GitHubRepoWithAuth,
@@ -25,6 +32,28 @@ object GitHubApi {
     val baseUrl: String = "https://api.github.com"
 
     val DefaultAccept: String = "application/vnd.github.v3+json"
+
+    def findReleaseByTagName(
+      tagName: Git.TagName,
+      repo: GitHubRepoWithAuth,
+    ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
+      val url = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/tags/${tagName.value}"
+      val httpRequest = HttpRequest.withHeaders(
+        HttpRequest.Method.get,
+        HttpRequest.Uri(url),
+        HttpRequest.Header("accept" -> DefaultAccept) ::
+          repo
+            .accessToken
+            .toHeaderList,
+      )
+      httpClient
+        .request[Option[GitHubRelease.Response]](httpRequest)
+        .map(
+          _.toOptionIfNotFound
+            .leftMap(GitHubError.fromHttpError)
+            .flatMap(res => res.asRight[GitHubError])
+        )
+    }
 
     override def createRelease(
       params: GitHubRelease.RequestParams,

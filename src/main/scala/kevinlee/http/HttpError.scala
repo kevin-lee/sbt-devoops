@@ -23,6 +23,10 @@ object HttpError {
   final case class UnhandledThrowable(
     throwable: Throwable
   ) extends HttpError
+  final case class NotFound(
+    httpRequest: HttpRequest,
+    httpResponse: HttpResponse,
+  ) extends HttpError
   final case class BadRequest(
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
@@ -51,6 +55,11 @@ object HttpError {
 
   def unhandledThrowable(throwable: Throwable): HttpError = UnhandledThrowable(throwable)
 
+  def notFound(
+    httpRequest: HttpRequest,
+    httpResponse: HttpResponse,
+  ): HttpError = NotFound(httpRequest, httpResponse)
+
   def badRequest(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError =
     BadRequest(httpRequest, httpResponse)
 
@@ -76,4 +85,20 @@ object HttpError {
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   implicit final val show: Show[HttpError] = _.toString
 
+  def toOptionIfNotFound[A](httpErrorOrA: Either[HttpError, Option[A]]): Either[HttpError, Option[A]] =
+    httpErrorOrA match {
+      case Right(a) =>
+        a.asRight[HttpError]
+
+      case Left(HttpError.NotFound(_, _)) =>
+        none[A].asRight[HttpError]
+
+      case Left(_) =>
+        httpErrorOrA
+    }
+
+  implicit final class EitherHttpErrorOps[A](val httpError: Either[HttpError, Option[A]]) extends AnyVal {
+    def toOptionIfNotFound: Either[HttpError, Option[A]] =
+      HttpError.toOptionIfNotFound(httpError)
+  }
 }
