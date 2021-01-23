@@ -173,6 +173,9 @@ object HttpRequest {
   def withBody(httpMethod: Method, uri: Uri, body: Json): HttpRequest =
     HttpRequest(httpMethod, uri, List.empty[Header], List.empty[Param], body.some)
 
+  def withHeaders(httpMethod: Method, uri: Uri, headers: List[Header]): HttpRequest =
+    HttpRequest(httpMethod, uri, headers, List.empty[Param], none[Json])
+
   def withHeadersAndBody(httpMethod: Method, uri: Uri, headers: List[Header], body: Json): HttpRequest =
     HttpRequest(httpMethod, uri, headers, List.empty[Param], body.some)
 
