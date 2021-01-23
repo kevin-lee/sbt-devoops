@@ -2,7 +2,6 @@ package kevinlee.github
 
 import cats.Monad
 import cats.syntax.all._
-import io.circe._
 import kevinlee.git.Git
 import kevinlee.github.data._
 import kevinlee.http.{HttpClient, HttpRequest}
@@ -66,16 +65,16 @@ object GitHubApi {
       repo: GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
       val url         = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases"
-      val body        = Encoder[GitHubRelease.CreateRequestParams].apply(params)
-      val httpRequest = HttpRequest.withHeadersAndBody(
-        HttpRequest.Method.post,
-        HttpRequest.Uri(url),
-        HttpRequest.Header("accept" -> DefaultAccept) ::
-          repo
-            .accessToken
-            .toHeaderList,
-        body,
-      )
+      val httpRequest = HttpRequest
+        .withHeadersAndBody[GitHubRelease.CreateRequestParams](
+          HttpRequest.Method.post,
+          HttpRequest.Uri(url),
+          HttpRequest.Header("accept" -> DefaultAccept) ::
+            repo
+              .accessToken
+              .toHeaderList,
+          params,
+        )
       httpClient
         .request[Option[GitHubRelease.Response]](httpRequest)
         .map(
@@ -91,16 +90,16 @@ object GitHubApi {
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
       val url         =
         s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/${params.releaseId.releaseId}"
-      val body        = Encoder[GitHubRelease.UpdateRequestParams].apply(params)
-      val httpRequest = HttpRequest.withHeadersAndBody(
-        HttpRequest.Method.patch,
-        HttpRequest.Uri(url),
-        HttpRequest.Header("accept" -> DefaultAccept) ::
-          repo
-            .accessToken
-            .toHeaderList,
-        body,
-      )
+      val httpRequest = HttpRequest
+        .withHeadersAndBody[GitHubRelease.UpdateRequestParams](
+          HttpRequest.Method.patch,
+          HttpRequest.Uri(url),
+          HttpRequest.Header("accept" -> DefaultAccept) ::
+            repo
+              .accessToken
+              .toHeaderList,
+          params,
+        )
       httpClient
         .request[Option[GitHubRelease.Response]](httpRequest)
         .map(

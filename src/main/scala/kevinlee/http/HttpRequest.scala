@@ -2,7 +2,7 @@ package kevinlee.http;
 
 import cats.{Applicative, Show}
 import cats.syntax.all._
-import io.circe.Json
+import io.circe.{Encoder, Json}
 import io.estatico.newtype.macros._
 import HttpRequest.Method.{Delete, Get, Patch, Post, Put}
 import org.http4s.{Request, Header => Http4sHeader, Uri => Http4sUri}
@@ -176,8 +176,19 @@ object HttpRequest {
   def withHeaders(httpMethod: Method, uri: Uri, headers: List[Header]): HttpRequest =
     HttpRequest(httpMethod, uri, headers, List.empty[Param], none[Json])
 
-  def withHeadersAndBody(httpMethod: Method, uri: Uri, headers: List[Header], body: Json): HttpRequest =
-    HttpRequest(httpMethod, uri, headers, List.empty[Param], body.some)
+  def withHeadersAndBody[A: Encoder](
+    httpMethod: Method,
+    uri: Uri,
+    headers: List[Header],
+    body: A,
+  ): HttpRequest =
+    HttpRequest(
+      httpMethod,
+      uri,
+      headers,
+      List.empty[Param],
+      Encoder[A].apply(body).some,
+    )
 
   def withoutBody(httpMethod: Method, uri: Uri): HttpRequest =
     HttpRequest(httpMethod, uri, List.empty[Header], List.empty[Param], none[Json])
