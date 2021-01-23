@@ -1,6 +1,5 @@
 package kevinlee.github.data
 
-import io.circe.Encoder._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import io.estatico.newtype.macros.{newsubtype, newtype}
@@ -20,15 +19,15 @@ import java.time.Instant
   )
 )
 object GitHubRelease {
-  final case class RequestParams(
+  final case class CreateRequestParams(
     tagName: Git.TagName,
     name: Option[ReleaseName],
     body: Option[Description],
     draft: Draft,
     prerelease: Prerelease,
   )
-  object RequestParams {
-    implicit val encoder: Encoder[RequestParams] =
+  object CreateRequestParams {
+    implicit val encoder: Encoder[CreateRequestParams] =
       requestParams =>
         Json.obj(
           (List("tag_name" -> requestParams.tagName.asJson) ++
@@ -40,7 +39,7 @@ object GitHubRelease {
             )): _*
         )
 
-    implicit val decoder: Decoder[RequestParams] =
+    implicit val decoder: Decoder[CreateRequestParams] =
       c =>
         for {
           tagName    <- c.downField("tag_name").as[Git.TagName]
@@ -48,7 +47,43 @@ object GitHubRelease {
           body       <- c.downField("body").as[Option[Description]]
           draft      <- c.downField("draft").as[Draft]
           prerelease <- c.downField("prerelease").as[Prerelease]
-        } yield RequestParams(tagName, name, body, draft, prerelease)
+        } yield CreateRequestParams(tagName, name, body, draft, prerelease)
+
+  }
+  final case class UpdateRequestParams(
+    tagName: Git.TagName,
+    releaseId: ReleaseId,
+    name: Option[ReleaseName],
+    body: Option[Description],
+    draft: Option[Draft],
+    prerelease: Option[Prerelease],
+  )
+  object UpdateRequestParams {
+    implicit val encoder: Encoder[UpdateRequestParams] =
+      requestParams =>
+        Json.obj(
+          (
+            List(
+              "tag_name"   -> requestParams.tagName.asJson,
+              "release_id" -> requestParams.releaseId.asJson,
+            ) ++
+              requestParams.name.toList.map(name => "name" -> name.asJson) ++
+              requestParams.body.toList.map(body => "body" -> body.asJson) ++
+              requestParams.draft.toList.map(draft => "draft" -> draft.asJson) ++
+              requestParams.prerelease.toList.map(prerelease => "prerelease" -> prerelease.asJson)
+          ): _*
+        )
+
+    implicit val decoder: Decoder[UpdateRequestParams] =
+      c =>
+        for {
+          tagName    <- c.downField("tag_name").as[Git.TagName]
+          releaseId  <- c.downField("release_id").as[ReleaseId]
+          name       <- c.downField("name").as[Option[ReleaseName]]
+          body       <- c.downField("body").as[Option[Description]]
+          draft      <- c.downField("draft").as[Option[Draft]]
+          prerelease <- c.downField("prerelease").as[Option[Prerelease]]
+        } yield UpdateRequestParams(tagName, releaseId, name, body, draft, prerelease)
 
   }
 
@@ -56,6 +91,12 @@ object GitHubRelease {
   object Accept {
     implicit val encoder: Encoder[Accept] = deriving
     implicit val decoder: Decoder[Accept] = deriving
+  }
+
+  @newtype case class ReleaseId(releaseId: Long)
+  object ReleaseId {
+    implicit val encoder: Encoder[ReleaseId] = deriving
+    implicit val decoder: Decoder[ReleaseId] = deriving
   }
 
   @newtype case class ReleaseName(releaseName: String)
