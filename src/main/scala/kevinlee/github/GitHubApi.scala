@@ -18,9 +18,15 @@ trait GitHubApi[F[_]] {
   ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
 
   def createRelease(
-    params: GitHubRelease.RequestParams,
+    params: GitHubRelease.CreateRequestParams,
     repo: GitHubRepoWithAuth,
   ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
+
+  def updateRelease(
+    params: GitHubRelease.UpdateRequestParams,
+    repo: GitHubRepoWithAuth,
+  ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
+
 }
 
 object GitHubApi {
@@ -37,7 +43,7 @@ object GitHubApi {
       tagName: Git.TagName,
       repo: GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
-      val url = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/tags/${tagName.value}"
+      val url         = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/tags/${tagName.value}"
       val httpRequest = HttpRequest.withHeaders(
         HttpRequest.Method.get,
         HttpRequest.Uri(url),
@@ -56,11 +62,11 @@ object GitHubApi {
     }
 
     override def createRelease(
-      params: GitHubRelease.RequestParams,
+      params: GitHubRelease.CreateRequestParams,
       repo: GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
       val url         = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases"
-      val body        = Encoder[GitHubRelease.RequestParams].apply(params)
+      val body        = Encoder[GitHubRelease.CreateRequestParams].apply(params)
       val httpRequest = HttpRequest.withHeadersAndBody(
         HttpRequest.Method.post,
         HttpRequest.Uri(url),
@@ -73,10 +79,37 @@ object GitHubApi {
       httpClient
         .request[Option[GitHubRelease.Response]](httpRequest)
         .map(
-          _.leftMap(GitHubError.fromHttpError)
+          _.toOptionIfNotFound
+            .leftMap(GitHubError.fromHttpError)
             .flatMap(res => res.asRight[GitHubError])
         )
     }
+
+    def updateRelease(
+      params: GitHubRelease.UpdateRequestParams,
+      repo: GitHubRepoWithAuth,
+    ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
+      val url         =
+        s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/${params.releaseId.releaseId}"
+      val body        = Encoder[GitHubRelease.UpdateRequestParams].apply(params)
+      val httpRequest = HttpRequest.withHeadersAndBody(
+        HttpRequest.Method.patch,
+        HttpRequest.Uri(url),
+        HttpRequest.Header("accept" -> DefaultAccept) ::
+          repo
+            .accessToken
+            .toHeaderList,
+        body,
+      )
+      httpClient
+        .request[Option[GitHubRelease.Response]](httpRequest)
+        .map(
+          _.toOptionIfNotFound
+            .leftMap(GitHubError.fromHttpError)
+            .flatMap(res => res.asRight[GitHubError])
+        )
+    }
+
   }
 
 }
