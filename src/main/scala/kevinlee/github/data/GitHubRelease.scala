@@ -4,6 +4,7 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import io.estatico.newtype.macros.{newsubtype, newtype}
 import kevinlee.git.Git
+import kevinlee.http.HttpRequest
 
 import java.time.Instant
 
@@ -50,6 +51,7 @@ object GitHubRelease {
         } yield CreateRequestParams(tagName, name, body, draft, prerelease)
 
   }
+
   final case class UpdateRequestParams(
     tagName: Git.TagName,
     releaseId: ReleaseId,
@@ -85,6 +87,18 @@ object GitHubRelease {
           prerelease <- c.downField("prerelease").as[Option[Prerelease]]
         } yield UpdateRequestParams(tagName, releaseId, name, body, draft, prerelease)
 
+  }
+
+  final case class UploadAssetParams(
+    tagName: Git.TagName,
+    releaseId: ReleaseId,
+    name: UploadAssetParams.AssetName,
+    label: Option[UploadAssetParams.AssetLabel],
+    multipartData: HttpRequest.MultipartData,
+  )
+  object UploadAssetParams {
+    @newtype case class AssetName(assetName: String)
+    @newtype case class AssetLabel(assetLabel: String)
   }
 
   @newtype case class Accept(accept: String)
@@ -285,6 +299,8 @@ object GitHubRelease {
   final case class Response(
     id: Response.Id,
     uri: Response.Url,
+    assetsUrl: Response.AssetsUrl,
+    uploadUrl: Response.UploadUrl,
     author: User,
     tagName: Git.TagName,
     name: ReleaseName,
@@ -308,6 +324,16 @@ object GitHubRelease {
       implicit val encoder: Encoder[Url] = deriving
       implicit val decoder: Decoder[Url] = deriving
     }
+    @newtype case class AssetsUrl(assetsUrl: String)
+    object AssetsUrl   {
+      implicit val encoder: Encoder[AssetsUrl] = deriving
+      implicit val decoder: Decoder[AssetsUrl] = deriving
+    }
+    @newtype case class UploadUrl(uploadUrl: String)
+    object UploadUrl   {
+      implicit val encoder: Encoder[UploadUrl] = deriving
+      implicit val decoder: Decoder[UploadUrl] = deriving
+    }
     @newtype case class CreatedAt(createdAt: Instant)
     object CreatedAt   {
       implicit val encoder: Encoder[CreatedAt] = deriving
@@ -324,6 +350,8 @@ object GitHubRelease {
         Json.obj(
           "id"           -> response.id.id.asJson,
           "url"          -> response.uri.url.asJson,
+          "assets_url"   -> response.assetsUrl.assetsUrl.asJson,
+          "upload_url"   -> response.uploadUrl.uploadUrl.asJson,
           "author"       -> response.author.asJson,
           "tag_name"     -> response.tagName.asJson,
           "name"         -> response.name.asJson,
@@ -340,6 +368,8 @@ object GitHubRelease {
         for {
           id          <- c.downField("id").as[Id]
           url         <- c.downField("url").as[Url]
+          assetsUrl   <- c.downField("assets_url").as[AssetsUrl]
+          uploadUrl   <- c.downField("upload_url").as[UploadUrl]
           author      <- c.downField("author").as[User]
           tagName     <- c.downField("tag_name").as[Git.TagName]
           name        <- c.downField("name").as[ReleaseName]
@@ -352,6 +382,8 @@ object GitHubRelease {
         } yield Response(
           id,
           url,
+          assetsUrl,
+          uploadUrl,
           author,
           tagName,
           name,

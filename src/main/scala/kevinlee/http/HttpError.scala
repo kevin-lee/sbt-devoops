@@ -45,6 +45,9 @@ object HttpError {
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
   ) extends HttpError
+  final case class MethodUnsupportedForMultipart(
+    httpRequest: HttpRequest
+  ) extends HttpError
 
   def invalidUri(uriString: String, errorMessage: String): HttpError = InvalidUri(uriString, errorMessage)
 
@@ -77,10 +80,14 @@ object HttpError {
       error.asLeft[Option[A]]
   }
 
-  def forbidden(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError = Forbidden(httpRequest, httpResponse)
+  def forbidden(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError =
+    Forbidden(httpRequest, httpResponse)
 
   def unprocessableEntity(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError =
     UnprocessableEntity(httpRequest, httpResponse)
+
+  def methodUnsupportedForMultipart(httpRequest: HttpRequest): HttpError =
+    MethodUnsupportedForMultipart(httpRequest)
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   implicit final val show: Show[HttpError] = _.toString
