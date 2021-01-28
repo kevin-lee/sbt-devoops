@@ -16,18 +16,29 @@ import java.time.Instant
 sealed trait GitHubError
 
 object GitHubError {
-  final case object NoCredential                                                          extends GitHubError
-  final case object InvalidCredential                                                     extends GitHubError
-  final case class MalformedURL(url: String, errorMessage: Option[String])                extends GitHubError
-  final case class ConnectionFailure(error: String)                                       extends GitHubError
-  final case class GitHubServerError(error: String)                                       extends GitHubError
-  final case class ReleaseAlreadyExists(tagName: TagName)                                 extends GitHubError
-  final case class ReleaseCreationError(message: String)                                  extends GitHubError
-  final case class InvalidGitHubRepoUrl(repoUrl: RepoUrl)                                 extends GitHubError
-  final case class ChangelogNotFound(changelogLocation: String, tagName: TagName)         extends GitHubError
-  final case class CausedByGitCommandError(cause: GitCommandError)                        extends GitHubError
-  case object NoReleaseCreated                                                            extends GitHubError
-  final case class AbuseRateLimits(message: String, documentationUrl: String)             extends GitHubError
+  final case object NoCredential                           extends GitHubError
+  final case object InvalidCredential                      extends GitHubError
+  final case class MalformedURL(
+    url: String,
+    errorMessage: Option[String],
+  )                                                        extends GitHubError
+  final case class ConnectionFailure(error: String)        extends GitHubError
+  final case class GitHubServerError(error: String)        extends GitHubError
+  final case class ReleaseAlreadyExists(tagName: TagName)  extends GitHubError
+  final case class ReleaseCreationError(message: String)   extends GitHubError
+  final case class InvalidGitHubRepoUrl(repoUrl: RepoUrl)  extends GitHubError
+  final case class ChangelogNotFound(
+    changelogLocation: String,
+    tagName: TagName,
+  )                                                        extends GitHubError
+  final case class CausedByGitCommandError(
+    cause: GitCommandError
+  )                                                        extends GitHubError
+  case object NoReleaseCreated                             extends GitHubError
+  final case class AbuseRateLimits(
+    message: String,
+    documentationUrl: String,
+  )                                                        extends GitHubError
   final case class RateLimitExceeded(
     // "X-RateLimit-Limit"
     rateLimit: Option[Int],
@@ -37,14 +48,17 @@ object GitHubError {
     reset: Option[Instant],
     message: String,
     docUrl: String,
-  )                                                                                       extends GitHubError
-  final case class ForbiddenRequest(httpRequest: HttpRequest, httpResponse: HttpResponse) extends GitHubError
+  )                                                        extends GitHubError
+  final case class ForbiddenRequest(
+    httpRequest: HttpRequest,
+    httpResponse: HttpResponse,
+  )                                                        extends GitHubError
   final case class UnprocessableEntity(
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
     responseBodyJson: Option[ResponseBodyJson],
-  )                                                                                       extends GitHubError
-  final case class UnexpectedFailure(httpError: HttpError)                                extends GitHubError
+  )                                                        extends GitHubError
+  final case class UnexpectedFailure(httpError: HttpError) extends GitHubError
 
   def noCredential: GitHubError = NoCredential
 
