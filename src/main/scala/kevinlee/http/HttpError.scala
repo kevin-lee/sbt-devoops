@@ -48,8 +48,13 @@ object HttpError {
   final case class MethodUnsupportedForMultipart(
     httpRequest: HttpRequest
   ) extends HttpError
+  final case class Unauthorized(
+    httpRequest: HttpRequest,
+    httpResponse: HttpResponse,
+  ) extends HttpError
 
-  def invalidUri(uriString: String, errorMessage: String): HttpError = InvalidUri(uriString, errorMessage)
+  def invalidUri(uriString: String, errorMessage: String): HttpError =
+    InvalidUri(uriString, errorMessage)
 
   def responseBodyDecodingFailure(message: String, cause: Option[Throwable]): HttpError =
     ResponseBodyDecodingFailure(message, cause)
@@ -71,14 +76,8 @@ object HttpError {
 
   def requestTimeout(httpResponse: HttpResponse): HttpError = RequestTimeout(httpResponse)
 
-  def recoverFromOptional404[A](httpError: HttpError): Either[HttpError, Option[A]] = httpError match {
-    case HttpError.FailedResponse(
-          HttpResponse(HttpResponse.Status(HttpResponse.Status.Code(404), _), _, _)
-        ) =>
-      none[A].asRight[HttpError]
-    case error =>
-      error.asLeft[Option[A]]
-  }
+  def unauthorized(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError =
+    Unauthorized(httpRequest, httpResponse)
 
   def forbidden(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError =
     Forbidden(httpRequest, httpResponse)
@@ -92,6 +91,16 @@ object HttpError {
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   implicit final val show: Show[HttpError] = _.toString
 
+  def recoverFromOptional404[A](httpError: HttpError): Either[HttpError, Option[A]] =
+    httpError match {
+      case HttpError.FailedResponse(
+            HttpResponse(HttpResponse.Status(HttpResponse.Status.Code(404), _), _, _)
+          ) =>
+        none[A].asRight[HttpError]
+      case error =>
+        error.asLeft[Option[A]]
+    }
+
   def toOptionIfNotFound[A](httpErrorOrA: Either[HttpError, Option[A]]): Either[HttpError, Option[A]] =
     httpErrorOrA match {
       case Right(a) =>
@@ -104,7 +113,9 @@ object HttpError {
         httpErrorOrA
     }
 
-  implicit final class EitherHttpErrorOps[A](val httpError: Either[HttpError, Option[A]]) extends AnyVal {
+  implicit final class EitherHttpErrorOps[A](
+    val httpError: Either[HttpError, Option[A]]
+  ) extends AnyVal {
     def toOptionIfNotFound: Either[HttpError, Option[A]] =
       HttpError.toOptionIfNotFound(httpError)
   }

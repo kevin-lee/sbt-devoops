@@ -2,6 +2,8 @@ package kevinlee.http
 
 import cats.Show
 import cats.syntax.all._
+import io.circe.{Decoder, Encoder, Json}
+import io.circe.parser.decode
 import io.estatico.newtype.macros._
 import org.http4s.Headers
 
@@ -51,6 +53,18 @@ object HttpResponse {
             f(name)
         })
         .map(_.header._2)
+
+    def toFailedResponseBodyJson: Option[FailedResponseBodyJson] =
+      httpResponse
+        .body
+        .flatMap(body =>
+          decode[FailedResponseBodyJson](body.body) match {
+            case Right(responseBodyJson) =>
+              responseBodyJson.some
+            case Left(err)               =>
+              none[FailedResponseBodyJson]
+          }
+        )
   }
 
   implicit final val show: Show[HttpResponse] = { httpResponse =>
@@ -74,4 +88,26 @@ object HttpResponse {
 
   @newtype case class Body(body: String)
 
+
+  final case class FailedResponseBodyJson(message: String, documentationUrl: Option[String])
+  object FailedResponseBodyJson {
+    implicit val encoder: Encoder[FailedResponseBodyJson] =
+      responseBodyJson =>
+        Json.obj(
+          (List("message" -> Json.fromString(responseBodyJson.message)) ++
+            responseBodyJson
+              .documentationUrl
+              .toList
+              .map(documentationUrl => "documentation_url" -> Json.fromString(documentationUrl))): _*
+        )
+
+    implicit val decoder: Decoder[FailedResponseBodyJson] =
+      c =>
+        for {
+          message          <- c.downField("message").as[String]
+          documentationUrl <- c.downField("documentation_url").as[Option[String]]
+        } yield FailedResponseBodyJson(message, documentationUrl)
+
+    implicit val show: Show[FailedResponseBodyJson] = encoder.apply(_).spaces2
+  }
 }
