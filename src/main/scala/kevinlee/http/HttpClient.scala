@@ -31,11 +31,15 @@ trait HttpClient[F[_]] {
 
 object HttpClient {
 
-  def apply[F[_]: Monad: EffectConstructor: ConcurrentEffect: Log](client: Client[F]): HttpClient[F] =
+  def apply[
+    F[_]: Monad: EffectConstructor: ConcurrentEffect: ContextShift: Log
+  ](client: Client[F]): HttpClient[F] =
     new HttpClientF[F](client)
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
-  final class HttpClientF[F[_]: Monad: EffectConstructor: ConcurrentEffect: Log](
+  final class HttpClientF[
+    F[_]: Monad: EffectConstructor: ConcurrentEffect: ContextShift: Log
+  ](
     client: Client[F]
   ) extends HttpClient[F] {
 
@@ -47,18 +51,24 @@ object HttpClient {
       sendRequest[A](httpRequest).value
 
     private[this] def sendRequest[A](
-      httpRequest: HttpRequest,
+      httpRequest: HttpRequest
     )(
       implicit entityDecoderA: Decoder[A]
     ): EitherT[F, HttpError, A] =
       for {
         request <- EitherT.fromEither(
-                     HttpRequest.toHttp4s(
-                       httpRequest,
-                     )
+                     httpRequest.toHttp4s[F]
                    )
 
-        postProcessedReq <- eitherTRightF[HttpError](postProcessRequest(request, implicitly[EntityDecoder[F, A]].consumes))
+        postProcessedReq <- eitherTRightF[HttpError](
+                              postProcessRequest(
+                                request,
+                                if (httpRequest.isBodyMultipart)
+                                  Set.empty[MediaRange]
+                                else
+                                  implicitly[EntityDecoder[F, A]].consumes,
+                              )
+                            )
 
         res <-
           log(
@@ -87,7 +97,7 @@ object HttpClient {
     private[this] def responseHandler[A](
       httpRequest: HttpRequest
     )(
-      implicit decoderA: Decoder[A],
+      implicit decoderA: Decoder[A]
     ): Response[F] => F[Either[HttpError, A]] = {
       case Successful(successResponse) =>
         implicitly[EntityDecoder[F, A]]

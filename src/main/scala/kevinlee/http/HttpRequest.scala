@@ -1,11 +1,15 @@
 package kevinlee.http;
 
-import cats.{Applicative, Show}
+import cats.effect.{Blocker, ContextShift, Sync}
 import cats.syntax.all._
-import io.circe.{Encoder, Json}
+import cats.{Applicative, Show}
+import io.circe.Encoder
 import io.estatico.newtype.macros._
-import HttpRequest.Method.{Delete, Get, Patch, Post, Put}
-import org.http4s.{Request, Header => Http4sHeader, Uri => Http4sUri}
+import org.http4s.headers.`Content-Type`
+import org.http4s.util.CaseInsensitiveString
+import org.http4s.{Headers, MediaType, Request, Header => Http4sHeader, Uri => Http4sUri}
+
+import java.net.URL
 
 /** @author Kevin Lee
   * @since 2021-01-03
@@ -15,7 +19,7 @@ final case class HttpRequest(
   uri: HttpRequest.Uri,
   headers: List[HttpRequest.Header],
   params: List[HttpRequest.Param],
-  body: Option[Json],
+  body: Option[HttpRequest.Body],
 )
 
 @SuppressWarnings(
@@ -81,7 +85,20 @@ object HttpRequest {
           s"($name: $value)"
       }
       .mkString("[", ", ", "]")
-    val bodyString   = httpRequest.body.fold("")(_.spaces2)
+    val bodyString   =
+      httpRequest.body.fold("") {
+        case HttpRequest.Body.Json(json) =>
+          json.spaces2
+
+        case HttpRequest.Body.Multipart(multipartData) =>
+          multipartData match {
+            case HttpRequest.MultipartData.File(name, file, mediaType, _) =>
+              s"Multipart(name=${name.name}, file=${file.getCanonicalPath}, mediaType=${mediaType.show})"
+            case HttpRequest.MultipartData.Url(name, url, mediaType, _)   =>
+              s"Multipart(name=${name.name}, url=${url.toString}, mediaType=${mediaType.show})"
+          }
+
+      }
     s"HttpRequest(method=${httpRequest.httpMethod.show}, url=${httpRequest.uri.uri}, headers=$headerString, params=$paramsString, body=$bodyString)"
   }
 
@@ -90,62 +107,126 @@ object HttpRequest {
   import org.http4s.dsl.request._
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
-  def toHttp4s[F[_]: Applicative](
+  def toHttp4s[F[_]: Applicative: Sync: ContextShift](
     httpRequest: HttpRequest
   ): Either[HttpError, F[Request[F]]] =
-    httpRequest.uri.toHttp4s.map { uri =>
+    httpRequest.uri.toHttp4s.flatMap { uri =>
       val http4sHeaders = httpRequest.headers.map(_.toHttp4s)
+      val uriWithParams =
+        httpRequest.params match {
+          case Nil    =>
+            uri
+          case params =>
+            params.foldLeft(uri) { (uri, param) =>
+              uri.withQueryParam(param.param._1, param.param._2)
+            }
+        }
+      println(s"""
+                 |uriWithParams: ${uriWithParams.toString}
+                 |""".stripMargin)
       httpRequest.httpMethod match {
-        case Get    =>
+        case HttpRequest.Method.Get    =>
           httpRequest
             .body
-            .fold(GET.apply(uri, http4sHeaders: _*))(
-              GET.apply(
-                _,
-                uri,
-                http4sHeaders: _*
-              )
-            )
-        case Post   =>
+            .fold(GET.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
+              case HttpRequest.Body.Json(json) =>
+                GET
+                  .apply(
+                    json,
+                    uriWithParams,
+                    http4sHeaders: _*
+                  )
+                  .asRight[HttpError]
+
+              case HttpRequest.Body.Multipart(_) =>
+                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
+            }
+        case HttpRequest.Method.Post   =>
           httpRequest
             .body
-            .fold(POST.apply(uri, http4sHeaders: _*))(
-              POST.apply(
-                _,
-                uri,
-                http4sHeaders: _*
-              )
-            )
-        case Put    =>
+            .fold(POST.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
+              case HttpRequest.Body.Json(json) =>
+                POST
+                  .apply(
+                    json,
+                    uriWithParams,
+                    http4sHeaders: _*
+                  )
+                  .asRight[HttpError]
+
+              case HttpRequest.Body.Multipart(multipartData) =>
+                val body = multipartData.toHttp4s[F]
+                POST
+                  .apply(
+                    body,
+                    uriWithParams,
+                    http4sHeaders: _*
+                  )
+                  .map(req =>
+                    req.withHeaders(
+                      Headers(
+                        req.headers.toList ++ body
+                          .headers
+                          .toList
+                          .filterNot(header =>
+                            /* Without this filtering, the headers contain "Transfer-Encoding: chunked"
+                             * which causes [400, Bad Content-Length] when uploading a release asset file using GitHub API
+                             */
+                            header.name === CaseInsensitiveString("Transfer-Encoding")
+                          )
+                      )
+                    )
+                  )
+                  .asRight[HttpError]
+            }
+        case HttpRequest.Method.Put    =>
           httpRequest
             .body
-            .fold(PUT.apply(uri, http4sHeaders: _*))(
-              PUT.apply(
-                _,
-                uri,
-                http4sHeaders: _*
-              )
-            )
-        case Patch  =>
+            .fold(PUT.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
+              case HttpRequest.Body.Json(json) =>
+                PUT
+                  .apply(
+                    json,
+                    uriWithParams,
+                    http4sHeaders: _*
+                  )
+                  .asRight[HttpError]
+
+              case HttpRequest.Body.Multipart(_) =>
+                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
+            }
+        case HttpRequest.Method.Patch  =>
           httpRequest
             .body
-            .fold(PATCH.apply(uri, http4sHeaders: _*))(
-              PATCH.apply(
-                _,
-                uri,
-                http4sHeaders: _*
-              )
-            )
-        case Delete =>
+            .fold(PATCH.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
+              case HttpRequest.Body.Json(json) =>
+                PATCH
+                  .apply(
+                    json,
+                    uriWithParams,
+                    http4sHeaders: _*
+                  )
+                  .asRight[HttpError]
+
+              case HttpRequest.Body.Multipart(_) =>
+                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
+            }
+        case HttpRequest.Method.Delete =>
           httpRequest
             .body
-            .fold(DELETE.apply(uri, http4sHeaders: _*))(
-              DELETE.apply(
-                _,
-                uri,
-                http4sHeaders: _*
-              )
-            )
+            .fold(DELETE.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
+              case HttpRequest.Body.Json(json) =>
+                DELETE
+                  .apply(
+                    json,
+                    uriWithParams,
+                    http4sHeaders: _*
+                  )
+                  .asRight[HttpError]
+
+              case HttpRequest.Body.Multipart(multipartData) =>
+                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
+            }
       }
     }
 
@@ -162,21 +243,112 @@ object HttpRequest {
 
   @newtype case class Param(param: (String, String))
 
+  sealed trait Body
+
+  object Body {
+    final case class Json(json: io.circe.Json)               extends Body
+    final case class Multipart(multipartData: MultipartData) extends Body
+
+    def json(json: io.circe.Json): Body = Json(json)
+
+    def multipart(multipartData: MultipartData): Body = Multipart(multipartData)
+  }
+
+  sealed trait MultipartData
+
+  object MultipartData {
+    final case class File(
+      name: Name,
+      file: java.io.File,
+      mediaTypes: List[MediaType],
+      blocker: Blocker,
+    ) extends MultipartData
+
+    final case class Url(
+      name: Name,
+      url: URL,
+      mediaTypes: List[MediaType],
+      blocker: Blocker,
+    ) extends MultipartData
+
+    def file(
+      name: Name,
+      file: java.io.File,
+      mediaTypes: List[MediaType],
+      blocker: Blocker,
+    ): MultipartData =
+      File(name, file, mediaTypes, blocker)
+
+    def url(
+      name: Name,
+      url: URL,
+      mediaTypes: List[MediaType],
+      blocker: Blocker,
+    ): MultipartData = Url(name, url, mediaTypes, blocker)
+
+    @newtype case class Name(name: String)
+
+//    import org.http4s.headers._
+    import org.http4s.multipart.{Part, Multipart => Http4sMultipart}
+
+    implicit final class MultipartDataOps(val multipartData: MultipartData) extends AnyVal {
+      def toHttp4s[F[_]: Sync: ContextShift]: Http4sMultipart[F] =
+        MultipartData.toHttp4s(multipartData)
+    }
+
+    def toHttp4s[F[_]: Sync: ContextShift](multipartData: MultipartData): Http4sMultipart[F] =
+      Http4sMultipart[F](
+        multipartData match {
+          case File(name, file, mediaTypes, blocker) =>
+            Vector(
+              Part.fileData(
+                name.name,
+                file,
+                blocker,
+                mediaTypes.map(`Content-Type`(_)): _*
+              )
+            )
+
+          case Url(name, url, mediaTypes, blocker) =>
+            Vector(
+              Part.fileData(
+                name.name,
+                url,
+                blocker,
+                mediaTypes.map(`Content-Type`(_)): _*
+              )
+            )
+
+        }
+      )
+  }
+
   implicit final class HttpRequestOps(val httpRequest: HttpRequest) extends AnyVal {
     def withHeader(header: Header): HttpRequest =
       httpRequest.copy(headers = httpRequest.headers :+ header)
+
+    def toHttp4s[F[_]: Applicative: Sync: ContextShift]: Either[HttpError, F[Request[F]]] =
+      HttpRequest.toHttp4s[F](httpRequest)
+
+    def isBodyMultipart: Boolean =
+      httpRequest.body match {
+        case Some(HttpRequest.Body.Multipart(_)) =>
+          true
+        case _                                   =>
+          false
+      }
   }
 
   def withParams(httpMethod: Method, uri: Uri, params: List[Param]): HttpRequest =
-    HttpRequest(httpMethod, uri, List.empty[Header], params, none[Json])
+    HttpRequest(httpMethod, uri, List.empty[Header], params, none[HttpRequest.Body])
 
-  def withBody(httpMethod: Method, uri: Uri, body: Json): HttpRequest =
+  def withBody(httpMethod: Method, uri: Uri, body: HttpRequest.Body): HttpRequest =
     HttpRequest(httpMethod, uri, List.empty[Header], List.empty[Param], body.some)
 
   def withHeaders(httpMethod: Method, uri: Uri, headers: List[Header]): HttpRequest =
-    HttpRequest(httpMethod, uri, headers, List.empty[Param], none[Json])
+    HttpRequest(httpMethod, uri, headers, List.empty[Param], none[HttpRequest.Body])
 
-  def withHeadersAndBody[A: Encoder](
+  def withHeadersAndJsonBody[A: Encoder](
     httpMethod: Method,
     uri: Uri,
     headers: List[Header],
@@ -187,10 +359,25 @@ object HttpRequest {
       uri,
       headers,
       List.empty[Param],
-      Encoder[A].apply(body).some,
+      HttpRequest.Body.json(Encoder[A].apply(body)).some,
+    )
+
+  def withHeadersParamsAndMultipartBody(
+    httpMethod: Method,
+    uri: Uri,
+    headers: List[Header],
+    params: List[Param],
+    multipartData: MultipartData,
+  ): HttpRequest =
+    HttpRequest(
+      httpMethod,
+      uri,
+      headers,
+      params,
+      HttpRequest.Body.multipart(multipartData).some,
     )
 
   def withoutBody(httpMethod: Method, uri: Uri): HttpRequest =
-    HttpRequest(httpMethod, uri, List.empty[Header], List.empty[Param], none[Json])
+    HttpRequest(httpMethod, uri, List.empty[Header], List.empty[Param], none[HttpRequest.Body])
 
 }
