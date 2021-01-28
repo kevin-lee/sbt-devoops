@@ -150,6 +150,9 @@ object HttpClient {
             case Status.UnprocessableEntity.code =>
               HttpError.unprocessableEntity(httpRequest, httpResponse).asLeft[A]
 
+            case Status.Unauthorized.code =>
+              HttpError.unauthorized(httpRequest, httpResponse).asLeft[A]
+
             case _ =>
               HttpError.failedResponse(httpResponse).asLeft[A]
           }

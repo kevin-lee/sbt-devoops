@@ -1,11 +1,10 @@
 package kevinlee.github.data
 
-import cats.Show
 import cats.syntax.all._
 import io.circe.parser._
-import io.circe.{Decoder, Encoder, Json}
 import kevinlee.git.Git.{RepoUrl, TagName}
 import kevinlee.git.GitCommandError
+import kevinlee.http.HttpResponse.FailedResponseBodyJson
 import kevinlee.http.{HttpError, HttpRequest, HttpResponse}
 
 import java.time.Instant
@@ -56,8 +55,9 @@ object GitHubError {
   final case class UnprocessableEntity(
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
-    responseBodyJson: Option[ResponseBodyJson],
+    responseBodyJson: Option[FailedResponseBodyJson],
   )                                                        extends GitHubError
+  final case class AuthFailure(message: String)            extends GitHubError
   final case class UnexpectedFailure(httpError: HttpError) extends GitHubError
 
   def noCredential: GitHubError = NoCredential
@@ -105,9 +105,11 @@ object GitHubError {
   def unprocessableEntity(
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
-    responseBodyJson: Option[ResponseBodyJson],
+    responseBodyJson: Option[FailedResponseBodyJson],
   ): GitHubError =
     UnprocessableEntity(httpRequest: HttpRequest, httpResponse: HttpResponse, responseBodyJson)
+
+  def authFailure(message: String): GitHubError = AuthFailure(message)
 
   def unexpectedFailure(httpError: HttpError): GitHubError =
     UnexpectedFailure(httpError)
@@ -175,6 +177,11 @@ object GitHubError {
          |Response: ${httpResponse.show}
          |""".stripMargin
 
+    case AuthFailure(message) =>
+      s"""Authentication to access GitHub API has failed.
+         |  - message: $message
+         |""".stripMargin
+
     case UnexpectedFailure(httpError) =>
       s"""Unexpected failure:
          |${httpError.show}
@@ -182,32 +189,10 @@ object GitHubError {
 
   }
 
-  final case class ResponseBodyJson(message: String, documentationUrl: Option[String])
-  object ResponseBodyJson {
-    implicit val encoder: Encoder[ResponseBodyJson] =
-      responseBodyJson =>
-        Json.obj(
-          (List("message" -> Json.fromString(responseBodyJson.message)) ++
-            responseBodyJson
-              .documentationUrl
-              .toList
-              .map(documentationUrl => "documentation_url" -> Json.fromString(documentationUrl))): _*
-        )
-
-    implicit val decoder: Decoder[ResponseBodyJson] =
-      c =>
-        for {
-          message          <- c.downField("message").as[String]
-          documentationUrl <- c.downField("documentation_url").as[Option[String]]
-        } yield ResponseBodyJson(message, documentationUrl)
-
-    implicit val show: Show[ResponseBodyJson] = encoder.apply(_).spaces2
-  }
-
   def fromHttpError(httpError: HttpError): GitHubError = httpError match {
     case HttpError.Forbidden(httpRequest, httpResponse @ HttpResponse(_, headers, Some(body))) =>
-      decode[ResponseBodyJson](body.body) match {
-        case Right(ResponseBodyJson(message, Some(docUrl))) =>
+      decode[FailedResponseBodyJson](body.body) match {
+        case Right(FailedResponseBodyJson(message, Some(docUrl))) =>
           if (
             message.contains("You have triggered an abuse detection mechanism") ||
             docUrl.contains("abuse-rate-limits")
@@ -217,8 +202,12 @@ object GitHubError {
             message.contains("API rate limit exceeded") ||
             docUrl.contains("rate-limiting")
           ) {
-            val rateLimit = httpResponse.findHeaderValueByName(_.equalsIgnoreCase("X-RateLimit-Limit")).map(_.toInt)
-            val remaining = httpResponse.findHeaderValueByName(_.equalsIgnoreCase("X-RateLimit-Remaining")).map(_.toInt)
+            val rateLimit = httpResponse
+              .findHeaderValueByName(_.equalsIgnoreCase("X-RateLimit-Limit"))
+              .map(_.toInt)
+            val remaining = httpResponse
+              .findHeaderValueByName(_.equalsIgnoreCase("X-RateLimit-Remaining"))
+              .map(_.toInt)
             val reset     = httpResponse
               .findHeaderValueByName(_.equalsIgnoreCase("X-RateLimit-Reset"))
               .map(x => Instant.ofEpochSecond(x.toLong))
@@ -233,7 +222,7 @@ object GitHubError {
           } else {
             GitHubError.forbiddenRequest(httpRequest, httpResponse)
           }
-        case Right(ResponseBodyJson(message, None))         =>
+        case Right(FailedResponseBodyJson(message, None))         =>
           GitHubError.forbiddenRequest(httpRequest, httpResponse)
 
         case Left(_) =>
@@ -241,17 +230,15 @@ object GitHubError {
       }
 
     case HttpError.UnprocessableEntity(request, response) =>
-      val responseBodyJson = response
-        .body
-        .flatMap(body =>
-          decode[ResponseBodyJson](body.body) match {
-            case Right(responseBodyJson) =>
-              responseBodyJson.some
-            case Left(err)               =>
-              none[ResponseBodyJson]
-          }
-        )
+      val responseBodyJson = response.toFailedResponseBodyJson
       GitHubError.unprocessableEntity(request, response, responseBodyJson)
+
+    case HttpError.Unauthorized(_, response) =>
+      GitHubError.authFailure(
+        response
+          .toFailedResponseBodyJson
+          .fold("")(_.message)
+      )
 
     case error =>
       GitHubError.unexpectedFailure(error)
