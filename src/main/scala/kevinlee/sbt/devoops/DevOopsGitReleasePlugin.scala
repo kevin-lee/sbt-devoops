@@ -1,7 +1,7 @@
 package kevinlee.sbt.devoops
 
 import cats._
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.instances.all._
 import cats.syntax.all._
 import effectie.cats.Effectful._
@@ -10,15 +10,20 @@ import just.semver.SemVer
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
 import kevinlee.github.data._
-import kevinlee.github.{GitHubTask, OldGitHubApi}
+import kevinlee.github.{GitHubApi, GitHubTask, OldGitHubApi}
+import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.devoops.data.SbtTaskResult.SbtTaskHistory
 import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
+import loggerf.logger.{CanLog, SbtLogger}
+import org.http4s.client.blaze.BlazeClientBuilder
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
+import scala.concurrent.duration._
 import java.io.FileInputStream
+import scala.concurrent.ExecutionContext
 
 /**
   * @author Kevin Lee
@@ -206,47 +211,62 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val authTokenFile = gitHubAuthTokenFile.value
       lazy val baseDir = baseDirectory.value
       lazy val artifacts = devOopsPackagedArtifacts.value
+      implicit val ec: ExecutionContext = ExecutionContext.global
+      implicit val cs: ContextShift[IO] = IO.contextShift(ec)
+
+      implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git = Git[IO]
       val sbtTask = SbtTask[IO]
-      val rslt: SbtTask.Result[IO, Unit] = for {
-        _ <- sbtTask.fromGitTask(git.fetchTags(baseDir))
-        tags <- sbtTask.fromGitTask(git.getTag(baseDir))
-        _ <- sbtTask.toLeftWhen(
-          !tags.contains(tagName.value)
-          , SbtTaskError.gitTaskError(
-            s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}"
-          )
-        )
-        _ <- sbtTask.toLeftWhen(
-          uploadArtifacts && assets.isEmpty
-          , SbtTaskError.noFileFound(
-            "devOopsCopyReleasePackages (uploadArtifacts is true)"
-            , artifacts
-          )
-        )
-        oauth <- sbtTask.eitherTWithWriter(
-          effectOf[IO](
-            getGitHubAuthToken(authTokenEnvVar, authTokenFile)
-              .leftMap(SbtTaskError.gitHubTaskError
+
+      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = BlazeClientBuilder[IO](ec)
+        .withIdleTimeout(2.minutes)
+        .withRequestTimeout(2.minutes)
+        .withConnectTimeout(2.minutes)
+        .resource
+        .use { client =>
+
+          val r: SbtTask.Result[IO, Unit] = for {
+            _ <- sbtTask.fromGitTask(git.fetchTags(baseDir))
+            tags <- sbtTask.fromGitTask(git.getTag(baseDir))
+            _ <- sbtTask.toLeftWhen(
+              !tags.contains(tagName.value)
+              , SbtTaskError.gitTaskError(
+                s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}"
               )
-          )
-        )(
-          _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
-        )
-        _ <- sbtTask.handleGitHubTask(
-          runGitHubRelease(
-            tagName
-            , assets
-            , baseDir
-            , ChangelogLocation(changelogLocation.value)
-            , Repository(gitTagPushRepo.value)
-            , oauth
-          )
-        )
-      } yield ()
-      sbtTask.handleSbtTask(
-        rslt.value.run
-      ).unsafeRunSync()
+            )
+            _ <- sbtTask.toLeftWhen(
+              uploadArtifacts && assets.isEmpty
+              , SbtTaskError.noFileFound(
+                "devOopsCopyReleasePackages (uploadArtifacts is true)"
+                , artifacts
+              )
+            )
+            oauth <- sbtTask.eitherTWithWriter(
+              effectOf[IO](
+                getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+                  .leftMap(SbtTaskError.gitHubTaskError
+                  )
+              )
+            )(
+              _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
+            )
+            _ <-
+              sbtTask.handleGitHubTask(
+                runGitHubRelease(
+                  tagName,
+                  assets,
+                  baseDir,
+                  ChangelogLocation(changelogLocation.value),
+                  Repository(gitTagPushRepo.value),
+                  oauth,
+                  GitHubApi[IO](HttpClient[IO](client))
+                )
+              )
+          } yield ()
+          r.value.run
+        }
+      sbtTask.handleSbtTask(result)
+        .unsafeRunSync()
     }
   , gitTagAndGitHubRelease := {
       lazy val tagName = TagName(gitTagName.value)
@@ -259,35 +279,49 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val baseDir = baseDirectory.value
       lazy val pushRepo = Repository(gitTagPushRepo.value)
       lazy val projectVersion = version.value
+      lazy val artifacts = devOopsPackagedArtifacts.value
 
-      SbtTask[IO].handleSbtTask(
-        (for {
-          _ <- SbtTask[IO].toLeftWhen(
-                uploadArtifacts && assets.isEmpty
-              , SbtTaskError.noFileFound(
-                "devOopsCopyReleasePackages (uploadArtifacts is true)"
-                , devOopsPackagedArtifacts.value
-              )
-            )
-          oauth <- SbtTask[IO].eitherTWithWriter(
-            effectOf[IO](getGitHubAuthToken(authTokenEnvVar, authTokenFile)
-              .leftMap(SbtTaskError.gitHubTaskError))
-            )(
-              _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
-            )
-          _ <- getTagVersion[IO](baseDir, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
-          _ <-  SbtTask[IO].handleGitHubTask(
-              runGitHubRelease(
-                  tagName
-                , assets
-                , baseDir
-                , ChangelogLocation(changelogLocation.value)
-                , pushRepo
-                , oauth
+      implicit val ec: ExecutionContext = ExecutionContext.global
+      implicit val cs: ContextShift[IO] = IO.contextShift(ec)
+
+      implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
+
+      BlazeClientBuilder[IO](ec)
+        .withIdleTimeout(2.minutes)
+        .withRequestTimeout(2.minutes)
+        .withConnectTimeout(2.minutes)
+        .resource
+        .use { client =>
+          SbtTask[IO].handleSbtTask(
+            (for {
+              _ <- SbtTask[IO].toLeftWhen(
+                    uploadArtifacts && assets.isEmpty
+                  , SbtTaskError.noFileFound(
+                    "devOopsCopyReleasePackages (uploadArtifacts is true)"
+                    , artifacts
+                  )
                 )
-            )
-        } yield ()).value.run
-      ).unsafeRunSync()
+              oauth <- SbtTask[IO].eitherTWithWriter(
+                effectOf[IO](getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+                  .leftMap(SbtTaskError.gitHubTaskError))
+                )(
+                  _ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token"))
+                )
+              _ <- getTagVersion[IO](baseDir, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
+              _ <-  SbtTask[IO].handleGitHubTask(
+                  runGitHubRelease(
+                    tagName,
+                    assets,
+                    baseDir,
+                    ChangelogLocation(changelogLocation.value),
+                    pushRepo,
+                    oauth,
+                    GitHubApi[IO](HttpClient[IO](client))
+                    )
+                )
+            } yield ()).value.run
+          )
+        }.unsafeRunSync()
     }
   )
 
@@ -340,6 +374,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       sys.env.get(envVarName)
         .fold(readOAuthToken(authTokenFile))(token => OAuthToken(token).asRight)
 
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   private def runGitHubRelease[F[_]: EffectConstructor: CanCatch: Monad](
       tagName: TagName
     , assets: Vector[File]
@@ -347,7 +382,8 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     , changelogLocation: ChangelogLocation
     , gitTagPushRepo: Repository
     , oAuthToken: OAuthToken
-    ): GitHubTask.GitHubTaskResult[F, Unit] =
+    , gitHubApi: GitHubApi[F]
+    )(implicit ec: ExecutionContext): GitHubTask.GitHubTaskResult[F, Unit] =
       for {
         changelog <- SbtTask[F].eitherTWithWriter(
             effectOf[F](getChangelog(new File(baseDir, changelogLocation.changeLogLocation), tagName))
@@ -362,27 +398,33 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           )(
             r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}")
           )
-        gitHub <- SbtTask[F].eitherTWithWriter(
-            TheGitHubApi[F].connectWithOAuth(oAuthToken)
-          )(
-            _ => List("Connect GitHub with OAuth")
-          )
         gitHubRelease <- SbtTask[F].eitherTWithWriter(
-          TheGitHubApi[F].release(
-              gitHub
-            , repo
+          gitHubApi.release(
+            GitHubRepoWithAuth(
+              GitHubRepo(
+                GitHubRepo.Org(
+                  repo.repoOrg.org
+                ),
+                GitHubRepo.Repo(
+                  repo.repoName.name
+                )
+              ),
+              GitHubRepoWithAuth.AccessToken(oAuthToken.token).some
+            )
             , tagName
             , changelog
-            , assets
+            , assets.toList
             ))(
               release =>
                 List[String](
                     s"GitHub release: ${release.tagName.value}"
-                  , if (release.releasedFiles.isEmpty)
+                  , if (release.assets.isEmpty)
                       "No files to upload"
                     else
-                      release.releasedFiles.mkString("Files uploaded:\n    - ", "\n    - ", "")
-                  , release.changelog.changelog.split("\n")
+                    release.assets.map { asset =>
+                      s"${asset.name.name} @ ${asset.browserDownloadUrl.browserDownloadUrl}"
+                    }.mkString("Files uploaded:\n    - ", "\n    - ", "")
+                  , release.body.description.split("\n")
                       .mkString("Changelog uploaded:\n    ", "\n    ", "\n")
                   )
             )

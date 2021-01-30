@@ -66,7 +66,7 @@ object HttpClient {
 //                                if (httpRequest.isBodyMultipart)
 //                                  Set.empty[MediaRange]
 //                                else
-                                  implicitly[EntityDecoder[F, A]].consumes,
+                                implicitly[EntityDecoder[F, A]].consumes,
                               )
                             )
 
@@ -79,8 +79,8 @@ object HttpClient {
             )
 //              .leftFlatMap(err => EitherT(effectOf(HttpError.recoverFromOptional404[A](err))))
           )(
-            err => error(err.show),
-            res => info(String.valueOf(res)),
+            err => debug(err.show),
+            res => debug(String.valueOf(res)),
           )
       } yield res
 
