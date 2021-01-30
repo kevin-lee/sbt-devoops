@@ -1,5 +1,6 @@
 package kevinlee.github.data
 
+import cats.data.NonEmptyList
 import cats.syntax.all._
 import io.circe.parser._
 import kevinlee.git.Git.{RepoUrl, TagName}
@@ -58,6 +59,10 @@ object GitHubError {
     responseBodyJson: Option[FailedResponseBodyJson],
   )                                                        extends GitHubError
   final case class AuthFailure(message: String)            extends GitHubError
+  final case class AssetUploadFailure(
+    failed: NonEmptyList[GitHubRelease.Asset.FailedAssetUpload],
+    succeeded: List[GitHubRelease.Asset],
+  )                                                        extends GitHubError
   final case class UnexpectedFailure(httpError: HttpError) extends GitHubError
 
   def noCredential: GitHubError = NoCredential
@@ -110,6 +115,11 @@ object GitHubError {
     UnprocessableEntity(httpRequest: HttpRequest, httpResponse: HttpResponse, responseBodyJson)
 
   def authFailure(message: String): GitHubError = AuthFailure(message)
+
+  def assetUploadFailure(
+    failed: NonEmptyList[GitHubRelease.Asset.FailedAssetUpload],
+    succeeded: List[GitHubRelease.Asset],
+  ): GitHubError = AssetUploadFailure(failed, succeeded)
 
   def unexpectedFailure(httpError: HttpError): GitHubError =
     UnexpectedFailure(httpError)
@@ -180,6 +190,19 @@ object GitHubError {
     case AuthFailure(message) =>
       s"""Authentication to access GitHub API has failed.
          |  - message: $message
+         |""".stripMargin
+
+    case AssetUploadFailure(failed, succeeded) =>
+      @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+      val failedOnes = failed.toList.map {
+        case GitHubRelease.Asset.FailedAssetUpload(file, Some(err: AssetUploadFailure)) =>
+          GitHubError.render(err)
+        case GitHubRelease.Asset.FailedAssetUpload(file, reason) =>
+          s"${file.toString}${reason.fold("")(s => s" Reason: ${GitHubError.render(s)}")}"
+      }
+      s"""Uploading assets to GitHub release has failed.
+         |Failed: ${failedOnes.mkString("\n  - ", "\n  - ", "\n")}
+         |Succeeded: ${succeeded.mkString("\n  - ", "\n  - ", "\n")}
          |""".stripMargin
 
     case UnexpectedFailure(httpError) =>

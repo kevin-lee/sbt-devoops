@@ -48,6 +48,9 @@ object HttpError {
   final case class MethodUnsupportedForMultipart(
     httpRequest: HttpRequest
   ) extends HttpError
+  final case class MethodUnsupportedForFileUpload(
+    httpRequest: HttpRequest
+  ) extends HttpError
   final case class Unauthorized(
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
@@ -87,6 +90,9 @@ object HttpError {
 
   def methodUnsupportedForMultipart(httpRequest: HttpRequest): HttpError =
     MethodUnsupportedForMultipart(httpRequest)
+
+  def methodUnsupportedForFileUpload(httpRequest: HttpRequest): HttpError =
+    MethodUnsupportedForFileUpload(httpRequest)
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   implicit final val show: Show[HttpError] = _.toString

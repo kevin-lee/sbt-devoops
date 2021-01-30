@@ -63,9 +63,9 @@ object HttpClient {
         postProcessedReq <- eitherTRightF[HttpError](
                               postProcessRequest(
                                 request,
-                                if (httpRequest.isBodyMultipart)
-                                  Set.empty[MediaRange]
-                                else
+//                                if (httpRequest.isBodyMultipart)
+//                                  Set.empty[MediaRange]
+//                                else
                                   implicitly[EntityDecoder[F, A]].consumes,
                               )
                             )

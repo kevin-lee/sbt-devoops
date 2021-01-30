@@ -2,9 +2,13 @@ package kevinlee.github
 
 import cats.Monad
 import cats.syntax.all._
+import effectie.cats.EffectConstructor
 import kevinlee.git.Git
 import kevinlee.github.data._
 import kevinlee.http.{HttpClient, HttpRequest}
+
+import java.io.File
+import scala.concurrent.ExecutionContext
 
 /** @author Kevin Lee
   * @since 2021-01-14
@@ -26,18 +30,22 @@ trait GitHubApi[F[_]] {
     repo: GitHubRepoWithAuth,
   ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
 
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def uploadAssetToRelease(
     params: GitHubRelease.UploadAssetParams,
     repo: GitHubRepoWithAuth,
-  ): F[Either[GitHubError, Option[GitHubRelease.Asset]]]
+  )(implicit ec: ExecutionContext): F[Either[GitHubError, (File, Option[GitHubRelease.Asset])]]
 
 }
 
 object GitHubApi {
 
-  def apply[F[_]: Monad](httpClient: HttpClient[F]): GitHubApi[F] = new GitHubApiF[F](httpClient)
+  def apply[F[_]: Monad: EffectConstructor](httpClient: HttpClient[F]): GitHubApi[F] =
+    new GitHubApiF[F](httpClient)
 
-  final class GitHubApiF[F[_]: Monad](val httpClient: HttpClient[F]) extends GitHubApi[F] {
+  final class GitHubApiF[F[_]: Monad: EffectConstructor](
+    val httpClient: HttpClient[F]
+  ) extends GitHubApi[F] {
     // TODO: make it configurable
     val baseUrl: String       = "https://api.github.com"
     val baseUploadUrl: String = "https://uploads.github.com"
@@ -115,14 +123,15 @@ object GitHubApi {
         )
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
     override def uploadAssetToRelease(
       params: GitHubRelease.UploadAssetParams,
       repo: GitHubRepoWithAuth,
-    ): F[Either[GitHubError, Option[GitHubRelease.Asset]]] = {
+    )(implicit ec: ExecutionContext): F[Either[GitHubError, (File, Option[GitHubRelease.Asset])]] = {
       val url         =
         s"$baseUploadUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/${params.releaseId.releaseId}/assets"
       val httpRequest = HttpRequest
-        .withHeadersParamsAndMultipartBody(
+        .withHeadersParamsAndFileBody(
           HttpRequest.Method.post,
           HttpRequest.Uri(url),
           repo
@@ -132,21 +141,22 @@ object GitHubApi {
             HttpRequest.Param(
               "name" -> params.name.assetName
             )
-          ) ++ params.label
+          ) ++ params
+            .label
             .map(assetLabel =>
               HttpRequest.Param(
                 "label" -> assetLabel.assetLabel
               )
             )
             .toList,
-          params.multipartData,
+          params.assetFile.assetFile,
         )
       httpClient
         .request[Option[GitHubRelease.Asset]](httpRequest)
         .map(
           _.toOptionIfNotFound
             .leftMap(GitHubError.fromHttpError)
-            .flatMap(res => res.asRight[GitHubError])
+            .flatMap(res => (params.assetFile.assetFile, res).asRight[GitHubError])
         )
     }
   }
