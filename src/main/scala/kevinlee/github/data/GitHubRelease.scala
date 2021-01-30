@@ -4,8 +4,8 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import io.estatico.newtype.macros.{newsubtype, newtype}
 import kevinlee.git.Git
-import kevinlee.http.HttpRequest
 
+import java.io.File
 import java.time.Instant
 
 /** @author Kevin Lee
@@ -90,15 +90,16 @@ object GitHubRelease {
   }
 
   final case class UploadAssetParams(
-    tagName: Git.TagName,
     releaseId: ReleaseId,
     name: UploadAssetParams.AssetName,
     label: Option[UploadAssetParams.AssetLabel],
-    multipartData: HttpRequest.MultipartData,
+    assetFile: UploadAssetParams.AssetFile,
   )
   object UploadAssetParams {
     @newtype case class AssetName(assetName: String)
     @newtype case class AssetLabel(assetLabel: String)
+    final case class AssetFile(assetFile: File, contentTypes: List[GitHubRelease.Asset.ContentType])
+
   }
 
   @newtype case class Accept(accept: String)
@@ -294,6 +295,7 @@ object GitHubRelease {
           uploader,
         )
 
+    final case class FailedAssetUpload(file: File, cause: Option[GitHubError])
   }
 
   final case class Response(

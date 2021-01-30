@@ -3,13 +3,15 @@ package kevinlee.http;
 import cats.effect.{Blocker, ContextShift, Sync}
 import cats.syntax.all._
 import cats.{Applicative, Show}
+import fs2.Chunk
 import io.circe.Encoder
 import io.estatico.newtype.macros._
 import org.http4s.headers.`Content-Type`
 import org.http4s.util.CaseInsensitiveString
-import org.http4s.{Headers, MediaType, Request, Header => Http4sHeader, Uri => Http4sUri}
+import org.http4s.{MediaType, Request, Header => Http4sHeader, Uri => Http4sUri}
 
 import java.net.URL
+import scala.concurrent.ExecutionContext
 
 /** @author Kevin Lee
   * @since 2021-01-03
@@ -90,13 +92,16 @@ object HttpRequest {
         case HttpRequest.Body.Json(json) =>
           json.spaces2
 
-        case HttpRequest.Body.Multipart(multipartData) =>
-          multipartData match {
-            case HttpRequest.MultipartData.File(name, file, mediaType, _) =>
-              s"Multipart(name=${name.name}, file=${file.getCanonicalPath}, mediaType=${mediaType.show})"
-            case HttpRequest.MultipartData.Url(name, url, mediaType, _)   =>
-              s"Multipart(name=${name.name}, url=${url.toString}, mediaType=${mediaType.show})"
-          }
+        case HttpRequest.Body.File(file, blocker) =>
+          s"File(file=${file.getCanonicalPath}, blocker=$blocker)"
+
+//        case HttpRequest.Body.Multipart(multipartData) =>
+//          multipartData match {
+//            case HttpRequest.MultipartData.File(name, file, mediaType, _) =>
+//              s"Multipart(name=${name.name}, file=${file.getCanonicalPath}, mediaType=${mediaType.show})"
+//            case HttpRequest.MultipartData.Url(name, url, mediaType, _)   =>
+//              s"Multipart(name=${name.name}, url=${url.toString}, mediaType=${mediaType.show})"
+//          }
 
       }
     s"HttpRequest(method=${httpRequest.httpMethod.show}, url=${httpRequest.uri.uri}, headers=$headerString, params=$paramsString, body=$bodyString)"
@@ -138,8 +143,12 @@ object HttpRequest {
                   )
                   .asRight[HttpError]
 
-              case HttpRequest.Body.Multipart(_) =>
-                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
+              case HttpRequest.Body.File(_, _) =>
+                HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[F[Request[F]]]
+
+              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+//              case HttpRequest.Body.Multipart(_) =>
+//                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
             }
         case HttpRequest.Method.Post   =>
           httpRequest
@@ -154,30 +163,56 @@ object HttpRequest {
                   )
                   .asRight[HttpError]
 
-              case HttpRequest.Body.Multipart(multipartData) =>
-                val body = multipartData.toHttp4s[F]
-                POST
-                  .apply(
-                    body,
-                    uriWithParams,
-                    http4sHeaders: _*
-                  )
+              case HttpRequest.Body.File(file, blocker) =>
+                val byteChunk = fs2.io.file.readAll[F](file.toPath, blocker, 8192).compile.to(Chunk)
+                byteChunk
+                  .flatMap { chunk =>
+                    POST
+                      .apply(
+                        chunk,
+                        uriWithParams,
+                        http4sHeaders: _*
+                      )
+                  }
                   .map(req =>
                     req.withHeaders(
-                      Headers(
-                        req.headers.toList ++ body
-                          .headers
-                          .toList
-                          .filterNot(header =>
-                            /* Without this filtering, the headers contain "Transfer-Encoding: chunked"
-                             * which causes [400, Bad Content-Length] when uploading a release asset file using GitHub API
-                             */
-                            header.name === CaseInsensitiveString("Transfer-Encoding")
-                          )
-                      )
+                      req
+                        .headers
+                        .filterNot(header =>
+                          /* Without this filtering, the headers contain "Transfer-Encoding: chunked"
+                           * which causes [400, Bad Content-Length] when uploading a release asset file using GitHub API
+                           */
+                          header.name === CaseInsensitiveString("Transfer-Encoding")
+                        )
                     )
                   )
                   .asRight[HttpError]
+
+              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+//              case HttpRequest.Body.Multipart(multipartData) =>
+//                val body = multipartData.toHttp4s[F]
+//                POST
+//                  .apply(
+//                    body,
+//                    uriWithParams,
+//                    http4sHeaders: _*
+//                  )
+//                  .map(req =>
+//                    req.withHeaders(
+//                      Headers(
+//                        req.headers.toList ++ body
+//                          .headers
+//                          .toList
+//                          .filterNot(header =>
+//                            /* Without this filtering, the headers contain "Transfer-Encoding: chunked"
+//                             * which causes [400, Bad Content-Length] when uploading a release asset file using GitHub API
+//                             */
+//                            header.name === CaseInsensitiveString("Transfer-Encoding")
+//                          )
+//                      )
+//                    )
+//                  )
+//                  .asRight[HttpError]
             }
         case HttpRequest.Method.Put    =>
           httpRequest
@@ -192,8 +227,12 @@ object HttpRequest {
                   )
                   .asRight[HttpError]
 
-              case HttpRequest.Body.Multipart(_) =>
-                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
+              case HttpRequest.Body.File(_, _) =>
+                HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[F[Request[F]]]
+
+              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+//              case HttpRequest.Body.Multipart(_) =>
+//                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
             }
         case HttpRequest.Method.Patch  =>
           httpRequest
@@ -208,8 +247,12 @@ object HttpRequest {
                   )
                   .asRight[HttpError]
 
-              case HttpRequest.Body.Multipart(_) =>
-                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
+              case HttpRequest.Body.File(_, _) =>
+                HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[F[Request[F]]]
+
+              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+//              case HttpRequest.Body.Multipart(_) =>
+//                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
             }
         case HttpRequest.Method.Delete =>
           httpRequest
@@ -224,8 +267,12 @@ object HttpRequest {
                   )
                   .asRight[HttpError]
 
-              case HttpRequest.Body.Multipart(multipartData) =>
-                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
+              case HttpRequest.Body.File(_, _) =>
+                HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[F[Request[F]]]
+
+              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+//              case HttpRequest.Body.Multipart(multipartData) =>
+//                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
             }
       }
     }
@@ -246,12 +293,17 @@ object HttpRequest {
   sealed trait Body
 
   object Body {
-    final case class Json(json: io.circe.Json)               extends Body
-    final case class Multipart(multipartData: MultipartData) extends Body
+    final case class Json(json: io.circe.Json)                  extends Body
+    // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+//    final case class Multipart(multipartData: MultipartData) extends Body
+    final case class File(file: java.io.File, blocker: Blocker) extends Body
 
     def json(json: io.circe.Json): Body = Json(json)
 
-    def multipart(multipartData: MultipartData): Body = Multipart(multipartData)
+    // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+//    def multipart(multipartData: MultipartData): Body = Multipart(multipartData)
+
+    def file(file: java.io.File, blocker: Blocker): Body = File(file, blocker)
   }
 
   sealed trait MultipartData
@@ -288,7 +340,6 @@ object HttpRequest {
 
     @newtype case class Name(name: String)
 
-//    import org.http4s.headers._
     import org.http4s.multipart.{Part, Multipart => Http4sMultipart}
 
     implicit final class MultipartDataOps(val multipartData: MultipartData) extends AnyVal {
@@ -330,13 +381,14 @@ object HttpRequest {
     def toHttp4s[F[_]: Applicative: Sync: ContextShift]: Either[HttpError, F[Request[F]]] =
       HttpRequest.toHttp4s[F](httpRequest)
 
-    def isBodyMultipart: Boolean =
-      httpRequest.body match {
-        case Some(HttpRequest.Body.Multipart(_)) =>
-          true
-        case _                                   =>
-          false
-      }
+    // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+//    def isBodyMultipart: Boolean =
+//      httpRequest.body match {
+//        case Some(HttpRequest.Body.Multipart(_)) =>
+//          true
+//        case _                                   =>
+//          false
+//      }
   }
 
   def withParams(httpMethod: Method, uri: Uri, params: List[Param]): HttpRequest =
@@ -362,20 +414,35 @@ object HttpRequest {
       HttpRequest.Body.json(Encoder[A].apply(body)).some,
     )
 
-  def withHeadersParamsAndMultipartBody(
+  def withHeadersParamsAndFileBody(
     httpMethod: Method,
     uri: Uri,
     headers: List[Header],
     params: List[Param],
-    multipartData: MultipartData,
-  ): HttpRequest =
+    file: java.io.File,
+  )(implicit ec: ExecutionContext): HttpRequest =
     HttpRequest(
       httpMethod,
       uri,
       headers,
       params,
-      HttpRequest.Body.multipart(multipartData).some,
+      HttpRequest.Body.file(file, Blocker.liftExecutionContext(ec)).some,
     )
+
+//  def withHeadersParamsAndMultipartBody(
+//    httpMethod: Method,
+//    uri: Uri,
+//    headers: List[Header],
+//    params: List[Param],
+//    multipartData: MultipartData,
+//  ): HttpRequest =
+//    HttpRequest(
+//      httpMethod,
+//      uri,
+//      headers,
+//      params,
+//      HttpRequest.Body.multipart(multipartData).some,
+//    )
 
   def withoutBody(httpMethod: Method, uri: Uri): HttpRequest =
     HttpRequest(httpMethod, uri, List.empty[Header], List.empty[Param], none[HttpRequest.Body])
