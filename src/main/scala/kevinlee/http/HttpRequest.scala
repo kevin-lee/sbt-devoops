@@ -126,9 +126,6 @@ object HttpRequest {
               uri.withQueryParam(param.param._1, param.param._2)
             }
         }
-      println(s"""
-                 |uriWithParams: ${uriWithParams.toString}
-                 |""".stripMargin)
       httpRequest.httpMethod match {
         case HttpRequest.Method.Get    =>
           httpRequest
