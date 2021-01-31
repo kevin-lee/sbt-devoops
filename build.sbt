@@ -48,7 +48,6 @@ lazy val root = (project in file("."))
             libs.cats,
             libs.catsEffect,
             libs.effectie,
-            "io.kevinlee" %% "logger-f-slf4j" % "1.7.0" % Test
           ) ++
             libs.hedgehogLibs ++
             libs.loggerF ++
@@ -93,7 +92,7 @@ lazy val props = new {
     val GitHubUsername: String = "Kevin-Lee"
     val ProjectName: String = "sbt-devoops"
 
-    val ProjectScalaVersion: String = "2.12.10"
+    val ProjectScalaVersion: String = "2.12.12"
     val CrossScalaVersions: Seq[String] = Seq(ProjectScalaVersion).distinct
 
     val GlobalSbtVersion: String = "1.3.4"
@@ -117,7 +116,7 @@ lazy val props = new {
 
     val circeVersion = "0.13.0"
 
-    val http4sVersion   = "0.21.15"
+    val http4sVersion   = "0.21.16"
 
     val IncludeTest: String = "compile->compile;test->test"
   }
@@ -145,7 +144,7 @@ lazy val libs = new {
 
   val loggerF: List[ModuleID] = List(
       "io.kevinlee" %% "logger-f-cats-effect" % props.loggerFVersion,
-      "io.kevinlee" %% "logger-f-sbt-logging" % props.loggerFVersion
+      "io.kevinlee" %% "logger-f-sbt-logging" % props.loggerFVersion,
     )
 
   lazy val http4sClient: List[ModuleID] = List(
