@@ -14,6 +14,11 @@ trait GitHubTask[F[_]] {
   def fromGitTask[A](
     taskResult: Git.CmdResult[F, A]
   ): GitHubTaskResult[F, A]
+
+  def toLeftIfNone[A](
+    maybeA: Option[A],
+    whenNone: => GitHubError
+  ): GitHubTaskResult[F, A]
 }
 
 object GitHubTask {
@@ -35,5 +40,21 @@ object GitHubTask {
           .value
           .mapWritten(_.map(GitCmdAndResult.render))
       )
+
+    override def toLeftIfNone[A](
+      maybeA: Option[A],
+      whenNone: => GitHubError
+    ): GitHubTaskResult[F, A] =
+      EitherT[GitHubTaskHistoryWriter[F, *], GitHubError, A](
+        WriterT(
+          Monad[F].pure(
+            (
+              List.empty[String],
+              maybeA.toRight[GitHubError](whenNone)
+            )
+          )
+        )
+      )
+
   }
 }

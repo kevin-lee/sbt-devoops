@@ -45,9 +45,9 @@ trait SbtTask[F[_]] {
     sbtTaskResult: F[(SbtTaskHistory, Either[SbtTaskError, Unit])]
   ): F[Unit]
 
-  def handleGitHubTask(
-    gitHubTaskResult: GitHubTask.GitHubTaskResult[F, Unit]
-  ): Result[F, Unit]
+  def handleGitHubTask[A](
+    gitHubTaskResult: GitHubTask.GitHubTaskResult[F, A]
+  ): Result[F, A]
 
 //    gitHubTaskResult.run.run match {
 //      case (history, Left(error)) =>
@@ -173,10 +173,10 @@ object SbtTask {
           )
       }
 
-    def handleGitHubTask(
-      gitHubTaskResult: GitHubTask.GitHubTaskResult[F, Unit]
-    ): Result[F, Unit] =
-      EitherT[SbtTaskHistoryWriter[F, *], SbtTaskError, Unit](
+    def handleGitHubTask[A](
+      gitHubTaskResult: GitHubTask.GitHubTaskResult[F, A]
+    ): Result[F, A] =
+      EitherT[SbtTaskHistoryWriter[F, *], SbtTaskError, A](
         gitHubTaskResult
           .leftMap(SbtTaskError.gitHubTaskError)
           .value
