@@ -6,6 +6,7 @@ import cats.syntax.all._
 import effectie.cats.EffectConstructor
 import effectie.cats.Effectful._
 import kevinlee.git.Git
+import kevinlee.github.data.GitHubRelease.ReleaseId
 import kevinlee.github.data._
 import kevinlee.http.{HttpClient, HttpRequest}
 
@@ -45,6 +46,13 @@ trait GitHubApi[F[_]] {
     params: GitHubRelease.UploadAssetParams,
     repo: GitHubRepoWithAuth,
   )(implicit ec: ExecutionContext): F[Either[GitHubError, (File, Option[GitHubRelease.Asset])]]
+
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+  def uploadAllAssetsToRelease(
+    releaseId: ReleaseId,
+    repo: GitHubRepoWithAuth,
+    assets: List[File],
+  )(implicit ec: ExecutionContext): F[Either[GitHubError, List[GitHubRelease.Asset]]]
 
 }
 
@@ -277,6 +285,66 @@ object GitHubApi {
             .flatMap(res => (params.assetFile.assetFile, res).asRight[GitHubError])
         )
     }
+
+    @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+    override def uploadAllAssetsToRelease(
+      releaseId: ReleaseId,
+      repo: GitHubRepoWithAuth,
+      assets: List[File],
+    )(implicit ec: ExecutionContext): F[Either[GitHubError, List[GitHubRelease.Asset]]] =
+      assets
+        .traverse { file =>
+          val contentType = contentTypeMap.getContentType(file)
+          val filename    = file.getName
+          EitherT(
+            uploadAssetToRelease(
+              GitHubRelease.UploadAssetParams(
+                GitHubRelease.ReleaseId(releaseId.releaseId),
+                GitHubRelease.UploadAssetParams.AssetName(filename),
+                none[GitHubRelease.UploadAssetParams.AssetLabel],
+                GitHubRelease
+                  .UploadAssetParams
+                  .AssetFile(
+                    file,
+                    List(GitHubRelease.Asset.ContentType(contentType)),
+                  ),
+              ),
+              repo,
+            )
+          ).transform {
+            case Left(err) =>
+              GitHubRelease
+                .Asset
+                .FailedAssetUpload(file, err.some)
+                .asLeft[GitHubRelease.Asset]
+
+            case Right((file, Some(asset))) =>
+              asset.asRight[GitHubRelease.Asset.FailedAssetUpload]
+
+            case Right((file, None)) =>
+              GitHubRelease
+                .Asset
+                .FailedAssetUpload(file, none[GitHubError])
+                .asLeft[GitHubRelease.Asset]
+
+          }.value
+        }
+        .map { results =>
+          results.partitionBifold(identity) match {
+            case ((Nil, assets)) =>
+              assets
+                .asRight[GitHubError]
+
+            case ((failed :: rest, succeeded)) =>
+              GitHubError
+                .assetUploadFailure(
+                  NonEmptyList(failed, rest),
+                  succeeded,
+                )
+                .asLeft[List[GitHubRelease.Asset]]
+          }
+        }
+
   }
 
 }

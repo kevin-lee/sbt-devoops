@@ -26,6 +26,9 @@ object GitHubError {
   final case class GitHubServerError(error: String)        extends GitHubError
   final case class ReleaseAlreadyExists(tagName: TagName)  extends GitHubError
   final case class ReleaseCreationError(message: String)   extends GitHubError
+  final case class ReleaseNotFoundByTagName(
+    tagName: TagName
+  )                                                        extends GitHubError
   final case class InvalidGitHubRepoUrl(repoUrl: RepoUrl)  extends GitHubError
   final case class ChangelogNotFound(
     changelogLocation: String,
@@ -81,6 +84,9 @@ object GitHubError {
 
   def releaseCreationError(message: String): GitHubError =
     ReleaseCreationError(message)
+
+  def releaseNotFoundByTagName(tagName: TagName): GitHubError =
+    ReleaseNotFoundByTagName(tagName)
 
   def invalidGitHubRepoUrl(repoUrl: RepoUrl): GitHubError =
     InvalidGitHubRepoUrl(repoUrl)
@@ -146,6 +152,9 @@ object GitHubError {
     case ReleaseCreationError(message) =>
       s"Error] Failed to create GitHub release - reason: $message"
 
+    case ReleaseNotFoundByTagName(tagName) =>
+      s"Error] There is no GitHub release with the given tag, ${tagName.value}"
+
     case InvalidGitHubRepoUrl(repoUrl) =>
       s"Error] Invalid GitHub repository URL: ${repoUrl.repoUrl}"
 
@@ -197,7 +206,7 @@ object GitHubError {
       val failedOnes = failed.toList.map {
         case GitHubRelease.Asset.FailedAssetUpload(file, Some(err: AssetUploadFailure)) =>
           GitHubError.render(err)
-        case GitHubRelease.Asset.FailedAssetUpload(file, reason) =>
+        case GitHubRelease.Asset.FailedAssetUpload(file, reason)                        =>
           s"${file.toString}${reason.fold("")(s => s" Reason: ${GitHubError.render(s)}")}"
       }
       s"""Uploading assets to GitHub release has failed.
