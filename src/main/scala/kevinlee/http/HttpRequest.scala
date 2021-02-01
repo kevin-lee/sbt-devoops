@@ -8,7 +8,7 @@ import io.circe.Encoder
 import io.estatico.newtype.macros._
 import org.http4s.headers.`Content-Type`
 import org.http4s.util.CaseInsensitiveString
-import org.http4s.{MediaType, Request, Header => Http4sHeader, Uri => Http4sUri}
+import org.http4s.{MediaType, Request, Header => Http4sHeader, Uri => Http4sUri, Headers => Http4sHeaders}
 
 import java.net.URL
 import scala.concurrent.ExecutionContext
@@ -22,7 +22,9 @@ final case class HttpRequest(
   headers: List[HttpRequest.Header],
   params: List[HttpRequest.Param],
   body: Option[HttpRequest.Body],
-)
+) {
+  override def toString: String = HttpRequest.show.show(this)
+}
 
 @SuppressWarnings(
   Array(
@@ -64,13 +66,27 @@ object HttpRequest {
     implicit final val show: Show[Method] = render
   }
 
+  lazy val sensitiveHeadersFromHttp4sInLowerCase: Set[String] = Http4sHeaders.SensitiveHeaders.map(_.value.toLowerCase)
+
+  def shouldProtect(s: String): Boolean = {
+    val stringInLower = s.toLowerCase
+    (
+      stringInLower.startsWith("auth") ||
+      stringInLower.contains("password") ||
+      stringInLower.endsWith("-key") ||
+      stringInLower.endsWith("_key") ||
+      stringInLower.endsWith("-token") ||
+      stringInLower.endsWith("_token") ||
+      sensitiveHeadersFromHttp4sInLowerCase.contains(stringInLower)
+    )
+  }
+
   implicit final val show: Show[HttpRequest] = { httpRequest =>
     val headerString = httpRequest
       .headers
       .map { header =>
         val (name, value) = header.header
-        val nameInLower   = name.toLowerCase
-        if (nameInLower.contains("auth") || nameInLower.contains("password"))
+        if (shouldProtect(name))
           s"($name: ***Protected***)"
         else
           s"($name: $value)"
@@ -80,8 +96,7 @@ object HttpRequest {
       .params
       .map { param =>
         val (name, value) = param.param
-        val nameInLower   = name.toLowerCase
-        if (nameInLower.contains("auth") || nameInLower.contains("password"))
+        if (shouldProtect(name))
           s"($name: ***Protected***)"
         else
           s"($name: $value)"
