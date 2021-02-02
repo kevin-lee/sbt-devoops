@@ -30,7 +30,7 @@ trait SbtTask[F[_]] {
 
   def toLeftWhen[A](
     condition: => Boolean,
-    whenFalse: => A
+    whenFalse: => A,
   ): EitherT[SbtTaskHistoryWriter[F, *], A, Unit]
 
   def eitherTWithWriter0[W: Monoid, A, B](r: Either[A, B])(
@@ -99,7 +99,7 @@ object SbtTask {
 
     def toLeftWhen[A](
       condition: => Boolean,
-      whenFalse: => A
+      whenFalse: => A,
     ): EitherT[SbtTaskHistoryWriter[F, *], A, Unit] =
       EitherT[SbtTaskHistoryWriter[F, *], A, Unit] {
         val aOrB =
@@ -163,9 +163,9 @@ object SbtTask {
                  |${SbtTaskError.render(error)}
                  |""".stripMargin
             )
-          )
-          SbtTaskError.error(error)
-        case (history, Right(()))   =>
+          ) >> effectOf(SbtTaskError.error[Unit](error))
+
+        case (history, Right(())) =>
           effectOf(
             SbtTaskResult.consolePrintln(
               SbtTaskResult.sbtTaskResults(history)

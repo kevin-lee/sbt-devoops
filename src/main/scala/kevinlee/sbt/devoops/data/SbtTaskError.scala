@@ -6,8 +6,7 @@ import kevinlee.sbt.SbtCommon.messageOnlyException
 
 import just.semver.{ParseError, SemVer}
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-01-05
   */
 sealed trait SbtTaskError
@@ -15,13 +14,14 @@ sealed trait SbtTaskError
 object SbtTaskError {
 
   // $COVERAGE-OFF$
-  final case class GitCommandTaskError(cause: GitCommandError) extends SbtTaskError
-  final case class GitTaskError(cause: String) extends SbtTaskError
-  final case class GitHubTaskError(cause: GitHubError) extends SbtTaskError
+  final case class GitCommandTaskError(cause: GitCommandError)        extends SbtTaskError
+  final case class GitTaskError(cause: String)                        extends SbtTaskError
+  final case class GitHubTaskError(cause: GitHubError)                extends SbtTaskError
   final case class NoFileFound(name: String, filePaths: List[String]) extends SbtTaskError
-  final case class SemVerFromProjectVersionParseError(projectVersion: String, parseError: ParseError) extends SbtTaskError
-  final case class VersionNotEligibleForTagging(semVer: SemVer) extends SbtTaskError
-  final case class IoError(name: String, throwable: Throwable) extends SbtTaskError
+  final case class SemVerFromProjectVersionParseError(projectVersion: String, parseError: ParseError)
+      extends SbtTaskError
+  final case class VersionNotEligibleForTagging(semVer: SemVer)       extends SbtTaskError
+  final case class IoError(name: String, throwable: Throwable)        extends SbtTaskError
 
   def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
     GitCommandTaskError(cause)
@@ -43,7 +43,6 @@ object SbtTaskError {
 
   def ioError(name: String, throwable: Throwable): SbtTaskError =
     IoError(name, throwable)
-
 
   def render(sbtTaskError: SbtTaskError): String = sbtTaskError match {
 
@@ -79,7 +78,13 @@ object SbtTaskError {
          |""".stripMargin
   }
 
-  def error(sbtTaskError: SbtTaskError): Nothing =
+  /** Throws a MessageOnlyException after rendering the given SbtTaskError
+    * @param sbtTaskError the given SbtTaskError to render
+    * @tparam A This is only to make the compiler happy for the call-site.
+    *           It doesn't mean anything since this method is throwing a MessageOnlyException
+    * @return Nothing. It throws a MessageOnlyException.
+    */
+  def error[A](sbtTaskError: SbtTaskError): A =
     messageOnlyException(render(sbtTaskError))
 
 }
