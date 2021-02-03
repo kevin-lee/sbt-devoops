@@ -75,16 +75,13 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       "The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: Some($USER/.github)) If you want to get the file in user's home, do Some(new File(Io.getUserHome, \".github\"))"
     )
 
-    lazy val artifactsRequiredForGitHubRelease: SettingKey[Boolean] = settingKey[Boolean](
-      "Option to upload artifacts to GitHub when doing GitHub release (default: true so upload the files)"
-    )
 
     lazy val gitHubRelease: TaskKey[Unit] = taskKey[Unit](
-      "Release the current version without creating a tag. It uploads the packaged files and changelog to GitHub."
+      "Release the current version without creating a tag. It also uploads the changelog to GitHub."
     )
 
     lazy val gitTagAndGitHubRelease: TaskKey[Unit] = taskKey[Unit](
-      "Release the current version. It creates a tag with the project version and uploads the packaged files and changelog to GitHub."
+      "Release the current version. It creates a tag with the project version and uploads the changelog to GitHub."
     )
 
     lazy val gitHubReleaseUploadArtifacts: TaskKey[Unit] = taskKey[Unit](
@@ -148,7 +145,6 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
     def getChangelog(dir: File, tagName: TagName): Either[GitHubError, Changelog] = {
       val changelogName = s"${tagName.value.stripPrefix("v")}.md"
-      // baseDirectory.value, changelogLocation.value)
       val changelog     = new File(dir, changelogName)
       if (!changelog.exists) {
         GitHubError.changelogNotFound(changelog.getCanonicalPath, tagName).asLeft
@@ -214,15 +210,11 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     gitHubAuthTokenEnvVar := "GITHUB_TOKEN",
     gitHubAuthTokenFile :=
       Some(new File(Io.getUserHome, ".github")),
-    artifactsRequiredForGitHubRelease := true,
     gitHubRelease := {
       lazy val tagName                  = TagName(gitTagName.value)
-      lazy val uploadArtifacts          = artifactsRequiredForGitHubRelease.value
-      lazy val assets                   = devOopsCopyReleasePackages.value
       lazy val authTokenEnvVar          = gitHubAuthTokenEnvVar.value
       lazy val authTokenFile            = gitHubAuthTokenFile.value
       lazy val baseDir                  = baseDirectory.value
-      lazy val artifacts                = devOopsPackagedArtifacts.value
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
 
@@ -246,13 +238,6 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                            s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}"
                          ),
                        )
-              _     <- sbtTask.toLeftWhen(
-                         uploadArtifacts && assets.isEmpty,
-                         SbtTaskError.noFileFound(
-                           "devOopsCopyReleasePackages (uploadArtifacts is true)",
-                           artifacts,
-                         ),
-                       )
               oauth <-
                 sbtTask.eitherTWithWriter(
                   effectOf[IO](
@@ -263,7 +248,6 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               _     <- sbtTask.handleGitHubTask(
                          runGitHubRelease(
                            tagName,
-                           assets,
                            baseDir,
                            ChangelogLocation(changelogLocation.value),
                            Repository(gitTagPushRepo.value),
@@ -282,14 +266,11 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val tagName         = TagName(gitTagName.value)
       lazy val tagDesc         = gitTagDescription.value
       lazy val tagFrom         = BranchName(gitTagFrom.value)
-      lazy val uploadArtifacts = artifactsRequiredForGitHubRelease.value
-      lazy val assets          = devOopsCopyReleasePackages.value
       lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
       lazy val authTokenFile   = gitHubAuthTokenFile.value
       lazy val baseDir         = baseDirectory.value
       lazy val pushRepo        = Repository(gitTagPushRepo.value)
       lazy val projectVersion  = version.value
-      lazy val artifacts       = devOopsPackagedArtifacts.value
 
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
@@ -304,13 +285,6 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         .use { client =>
           SbtTask[IO].handleSbtTask(
             (for {
-              _     <- SbtTask[IO].toLeftWhen(
-                         uploadArtifacts && assets.isEmpty,
-                         SbtTaskError.noFileFound(
-                           "devOopsCopyReleasePackages (uploadArtifacts is true)",
-                           artifacts,
-                         ),
-                       )
               oauth <-
                 SbtTask[IO].eitherTWithWriter(
                   effectOf[IO](
@@ -322,7 +296,6 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               _     <- SbtTask[IO].handleGitHubTask(
                          runGitHubRelease(
                            tagName,
-                           assets,
                            baseDir,
                            ChangelogLocation(changelogLocation.value),
                            pushRepo,
@@ -368,7 +341,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               _     <- sbtTask.toLeftWhen(
                          assets.isEmpty,
                          SbtTaskError.noFileFound(
-                           "devOopsCopyReleasePackages (uploadArtifacts is true)",
+                           "devOopsCopyReleasePackages",
                            artifacts,
                          ),
                        )
@@ -458,13 +431,12 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   private def runGitHubRelease[F[_]: EffectConstructor: CanCatch: Monad](
     tagName: TagName,
-    assets: Vector[File],
     baseDir: File,
     changelogLocation: ChangelogLocation,
     gitTagPushRepo: Repository,
     oAuthToken: OAuthToken,
     gitHubApi: GitHubApi[F],
-  )(implicit ec: ExecutionContext): GitHubTask.GitHubTaskResult[F, Unit] =
+  ): GitHubTask.GitHubTaskResult[F, Unit] =
     for {
       changelog     <-
         SbtTask[F].eitherTWithWriter(
@@ -479,7 +451,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         )(r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}"))
       gitHubRelease <-
         SbtTask[F].eitherTWithWriter(
-          gitHubApi.release(
+          gitHubApi.createRelease(
+            GitHubRelease.CreateRequestParams(
+              tagName,
+              GitHubRelease.ReleaseName(tagName.value).some,
+              GitHubRelease.Description(changelog.changelog).some,
+              GitHubRelease.Draft.no,
+              GitHubRelease.Prerelease.no
+            ),
             GitHubRepoWithAuth(
               GitHubRepo(
                 GitHubRepo.Org(
@@ -490,30 +469,21 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 ),
               ),
               GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
-            ),
-            tagName,
-            changelog,
-            assets.toList,
+            )
           )
-        )(release =>
-          List[String](
-            s"GitHub release: ${release.tagName.value}",
-            if (release.assets.isEmpty)
-              "No files to upload"
-            else
+        ) {
+          case Some(release) =>
+            List[String](
+              s"GitHub release: ${release.tagName.value}",
               release
-                .assets
-                .map { asset =>
-                  s"${asset.name.name} @ ${asset.browserDownloadUrl.browserDownloadUrl}"
-                }
-                .mkString("Files uploaded:\n    - ", "\n    - ", ""),
-            release
-              .body
-              .description
-              .split("\n")
-              .mkString("Changelog uploaded:\n    ", "\n    ", "\n"),
-          )
-        )
+                .body
+                .description
+                .split("\n")
+                .mkString("Changelog uploaded:\n    ", "\n    ", "\n"),
+            )
+          case None =>
+            List("Release has failed.")
+        }
     } yield ()
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
