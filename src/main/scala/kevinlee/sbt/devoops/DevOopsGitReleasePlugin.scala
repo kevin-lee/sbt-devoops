@@ -37,7 +37,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   override def trigger: PluginTrigger = noTrigger
 
   object autoImport {
-    lazy val gitTagFrom: SettingKey[String] = settingKey[String]("The name of branch to tag from. (Default: master)")
+    lazy val gitTagFrom: SettingKey[String] = settingKey[String]("The name of branch to tag from. (Default: main)")
 
     lazy val gitTagDescription: SettingKey[Option[String]] = settingKey[Option[String]](
       "description for git tagging (Default: None)"
@@ -166,7 +166,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   val requestTimeout: FiniteDuration = 2.minutes
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    gitTagFrom := "master",
+    gitTagFrom := "main",
     gitTagDescription := None,
     gitTagName := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}"),
     gitTagPushRepo := "origin",
