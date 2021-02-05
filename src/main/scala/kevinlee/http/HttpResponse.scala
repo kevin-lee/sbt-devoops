@@ -2,9 +2,10 @@ package kevinlee.http
 
 import cats.Show
 import cats.syntax.all._
-import io.circe.{Decoder, Encoder, Json}
 import io.circe.parser.decode
+import io.circe.{Decoder, Encoder, Json}
 import io.estatico.newtype.macros._
+import kevinlee.ops._
 import org.http4s.Headers
 
 /** @author Kevin Lee
@@ -72,8 +73,7 @@ object HttpResponse {
       .headers
       .map { header =>
         val (name, value) = header.header
-        val nameInLower   = name.toLowerCase
-        if (nameInLower.contains("auth") || nameInLower.contains("password"))
+        if (shouldProtect(name))
           s"($name: ***Protected***)"
         else
           s"($name: $value)"
@@ -87,7 +87,6 @@ object HttpResponse {
     headers.toList.map(header => Header(header.name.toString -> header.value))
 
   @newtype case class Body(body: String)
-
 
   final case class FailedResponseBodyJson(message: String, documentationUrl: Option[String])
   object FailedResponseBodyJson {
