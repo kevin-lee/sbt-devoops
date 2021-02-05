@@ -75,6 +75,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       "The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: Some($USER/.github)) If you want to get the file in user's home, do Some(new File(Io.getUserHome, \".github\"))"
     )
 
+    lazy val gitHubRequestTimeout: TaskKey[FiniteDuration] = taskKey[FiniteDuration](
+      "Timeout value for any request sent to GitHub (default: 2.minutes)"
+    )
 
     lazy val gitHubRelease: TaskKey[Unit] = taskKey[Unit](
       "Release the current version without creating a tag. It also uploads the changelog to GitHub."
@@ -163,8 +166,6 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
   import autoImport._
 
-  val requestTimeout: FiniteDuration = 2.minutes
-
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     gitTagFrom := "main",
     gitTagDescription := None,
@@ -210,11 +211,13 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     gitHubAuthTokenEnvVar := "GITHUB_TOKEN",
     gitHubAuthTokenFile :=
       Some(new File(Io.getUserHome, ".github")),
+    gitHubRequestTimeout := 2.minutes,
     gitHubRelease := {
       lazy val tagName                  = TagName(gitTagName.value)
       lazy val authTokenEnvVar          = gitHubAuthTokenEnvVar.value
       lazy val authTokenFile            = gitHubAuthTokenFile.value
       lazy val baseDir                  = baseDirectory.value
+      lazy val requestTimeout           = gitHubRequestTimeout.value
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
 
@@ -271,6 +274,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val baseDir         = baseDirectory.value
       lazy val pushRepo        = Repository(gitTagPushRepo.value)
       lazy val projectVersion  = version.value
+      lazy val requestTimeout  = gitHubRequestTimeout.value
 
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
@@ -309,12 +313,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         .unsafeRunSync()
     },
     gitHubReleaseUploadArtifacts := {
-      lazy val tagName                  = TagName(gitTagName.value)
-      lazy val assets                   = devOopsCopyReleasePackages.value
-      lazy val authTokenEnvVar          = gitHubAuthTokenEnvVar.value
-      lazy val authTokenFile            = gitHubAuthTokenFile.value
-      lazy val baseDir                  = baseDirectory.value
-      lazy val artifacts                = devOopsPackagedArtifacts.value
+      lazy val tagName         = TagName(gitTagName.value)
+      lazy val assets          = devOopsCopyReleasePackages.value
+      lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
+      lazy val authTokenFile   = gitHubAuthTokenFile.value
+      lazy val baseDir         = baseDirectory.value
+      lazy val artifacts       = devOopsPackagedArtifacts.value
+      lazy val requestTimeout  = gitHubRequestTimeout.value
+
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
 
@@ -457,7 +463,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               GitHubRelease.ReleaseName(tagName.value).some,
               GitHubRelease.Description(changelog.changelog).some,
               GitHubRelease.Draft.no,
-              GitHubRelease.Prerelease.no
+              GitHubRelease.Prerelease.no,
             ),
             GitHubRepoWithAuth(
               GitHubRepo(
@@ -469,7 +475,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 ),
               ),
               GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
-            )
+            ),
           )
         ) {
           case Some(release) =>
@@ -481,7 +487,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                 .split("\n")
                 .mkString("Changelog uploaded:\n    ", "\n    ", "\n"),
             )
-          case None =>
+          case None          =>
             List("Release has failed.")
         }
     } yield ()
