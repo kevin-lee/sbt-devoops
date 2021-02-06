@@ -2,8 +2,7 @@ package kevinlee.git
 
 sealed trait GitCommandError
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-01-01
   */
 object GitCommandError {

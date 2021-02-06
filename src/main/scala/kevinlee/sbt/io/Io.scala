@@ -1,25 +1,22 @@
 package kevinlee.sbt.io
 
-import java.io.FileFilter
-
 import cats.implicits._
 import kevinlee.sbt.SbtCommon.messageOnlyException
-
 import org.apache.commons.io.filefilter.WildcardFileFilter
+import sbt.{DirectoryFilter, File, IO, file}
 
-import sbt.{File, file}
-import sbt.{DirectoryFilter, IO}
-
+import java.io.FileFilter
 import scala.annotation.tailrec
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-01-20
   */
 object Io {
 
   def getUserHome: String =
-    sys.props.get("user.home")
+    sys
+      .props
+      .get("user.home")
       .getOrElse(messageOnlyException("User home is not found."))
 
   def wildcardFilters(names: Seq[String], caseSensitivity: CaseSensitivity): FileFilter =
@@ -28,8 +25,7 @@ object Io {
   def wildcardFilter(caseSensitivity: CaseSensitivity, name: String, names: String*): FileFilter =
     wildcardFilters(name +: names.toSeq, caseSensitivity)
 
-  /**
-    * Get Seq of all the sub-directories of the given dir. It does not contain
+  /** Get Seq of all the sub-directories of the given dir. It does not contain
     * the given dir itself.
     *
     * @example
@@ -75,8 +71,10 @@ object Io {
       dirs match {
         case Array() =>
           acc
+
         case Array(x) =>
           getAllSubDirs(x.listFiles(DirectoryFilter), acc :+ x)
+
         case array @ Array(x, _*) =>
           getAllSubDirs(array.drop(1) ++ x.listFiles(DirectoryFilter), acc :+ x)
       }
@@ -90,8 +88,10 @@ object Io {
       (Option(file.getParentFile), file.getName) match {
         case (Some(parent), name) if parent.getPath === "/" =>
           name :: files
+
         case (Some(parent), name) =>
           allFilenames(parent, name :: files)
+
         case (None, name) =>
           name :: files
       }
@@ -99,16 +99,16 @@ object Io {
   }
 
   def findAllFiles(
-      caseSensitivity: CaseSensitivity
-    , baseDir: File
-    , filenames: List[String]
+    caseSensitivity: CaseSensitivity,
+    baseDir: File,
+    filenames: List[String],
   ): List[File] = {
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     def findFiles(
-        cs: CaseSensitivity
-      , file: File
-      , filenames: List[String]
-      , acc: List[File]
+      cs: CaseSensitivity,
+      file: File,
+      filenames: List[String],
+      acc: List[File],
     ): List[File] =
       filenames match {
         case Nil =>
@@ -134,9 +134,14 @@ object Io {
     }
   }
 
-
   def copy(sourceFiles: Seq[File], targetDir: File): Vector[File] =
-    IO.copy(sourceFiles.map(source => (source, new File(targetDir, source.getName))))
-      .toVector
+    IO.copy(
+      sourceFiles.map(source =>
+        (
+          source,
+          new File(targetDir, source.getName),
+        )
+      )
+    ).toVector
       .sorted
 }
