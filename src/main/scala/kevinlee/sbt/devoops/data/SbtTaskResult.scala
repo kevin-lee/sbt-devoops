@@ -3,8 +3,7 @@ package kevinlee.sbt.devoops.data
 import cats.data._
 import kevinlee.git.{GitCmd, GitCmdAndResult, GitCommandResult}
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-01-06
   */
 sealed trait SbtTaskResult
@@ -17,7 +16,7 @@ object SbtTaskResult {
   type SbtTaskHistoryWriter[F[_], A] = WriterT[F, SbtTaskHistory, A]
 
   final case class GitCommandTaskResult(gitCmdAndResult: GitCmdAndResult) extends SbtTaskResult
-  
+
   final case class GitHubTaskResult(gitHubTaskResult: String) extends SbtTaskResult
 
   final case class TaskResult(result: Seq[String]) extends SbtTaskResult
@@ -26,13 +25,12 @@ object SbtTaskResult {
 
   final case class NonSbtTaskResult(result: String) extends SbtTaskResult
 
-
   def gitCommandTaskResult(gitCmdAndResult: GitCmdAndResult): SbtTaskResult =
     GitCommandTaskResult(gitCmdAndResult)
 
   def gitHubTaskResult(gitHubTaskResult: String): SbtTaskResult =
     GitHubTaskResult(gitHubTaskResult)
-  
+
   def taskResult(result: Seq[String]): SbtTaskResult =
     TaskResult(result)
 
@@ -45,7 +43,7 @@ object SbtTaskResult {
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def render(sbtTaskResult: SbtTaskResult): String = sbtTaskResult match {
     case GitCommandTaskResult(GitCmdAndResult(gitCmd, gitCommandResult)) =>
-       s"${GitCmd.render(gitCmd)}${GitCommandResult.render(gitCommandResult)}"
+      s"${GitCmd.render(gitCmd)}${GitCommandResult.render(gitCommandResult)}"
 
     case TaskResult(result) =>
       if (result.isEmpty) {

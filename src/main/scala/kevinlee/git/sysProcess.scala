@@ -1,14 +1,12 @@
 package kevinlee.git
 
-import java.io.File
-
 import cats.implicits._
 
+import java.io.File
 import scala.sys.process.ProcessLogger
 
 // $COVERAGE-OFF$
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-01-01
   */
 final case class ResultCollector() extends ProcessLogger {
@@ -20,7 +18,7 @@ final case class ResultCollector() extends ProcessLogger {
   private var errs: List[String] = Nil
 
   def outputs: List[String] = outs.reverse
-  def errors: List[String] = errs.reverse
+  def errors: List[String]  = errs.reverse
 
   override def out(s: => String): Unit = {
     outs = s :: outs
@@ -44,7 +42,7 @@ sealed trait ProcessResult {
 
 object ProcessResult {
 
-  final case class Success(outputs: List[String]) extends ProcessResult {
+  final case class Success(outputs: List[String])                        extends ProcessResult {
     val code: Int = 0
   }
   final case class Failure(override val code: Int, errors: List[String]) extends ProcessResult
@@ -60,12 +58,14 @@ object ProcessResult {
       /* Why concatenate outputs and errors in success?
        * Sometimes errors has some part of success result. :(
        */
-      success(resultCollector.outputs ++ resultCollector.errors )
+      success(resultCollector.outputs ++ resultCollector.errors)
     } else {
       failure(code, resultCollector.errors)
     }
 
-  def toEither[A, B](processResult: ProcessResult)(resultToEither: PartialFunction[ProcessResult, Either[A, B]]): Either[A, B] =
+  def toEither[A, B](processResult: ProcessResult)(
+    resultToEither: PartialFunction[ProcessResult, Either[A, B]]
+  ): Either[A, B] =
     resultToEither(processResult)
 }
 
@@ -80,12 +80,12 @@ object SysProcess {
   def run(sysProcess: SysProcess): ProcessResult = sysProcess match {
     case SingleSysProcess(commands, baseDir) =>
       val resultCollector = ResultCollector()
-      val code =
-        baseDir.fold(
+
+      val code = baseDir
+        .fold(
           sys.process.Process(commands)
-        )(
-          dir => sys.process.Process(commands, dir)
-        ).!(resultCollector)
+        )(dir => sys.process.Process(commands, dir))
+        .!(resultCollector)
       ProcessResult.processResult(code, resultCollector)
   }
 

@@ -386,7 +386,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     projectVersion: String,
   ): SbtTask.Result[F, Unit] =
     for {
-      projectVersion    <-
+      projectVersion <-
         SbtTask[F].fromNonSbtTask(
           effectOf(
             SemVer
@@ -400,29 +400,33 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
             )
           )
         )
-      _                 <- SbtTask[F].toLeftWhen(
-                             projectVersion.pre.isDefined || projectVersion.buildMetadata.isDefined,
-                             SbtTaskError.versionNotEligibleForTagging(projectVersion),
-                           )
+
+      _ <- SbtTask[F].toLeftWhen(
+             projectVersion.pre.isDefined || projectVersion.buildMetadata.isDefined,
+             SbtTaskError.versionNotEligibleForTagging(projectVersion),
+           )
+
       currentBranchName <- SbtTask[F].fromGitTask(Git[F].currentBranchName(basePath))
-      _                 <- SbtTask[F].toLeftWhen(
-                             currentBranchName.value =!= tagFrom.value,
-                             SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom"),
+
+      _ <- SbtTask[F].toLeftWhen(
+             currentBranchName.value =!= tagFrom.value,
+             SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom"),
+           )
+
+      fetchResult <- SbtTask[F].fromGitTask(Git[F].fetchTags(basePath))
+      tagResult   <- SbtTask[F].fromGitTask(
+                       gitTagDescription
+                         .fold(
+                           Git[F].tag(tagName, basePath)
+                         ) { desc =>
+                           Git[F].tagWithDescription(
+                             tagName,
+                             Git.Description(desc),
+                             basePath,
                            )
-      fetchResult       <- SbtTask[F].fromGitTask(Git[F].fetchTags(basePath))
-      tagResult         <- SbtTask[F].fromGitTask(
-                             gitTagDescription
-                               .fold(
-                                 Git[F].tag(tagName, basePath)
-                               ) { desc =>
-                                 Git[F].tagWithDescription(
-                                   tagName,
-                                   Git.Description(desc),
-                                   basePath,
-                                 )
-                               }
-                           )
-      pushResult        <- SbtTask[F].fromGitTask(Git[F].pushTag(pushRepo, tagName, basePath))
+                         }
+                     )
+      pushResult  <- SbtTask[F].fromGitTask(Git[F].pushTag(pushRepo, tagName, basePath))
     } yield ()
 
   private def getGitHubAuthToken(
@@ -444,17 +448,19 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     gitHubApi: GitHubApi[F],
   ): GitHubTask.GitHubTaskResult[F, Unit] =
     for {
-      changelog     <-
+      changelog <-
         SbtTask[F].eitherTWithWriter(
           effectOf[F](getChangelog(new File(baseDir, changelogLocation.changeLogLocation), tagName))
         )(_ => List("Get changelog"))
-      url           <- GitHubTask[F].fromGitTask(
-                         Git[F].getRemoteUrl(gitTagPushRepo, baseDir)
-                       )
-      repo          <-
+
+      url  <- GitHubTask[F].fromGitTask(
+                Git[F].getRemoteUrl(gitTagPushRepo, baseDir)
+              )
+      repo <-
         SbtTask[F].eitherTWithWriter(
           effectOf(getRepoFromUrl(url))
         )(r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}"))
+
       gitHubRelease <-
         SbtTask[F].eitherTWithWriter(
           gitHubApi.createRelease(

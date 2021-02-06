@@ -11,13 +11,13 @@ package object ops {
     val stringInLower = s.toLowerCase
     (
       stringInLower.startsWith("auth") ||
-        stringInLower.contains("password") ||
-        stringInLower.endsWith("-key") ||
-        stringInLower.endsWith("_key") ||
-        stringInLower.endsWith("-token") ||
-        stringInLower.endsWith("_token") ||
-        sensitiveHeadersFromHttp4sInLowerCase.contains(stringInLower)
-      )
+      stringInLower.contains("password") ||
+      stringInLower.endsWith("-key") ||
+      stringInLower.endsWith("_key") ||
+      stringInLower.endsWith("-token") ||
+      stringInLower.endsWith("_token") ||
+      sensitiveHeadersFromHttp4sInLowerCase.contains(stringInLower)
+    )
   }
 
 }

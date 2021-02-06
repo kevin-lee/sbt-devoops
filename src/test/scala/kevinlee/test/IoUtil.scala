@@ -1,14 +1,12 @@
 package kevinlee.test
 
-import java.io.{BufferedWriter, File, FileWriter}
-import java.nio.file.Files
-
 import kevinlee.test.data.{Content, Names, NamesAndContent}
 
+import java.io.{BufferedWriter, File, FileWriter}
+import java.nio.file.Files
 import scala.annotation.tailrec
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-02-23
   */
 object IoUtil {
@@ -31,6 +29,7 @@ object IoUtil {
         } else {
           getAllFiles(xs, x :: acc)
         }
+
       case Nil =>
         acc
     }
@@ -54,13 +53,13 @@ object IoUtil {
   def readFile(file: File): String =
     scala.io.Source.fromFile(file).mkString
 
-
   def createFiles(rootDir: File, namesAndContentList: List[NamesAndContent]): List[(String, File)] = {
     for {
       NamesAndContent(Names(names), Content(content)) <- namesAndContentList
+
       path = names.mkString("/")
       file = new File(rootDir, path)
-      _ = IoUtil.writeFile(file, content)
+      _    = IoUtil.writeFile(file, content)
     } yield (path, file)
   }
 }

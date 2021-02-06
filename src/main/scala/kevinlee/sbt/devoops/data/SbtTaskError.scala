@@ -1,10 +1,9 @@
 package kevinlee.sbt.devoops.data
 
+import just.semver.{ParseError, SemVer}
 import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
 import kevinlee.sbt.SbtCommon.messageOnlyException
-
-import just.semver.{ParseError, SemVer}
 
 /** @author Kevin Lee
   * @since 2019-01-05

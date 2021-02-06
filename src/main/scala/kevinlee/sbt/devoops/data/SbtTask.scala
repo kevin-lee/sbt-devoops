@@ -1,14 +1,11 @@
 package kevinlee.sbt.devoops.data
 
 import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
-
 import cats._
 import cats.data._
 import cats.implicits._
-
-import effectie.cats._
 import effectie.cats.Effectful._
-
+import effectie.cats._
 import kevinlee.git.Git
 import kevinlee.github.GitHubTask
 

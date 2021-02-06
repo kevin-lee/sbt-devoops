@@ -1,7 +1,6 @@
 package kevinlee.git
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-03-31
   */
 final case class GitCmdAndResult(gitCmd: GitCmd, gitCommandResult: GitCommandResult)

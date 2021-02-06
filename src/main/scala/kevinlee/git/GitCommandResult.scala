@@ -1,7 +1,6 @@
 package kevinlee.git
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-01-01
   */
 sealed trait GitCommandResult
@@ -19,8 +18,10 @@ object GitCommandResult {
       result match {
         case Nil =>
           ""
+
         case oneResult :: Nil =>
           s" => $oneResult"
+
         case rs =>
           val delimiter = "|  |  "
           rs.mkString(s"\n$delimiter", s"\n$delimiter", "")
