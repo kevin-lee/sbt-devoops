@@ -6,9 +6,10 @@ import cats.{Applicative, Show}
 import fs2.Chunk
 import io.circe.Encoder
 import io.estatico.newtype.macros._
+import kevinlee.ops._
 import org.http4s.headers.`Content-Type`
 import org.http4s.util.CaseInsensitiveString
-import org.http4s.{MediaType, Request, Header => Http4sHeader, Uri => Http4sUri, Headers => Http4sHeaders}
+import org.http4s.{MediaType, Request, Header => Http4sHeader, Headers => Http4sHeaders, Uri => Http4sUri}
 
 import java.net.URL
 import scala.concurrent.ExecutionContext
@@ -67,19 +68,6 @@ object HttpRequest {
   }
 
   lazy val sensitiveHeadersFromHttp4sInLowerCase: Set[String] = Http4sHeaders.SensitiveHeaders.map(_.value.toLowerCase)
-
-  def shouldProtect(s: String): Boolean = {
-    val stringInLower = s.toLowerCase
-    (
-      stringInLower.startsWith("auth") ||
-      stringInLower.contains("password") ||
-      stringInLower.endsWith("-key") ||
-      stringInLower.endsWith("_key") ||
-      stringInLower.endsWith("-token") ||
-      stringInLower.endsWith("_token") ||
-      sensitiveHeadersFromHttp4sInLowerCase.contains(stringInLower)
-    )
-  }
 
   implicit final val show: Show[HttpRequest] = { httpRequest =>
     val headerString = httpRequest

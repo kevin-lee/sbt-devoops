@@ -2,6 +2,7 @@ package kevinlee.http
 
 import cats.Show
 import cats.syntax.all._
+import kevinlee.ops.instances._
 
 /** @author Kevin Lee
   * @since 2021-01-03
@@ -95,7 +96,46 @@ object HttpError {
     MethodUnsupportedForFileUpload(httpRequest)
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  implicit final val show: Show[HttpError] = _.toString
+  implicit final val show: Show[HttpError] = {
+    case InvalidUri(uriString: String, errorMessage: String) =>
+      s"InvalidUri(uriString: $uriString, errorMessage: $errorMessage)"
+
+    case ResponseBodyDecodingFailure(message: String, cause: Option[Throwable]) =>
+      s"ResponseBodyDecodingFailure(message: $message, cause: ${cause.show})"
+
+    case FailedResponse(httpResponse: HttpResponse) =>
+      s"FailedResponse(httpResponse: ${httpResponse.show})"
+
+    case UnhandledThrowable(throwable: Throwable) =>
+      s"UnhandledThrowable(throwable: ${throwable.show})"
+
+    case NotFound(httpRequest: HttpRequest, httpResponse: HttpResponse) =>
+      s"NotFound(httpRequest: ${httpRequest.show}, httpResponse: ${httpResponse.show})"
+
+    case BadRequest(httpRequest: HttpRequest, httpResponse: HttpResponse) =>
+      s"BadRequest(httpRequest: ${httpRequest.show}, httpResponse: ${httpResponse.show})"
+
+    case InternalServerError(httpResponse: HttpResponse) =>
+      s"InternalServerError(httpResponse: ${httpResponse.show})"
+
+    case RequestTimeout(httpResponse: HttpResponse) =>
+      s"RequestTimeout(httpResponse: ${httpResponse.show})"
+
+    case Forbidden(httpRequest: HttpRequest, httpResponse: HttpResponse) =>
+      s"Forbidden(httpRequest: ${httpRequest.show}, httpResponse: ${httpResponse.show})"
+
+    case UnprocessableEntity(httpRequest: HttpRequest, httpResponse: HttpResponse) =>
+      s"UnprocessableEntity(httpRequest: ${httpRequest.show}, httpResponse: ${httpResponse.show})"
+
+    case MethodUnsupportedForMultipart(httpRequest: HttpRequest) =>
+      s"MethodUnsupportedForMultipart(httpRequest: ${httpRequest.show})"
+
+    case MethodUnsupportedForFileUpload(httpRequest: HttpRequest) =>
+      s"MethodUnsupportedForFileUpload(httpRequest: ${httpRequest.show})"
+
+    case Unauthorized(httpRequest: HttpRequest, httpResponse: HttpResponse) =>
+      s"Unauthorized(httpRequest: ${httpRequest.show}, httpResponse: ${httpResponse.show})"
+  }
 
   def recoverFromOptional404[A](httpError: HttpError): Either[HttpError, Option[A]] =
     httpError match {
@@ -125,4 +165,5 @@ object HttpError {
     def toOptionIfNotFound: Either[HttpError, Option[A]] =
       HttpError.toOptionIfNotFound(httpError)
   }
+
 }
