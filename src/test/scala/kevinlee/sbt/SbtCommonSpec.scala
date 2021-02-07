@@ -36,7 +36,7 @@ object SbtCommonSpec extends Properties {
     val expected = ss1
     val actual   =
       SbtCommon.crossVersionProps(ss1, semVer2) {
-        case (semVer1.major, semVer1.minor) =>
+        case (semVer1.major, semVer1.minor, semVer1.patch) =>
           ss2
         case _                              =>
           Seq()
@@ -52,7 +52,7 @@ object SbtCommonSpec extends Properties {
   } yield {
     try {
       SbtCommon.crossVersionProps(ss1, semVer2) {
-        case (semVer1.major, semVer1.minor) =>
+        case (semVer1.major, semVer1.minor, semVer1.patch) =>
           ss2
       }
       Result.failure
@@ -70,7 +70,7 @@ object SbtCommonSpec extends Properties {
     val expected = ss1 ++ ss2
     val actual   =
       SbtCommon.crossVersionProps(ss1, semVer) {
-        case (semVer.major, semVer.minor) =>
+        case (semVer.major, semVer.minor, semVer.patch) =>
           ss2
       }
     actual ==== expected
@@ -86,10 +86,10 @@ object SbtCommonSpec extends Properties {
     val expected = ss1 ++ ss3
     val actual   =
       SbtCommon.crossVersionProps(ss1, semVer2) {
-        case (semVer1.major, semVer1.minor) =>
+        case (semVer1.major, semVer1.minor, semVer1.patch) =>
           ss2
 
-        case (semVer2.major, semVer2.minor) =>
+        case (semVer2.major, semVer2.minor, semVer2.patch) =>
           ss3
 
         case _ =>
