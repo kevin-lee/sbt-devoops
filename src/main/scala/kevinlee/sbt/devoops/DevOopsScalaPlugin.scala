@@ -1,6 +1,5 @@
 package kevinlee.sbt.devoops
 
-import just.semver.SemVer.{Major, Minor, Patch}
 import just.semver.{ParseError, SemVer}
 import kevinlee.sbt.SbtCommon._
 import sbt.Keys._
@@ -50,6 +49,16 @@ object DevOopsScalaPlugin extends AutoPlugin {
       , "-Xlint:inaccessible"       // Warn about inaccessible types in method signatures.
       , "-Xlint:nullary-override"   // Warn when non-nullary def f()' overrides nullarydef f’.
       , "-Wnumeric-widen"           // Warn when numerics are widened.
+      , "-Ymacro-annotations"
+    )
+
+    val defaultOptions2_13_3_and_higher: Seq[String] = Seq(
+        "-Wdead-code"               // Warn when dead code is identified.
+      , "-Wvalue-discard"           // Warn when non-Unit expression results are unused.
+      , "-Xlint:adapted-args"       // Warn if an argument list is modified to match the receiver.
+      , "-Xlint:inaccessible"       // Warn about inaccessible types in method signatures.
+      , "-Wnumeric-widen"           // Warn when numerics are widened.
+      , "-Ymacro-annotations"
     )
 
     val scalacOptions2_13: Seq[String] = Seq(
@@ -150,25 +159,34 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
   import autoImport._
 
-  def versionSpecificScalacOptions(useAggressiveScalacOptions: Boolean): PartialFunction[(Major, Minor), Seq[String]] = {
-      case (Major(2), Minor(10)) =>
+  def versionSpecificScalacOptions(
+    useAggressiveScalacOptions: Boolean
+  ): PartialFunction[(SemVer.Major, SemVer.Minor, SemVer.Patch), Seq[String]] = {
+      case (SemVer.Major(2), SemVer.Minor(10), _) =>
         defaultOptions2_10
 
-      case (Major(2), Minor(11)) =>
+      case (SemVer.Major(2), SemVer.Minor(11), _) =>
         if (useAggressiveScalacOptions) {
           defaultOptionsBefore2_13 ++ aggressiveScalacOptions2_11
         } else {
           defaultOptionsBefore2_13 ++ scalacOptions2_11
         }
 
-      case (Major(2), Minor(12)) =>
+      case (SemVer.Major(2), SemVer.Minor(12), _) =>
         if (useAggressiveScalacOptions) {
           defaultOptionsBefore2_13 ++ aggressiveScalacOptions2_12
         } else {
           defaultOptionsBefore2_13 ++ scalacOptions2_12
         }
 
-      case (Major(2), Minor(13)) =>
+      case (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(patch)) if patch >= 3 =>
+        if (useAggressiveScalacOptions) {
+          defaultOptions2_13_3_and_higher ++ aggressiveScalacOptions2_13
+        } else {
+          defaultOptions2_13_3_and_higher ++ scalacOptions2_13
+        }
+
+      case (SemVer.Major(2), SemVer.Minor(13), _) =>
         if (useAggressiveScalacOptions) {
           defaultOptions2_13 ++ aggressiveScalacOptions2_13
         } else {
@@ -177,9 +195,9 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
       case _ =>
         if (useAggressiveScalacOptions) {
-          defaultOptions2_13 ++ aggressiveScalacOptions2_13
+          defaultOptions2_13_3_and_higher ++ aggressiveScalacOptions2_13
         } else {
-          defaultOptions2_13 ++ scalacOptions2_13
+          defaultOptions2_13_3_and_higher ++ scalacOptions2_13
         }
     }
 
@@ -193,7 +211,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
     , updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error)
     , libraryDependencies ++=
       (SemVer.parse(scalaVersion.value) match {
-        case Right(SemVer(Major(2), Minor(10), Patch(7), _, _)) =>
+        case Right(SemVer(SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7), _, _)) =>
           Seq("com.milessabin" % "si2712fix-plugin_2.10.7" % "1.2.0" % "plugin->default(compile)")
         case Right(_: SemVer) =>
           Seq.empty

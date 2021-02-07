@@ -1,8 +1,6 @@
 package kevinlee.sbt
 
 import just.semver.SemVer
-import just.semver.SemVer.{Major, Minor}
-
 import sbt.MessageOnlyException
 
 /** @author Kevin Lee
@@ -11,9 +9,9 @@ import sbt.MessageOnlyException
 object SbtCommon {
 
   def crossVersionProps[T](commonProps: Seq[T], version: SemVer)(
-    versionSpecific: PartialFunction[(Major, Minor), Seq[T]]
+    versionSpecific: PartialFunction[(SemVer.Major, SemVer.Minor, SemVer.Patch), Seq[T]]
   ): Seq[T] =
-    commonProps ++ versionSpecific((version.major, version.minor))
+    commonProps ++ versionSpecific((version.major, version.minor, version.patch))
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def messageOnlyException(message: String): Nothing =
