@@ -10,7 +10,7 @@ import just.semver.SemVer
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
 import kevinlee.github.data._
-import kevinlee.github.{GitHubApi, GitHubTask, OldGitHubApi}
+import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.devoops.data.SbtTaskResult.SbtTaskHistory
@@ -29,8 +29,6 @@ import scala.concurrent.ExecutionContext
   * @since 2019-01-01
   */
 object DevOopsGitReleasePlugin extends AutoPlugin {
-
-  def TheGitHubApi[F[_]: EffectConstructor: CanCatch: Monad]: OldGitHubApi[F] = OldGitHubApi[F]
 
   // $COVERAGE-OFF$
   override def requires: Plugins      = empty

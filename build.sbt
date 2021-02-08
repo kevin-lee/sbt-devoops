@@ -42,7 +42,6 @@ lazy val root = (project in file("."))
   , libraryDependencies ++=
       crossVersionProps(List(
             libs.commonsIo,
-            libs.githubApi,
             libs.semVer,
             libs.newtype,
             libs.cats,
@@ -163,8 +162,6 @@ lazy val libs = new {
   val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
 
   val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
-
-  val githubApi: ModuleID = "org.kohsuke" % "github-api" % "1.95"
 
   val javaxActivation212: List[ModuleID] = List(
     "javax.activation" % "activation" % "1.1.1",

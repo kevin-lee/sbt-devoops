@@ -2,10 +2,7 @@ package kevinlee.github.data
 
 import io.estatico.newtype.macros.newtype
 
-import java.io.File
-import kevinlee.git.Git.TagName
 import kevinlee.http.HttpRequest
-import org.kohsuke.github.GHRelease
 
 /** @author Kevin Lee
   * @since 2019-03-09
@@ -25,12 +22,6 @@ object Repo {
 final case class Changelog(changelog: String)                 extends AnyVal
 final case class ChangelogLocation(changeLogLocation: String) extends AnyVal
 
-final case class OldGitHubRelease(
-  tagName: TagName,
-  changelog: Changelog,
-  releasedFiles: Seq[File],
-  gHRelease: GHRelease,
-)
 
 final case class GitHubRepo(
   org: GitHubRepo.Org,
