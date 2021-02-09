@@ -2,6 +2,7 @@ package kevinlee.github
 
 import cats.Monad
 import cats.data.{EitherT, NonEmptyList}
+import cats.effect.Timer
 import cats.syntax.all._
 import effectie.cats.EffectConstructor
 import effectie.cats.Effectful._
@@ -12,6 +13,7 @@ import kevinlee.http.{HttpClient, HttpRequest}
 
 import java.io.File
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 /** @author Kevin Lee
   * @since 2021-01-14
@@ -52,7 +54,7 @@ trait GitHubApi[F[_]] {
     releaseId: ReleaseId,
     repo: GitHubRepoWithAuth,
     assets: List[File],
-  )(implicit ec: ExecutionContext): F[Either[GitHubError, List[GitHubRelease.Asset]]]
+  )(implicit ec: ExecutionContext, timer: Timer[F]): F[Either[GitHubError, List[GitHubRelease.Asset]]]
 
 }
 
@@ -60,6 +62,13 @@ object GitHubApi {
 
   def apply[F[_]: Monad: EffectConstructor](httpClient: HttpClient[F]): GitHubApi[F] =
     new GitHubApiF[F](httpClient)
+
+  /*
+   * It is to avoid the abuse rate limits.
+   * https://docs.github.com/en/rest/overview/resources-in-the-rest-api#abuse-rate-limits
+   */
+  def githubWithAbuseRateLimit[F[_]: Monad: Timer](): F[Unit] =
+    Timer[F].sleep(1.second).as(())
 
   final class GitHubApiF[F[_]: Monad: EffectConstructor](
     val httpClient: HttpClient[F]
@@ -291,13 +300,14 @@ object GitHubApi {
       releaseId: ReleaseId,
       repo: GitHubRepoWithAuth,
       assets: List[File],
-    )(implicit ec: ExecutionContext): F[Either[GitHubError, List[GitHubRelease.Asset]]] =
+    )(implicit ec: ExecutionContext, timer: Timer[F]): F[Either[GitHubError, List[GitHubRelease.Asset]]] =
       assets
         .traverse { file =>
           val contentType = contentTypeMap.getContentType(file)
           val filename    = file.getName
+
           EitherT(
-            uploadAssetToRelease(
+            githubWithAbuseRateLimit() >> uploadAssetToRelease(
               GitHubRelease.UploadAssetParams(
                 GitHubRelease.ReleaseId(releaseId.releaseId),
                 GitHubRelease.UploadAssetParams.AssetName(filename),
