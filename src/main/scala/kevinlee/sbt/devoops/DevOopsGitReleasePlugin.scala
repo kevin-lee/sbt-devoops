@@ -1,7 +1,7 @@
 package kevinlee.sbt.devoops
 
 import cats._
-import cats.effect.{ContextShift, IO}
+import cats.effect.{ContextShift, IO, Timer}
 import cats.instances.all._
 import cats.syntax.all._
 import effectie.cats.Effectful._
@@ -21,9 +21,9 @@ import org.http4s.client.blaze.BlazeClientBuilder
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
 
-import scala.concurrent.duration._
 import java.io.FileInputStream
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 /** @author Kevin Lee
   * @since 2019-01-01
@@ -218,6 +218,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       lazy val requestTimeout           = gitHubRequestTimeout.value
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
+      implicit val timer: Timer[IO]     = IO.timer(ec)
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -276,6 +277,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
+      implicit val timer: Timer[IO]     = IO.timer(ec)
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
 
@@ -321,6 +323,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
+      implicit val timer: Timer[IO]     = IO.timer(ec)
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -437,7 +440,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       .fold(readOAuthToken(authTokenFile))(token => OAuthToken(token).asRight)
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  private def runGitHubRelease[F[_]: EffectConstructor: CanCatch: Monad](
+  private def runGitHubRelease[F[_]: EffectConstructor: CanCatch: Monad: Timer](
     tagName: TagName,
     baseDir: File,
     changelogLocation: ChangelogLocation,
@@ -461,7 +464,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
 
       gitHubRelease <-
         SbtTask[F].eitherTWithWriter(
-          gitHubApi.createRelease(
+          GitHubApi.githubWithAbuseRateLimit[F]() >> gitHubApi.createRelease(
             GitHubRelease.CreateRequestParams(
               tagName,
               GitHubRelease.ReleaseName(tagName.value).some,
@@ -504,7 +507,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     gitTagPushRepo: Repository,
     oAuthToken: OAuthToken,
     gitHubApi: GitHubApi[F],
-  )(implicit ec: ExecutionContext): GitHubTask.GitHubTaskResult[F, Unit] =
+  )(implicit ec: ExecutionContext, timer: Timer[F]): GitHubTask.GitHubTaskResult[F, Unit] =
     for {
       url <- GitHubTask[F].fromGitTask(
                Git[F].getRemoteUrl(gitTagPushRepo, baseDir)
