@@ -119,18 +119,20 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           SbtTaskError.ioError(taskName, error).asLeft
       }
 
-    def readOAuthToken(maybeFile: Option[File]): Either[GitHubError, OAuthToken] =
+    def readOAuthToken(maybeFile: Option[File]): Either[GitHubError, GitHub.OAuthToken] =
       maybeFile match {
         case Some(file) =>
           val props = new java.util.Properties()
           props.load(new FileInputStream(file))
           Option(props.getProperty("oauth"))
-            .fold[Either[GitHubError, OAuthToken]](GitHubError.noCredential.asLeft)(token => OAuthToken(token).asRight)
+            .fold[Either[GitHubError, GitHub.OAuthToken]](GitHubError.noCredential.asLeft)(token =>
+              GitHub.OAuthToken(token).asRight
+            )
         case None       =>
           GitHubError.noCredential.asLeft
       }
 
-    def getRepoFromUrl(repoUrl: RepoUrl): Either[GitHubError, Repo] = {
+    def getRepoFromUrl(repoUrl: RepoUrl): Either[GitHubError, GitHub.Repo] = {
       val names =
         if (repoUrl.repoUrl.startsWith("http"))
           repoUrl.repoUrl.split("/")
@@ -138,13 +140,13 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           repoUrl.repoUrl.split(":").last.split("/")
       names.takeRight(2) match {
         case Array(org, name) =>
-          Repo(RepoOrg(org), RepoName(name.stripSuffix(".git"))).asRight
+          GitHub.Repo(GitHub.RepoOrg(org), GitHub.RepoName(name.stripSuffix(".git"))).asRight
         case _                =>
           GitHubError.invalidGitHubRepoUrl(repoUrl).asLeft
       }
     }
 
-    def getChangelog(dir: File, tagName: TagName): Either[GitHubError, Changelog] = {
+    def getChangelog(dir: File, tagName: TagName): Either[GitHubError, GitHub.Changelog] = {
       val changelogName = s"${tagName.value.stripPrefix("v")}.md"
       val changelog     = new File(dir, changelogName)
       if (!changelog.exists) {
@@ -153,7 +155,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         lazy val changelogSource = scala.io.Source.fromFile(changelog)
         try {
           val log = changelogSource.getLines().mkString("\n")
-          Changelog(log).asRight
+          GitHub.Changelog(log).asRight
         } finally {
           changelogSource.close()
         }
@@ -251,7 +253,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                          runGitHubRelease(
                            tagName,
                            baseDir,
-                           ChangelogLocation(changelogLocation.value),
+                           GitHub.ChangelogLocation(changelogLocation.value),
                            Repository(gitTagPushRepo.value),
                            oauth,
                            GitHubApi[IO](HttpClient[IO](client)),
@@ -301,7 +303,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
                          runGitHubRelease(
                            tagName,
                            baseDir,
-                           ChangelogLocation(changelogLocation.value),
+                           GitHub.ChangelogLocation(changelogLocation.value),
                            pushRepo,
                            oauth,
                            GitHubApi[IO](HttpClient[IO](client)),
@@ -433,19 +435,19 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   private def getGitHubAuthToken(
     envVarName: String,
     authTokenFile: Option[File],
-  ): Either[GitHubError, OAuthToken] =
+  ): Either[GitHubError, GitHub.OAuthToken] =
     sys
       .env
       .get(envVarName)
-      .fold(readOAuthToken(authTokenFile))(token => OAuthToken(token).asRight)
+      .fold(readOAuthToken(authTokenFile))(token => GitHub.OAuthToken(token).asRight)
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   private def runGitHubRelease[F[_]: EffectConstructor: CanCatch: Monad: Timer](
     tagName: TagName,
     baseDir: File,
-    changelogLocation: ChangelogLocation,
+    changelogLocation: GitHub.ChangelogLocation,
     gitTagPushRepo: Repository,
-    oAuthToken: OAuthToken,
+    oAuthToken: GitHub.OAuthToken,
     gitHubApi: GitHubApi[F],
   ): GitHubTask.GitHubTaskResult[F, Unit] =
     for {
@@ -460,7 +462,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       repo <-
         SbtTask[F].eitherTWithWriter(
           effectOf(getRepoFromUrl(url))
-        )(r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}"))
+        )(r => List(s"Get GitHub repo org and name: ${GitHub.Repo.repoNameString(r)}"))
 
       gitHubRelease <-
         SbtTask[F].eitherTWithWriter(
@@ -472,16 +474,20 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               GitHubRelease.Draft.no,
               GitHubRelease.Prerelease.no,
             ),
-            GitHubRepoWithAuth(
-              GitHubRepo(
-                GitHubRepo.Org(
-                  repo.repoOrg.org
-                ),
-                GitHubRepo.Repo(
-                  repo.repoName.name
-                ),
+            GitHub.GitHubRepoWithAuth(
+              GitHub.GitHubRepo(
+                GitHub
+                  .GitHubRepo
+                  .Org(
+                    repo.repoOrg.org
+                  ),
+                GitHub
+                  .GitHubRepo
+                  .Repo(
+                    repo.repoName.name
+                  ),
               ),
-              GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
+              GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
             ),
           )
         ) {
@@ -505,7 +511,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
     assets: Vector[File],
     baseDir: File,
     gitTagPushRepo: Repository,
-    oAuthToken: OAuthToken,
+    oAuthToken: GitHub.OAuthToken,
     gitHubApi: GitHubApi[F],
   )(implicit ec: ExecutionContext, timer: Timer[F]): GitHubTask.GitHubTaskResult[F, Unit] =
     for {
@@ -516,14 +522,14 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
       repo <-
         SbtTask[F].eitherTWithWriter(
           effectOf(getRepoFromUrl(url))
-        )(r => List(s"Get GitHub repo org and name: ${Repo.repoNameString(r)}"))
+        )(r => List(s"Get GitHub repo org and name: ${GitHub.Repo.repoNameString(r)}"))
 
-      repoWithAuth   = GitHubRepoWithAuth(
-                         GitHubRepo(
-                           GitHubRepo.Org(repo.repoOrg.org),
-                           GitHubRepo.Repo(repo.repoName.name),
+      repoWithAuth   = GitHub.GitHubRepoWithAuth(
+                         GitHub.GitHubRepo(
+                           GitHub.GitHubRepo.Org(repo.repoOrg.org),
+                           GitHub.GitHubRepo.Repo(repo.repoName.name),
                          ),
-                         GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
+                         GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
                        )
       maybeRelease  <-
         SbtTask[F].eitherTWithWriter(

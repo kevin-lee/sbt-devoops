@@ -190,7 +190,7 @@ object GitHubRelease {
     downloadCount: Asset.DownloadCount,
     createdAt: Asset.CreatedAt,
     updatedAt: Asset.UpdatedAt,
-    uploader: User,
+    uploader: GitHub.User,
   )
   object Asset {
     @newsubtype case class Id(id: Long)
@@ -279,7 +279,7 @@ object GitHubRelease {
           downloadCount      <- c.downField("download_count").as[DownloadCount]
           createdAt          <- c.downField("created_at").as[CreatedAt]
           updatedAt          <- c.downField("updated_at").as[UpdatedAt]
-          uploader           <- c.downField("uploader").as[User]
+          uploader           <- c.downField("uploader").as[GitHub.User]
         } yield Asset(
           id,
           url,
@@ -303,7 +303,7 @@ object GitHubRelease {
     uri: Response.Url,
     assetsUrl: Response.AssetsUrl,
     uploadUrl: Response.UploadUrl,
-    author: User,
+    author: GitHub.User,
     tagName: Git.TagName,
     name: ReleaseName,
     body: Description,
@@ -372,7 +372,7 @@ object GitHubRelease {
           url         <- c.downField("url").as[Url]
           assetsUrl   <- c.downField("assets_url").as[AssetsUrl]
           uploadUrl   <- c.downField("upload_url").as[UploadUrl]
-          author      <- c.downField("author").as[User]
+          author      <- c.downField("author").as[GitHub.User]
           tagName     <- c.downField("tag_name").as[Git.TagName]
           name        <- c.downField("name").as[ReleaseName]
           body        <- c.downField("body").as[Description]

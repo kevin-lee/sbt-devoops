@@ -22,37 +22,37 @@ trait GitHubApi[F[_]] {
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def release(
-    repo: GitHubRepoWithAuth,
+    repo: GitHub.GitHubRepoWithAuth,
     tagName: Git.TagName,
-    changelog: Changelog,
+    changelog: GitHub.Changelog,
     assets: List[File],
   )(implicit ec: ExecutionContext): F[Either[GitHubError, GitHubRelease.Response]]
 
   def findReleaseByTagName(
     tagName: Git.TagName,
-    repo: GitHubRepoWithAuth,
+    repo: GitHub.GitHubRepoWithAuth,
   ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
 
   def createRelease(
     params: GitHubRelease.CreateRequestParams,
-    repo: GitHubRepoWithAuth,
+    repo: GitHub.GitHubRepoWithAuth,
   ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
 
   def updateRelease(
     params: GitHubRelease.UpdateRequestParams,
-    repo: GitHubRepoWithAuth,
+    repo: GitHub.GitHubRepoWithAuth,
   ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def uploadAssetToRelease(
     params: GitHubRelease.UploadAssetParams,
-    repo: GitHubRepoWithAuth,
+    repo: GitHub.GitHubRepoWithAuth,
   )(implicit ec: ExecutionContext): F[Either[GitHubError, (File, Option[GitHubRelease.Asset])]]
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def uploadAllAssetsToRelease(
     releaseId: ReleaseId,
-    repo: GitHubRepoWithAuth,
+    repo: GitHub.GitHubRepoWithAuth,
     assets: List[File],
   )(implicit ec: ExecutionContext, timer: Timer[F]): F[Either[GitHubError, List[GitHubRelease.Asset]]]
 
@@ -88,9 +88,9 @@ object GitHubApi {
 
     @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
     override def release(
-      repo: GitHubRepoWithAuth,
+      repo: GitHub.GitHubRepoWithAuth,
       tagName: Git.TagName,
-      changelog: Changelog,
+      changelog: GitHub.Changelog,
       assets: List[File],
     )(implicit ec: ExecutionContext): F[Either[GitHubError, GitHubRelease.Response]] = (for {
       maybeExistingRelease <- EitherT(
@@ -189,7 +189,7 @@ object GitHubApi {
 
     def findReleaseByTagName(
       tagName: Git.TagName,
-      repo: GitHubRepoWithAuth,
+      repo: GitHub.GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
       val url         = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/tags/${tagName.value}"
       val httpRequest = HttpRequest.withHeaders(
@@ -211,7 +211,7 @@ object GitHubApi {
 
     override def createRelease(
       params: GitHubRelease.CreateRequestParams,
-      repo: GitHubRepoWithAuth,
+      repo: GitHub.GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
       val url         = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases"
       val httpRequest = HttpRequest
@@ -235,7 +235,7 @@ object GitHubApi {
 
     def updateRelease(
       params: GitHubRelease.UpdateRequestParams,
-      repo: GitHubRepoWithAuth,
+      repo: GitHub.GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
       val url         =
         s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/${params.releaseId.releaseId}"
@@ -261,7 +261,7 @@ object GitHubApi {
     @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
     override def uploadAssetToRelease(
       params: GitHubRelease.UploadAssetParams,
-      repo: GitHubRepoWithAuth,
+      repo: GitHub.GitHubRepoWithAuth,
     )(implicit ec: ExecutionContext): F[Either[GitHubError, (File, Option[GitHubRelease.Asset])]] = {
       val url         =
         s"$baseUploadUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/${params.releaseId.releaseId}/assets"
@@ -298,7 +298,7 @@ object GitHubApi {
     @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
     override def uploadAllAssetsToRelease(
       releaseId: ReleaseId,
-      repo: GitHubRepoWithAuth,
+      repo: GitHub.GitHubRepoWithAuth,
       assets: List[File],
     )(implicit ec: ExecutionContext, timer: Timer[F]): F[Either[GitHubError, List[GitHubRelease.Asset]]] =
       assets
