@@ -1,6 +1,6 @@
 package kevinlee.test
 
-import kevinlee.test.data.{Content, Names, NamesAndContent}
+import kevinlee.test.data.NamesAndContent
 
 import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.Files
@@ -55,11 +55,11 @@ object IoUtil {
 
   def createFiles(rootDir: File, namesAndContentList: List[NamesAndContent]): List[(String, File)] = {
     for {
-      NamesAndContent(Names(names), Content(content)) <- namesAndContentList
+      NamesAndContent(names, content) <- namesAndContentList
 
-      path = names.mkString("/")
+      path = names.names.mkString("/")
       file = new File(rootDir, path)
-      _    = IoUtil.writeFile(file, content)
+      _    = IoUtil.writeFile(file, content.content)
     } yield (path, file)
   }
 }
