@@ -12,15 +12,20 @@ import kevinlee.http.HttpRequest
 /** @author Kevin Lee
   * @since 2019-03-09
   */
+@SuppressWarnings(Array(
+  "org.wartremover.warts.ExplicitImplicitTypes",
+  "org.wartremover.warts.ImplicitConversion",
+  "org.wartremover.warts.ImplicitParameter",
+  "org.wartremover.warts.PublicInference",
+))
 object GitHub {
 
   final case class OAuthToken(token: String) extends AnyVal {
     override def toString: String = "***Protected***"
   }
 
-  final case class RepoOrg(org: String) extends AnyVal
-
-  final case class RepoName(name: String) extends AnyVal
+  @newtype case class RepoOrg(org: String)
+  @newtype case class RepoName(name: String)
 
   final case class Repo(repoOrg: RepoOrg, repoName: RepoName)
 
@@ -28,23 +33,15 @@ object GitHub {
     def repoNameString(repo: Repo): String = s"${repo.repoOrg.org}/${repo.repoName.name}"
   }
 
-  final case class Changelog(changelog: String) extends AnyVal
+  @newtype case class Changelog(changelog: String)
 
-  final case class ChangelogLocation(changeLogLocation: String) extends AnyVal
+  @newtype case class ChangelogLocation(changeLogLocation: String)
 
   final case class GitHubRepo(
     org: GitHubRepo.Org,
     repo: GitHubRepo.Repo,
   )
 
-  @SuppressWarnings(
-    Array(
-      "org.wartremover.warts.ExplicitImplicitTypes",
-      "org.wartremover.warts.ImplicitConversion",
-      "org.wartremover.warts.ImplicitParameter",
-      "org.wartremover.warts.PublicInference",
-    )
-  )
   object GitHubRepo {
 
     @newtype case class Org(org: String)
@@ -85,14 +82,6 @@ object GitHub {
     avatarUrl: Option[User.AvatarUrl],
   )
 
-  @SuppressWarnings(
-    Array(
-      "org.wartremover.warts.ExplicitImplicitTypes",
-      "org.wartremover.warts.ImplicitConversion",
-      "org.wartremover.warts.ImplicitParameter",
-      "org.wartremover.warts.PublicInference",
-    )
-  )
   object User {
     @newsubtype case class Id(id: Long)
     object Id        {

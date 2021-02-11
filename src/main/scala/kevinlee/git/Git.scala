@@ -104,10 +104,10 @@ object Git {
     implicit val encoder: Encoder[TagName] = deriving
     implicit val decoder: Decoder[TagName] = deriving
   }
-  final case class Repository(value: String) extends AnyVal
-  final case class RemoteName(remoteName: String) extends AnyVal
-  final case class RepoUrl(repoUrl: String)       extends AnyVal
-  final case class Description(value: String)     extends AnyVal
+  @newtype case class Repository(value: String)
+  @newtype case class RemoteName(remoteName: String)
+  @newtype case class RepoUrl(repoUrl: String)
+  @newtype case class Description(value: String)
 
   @newtype case class TagMessage(tagMessage: String)
   @newtype case class HashObject(hashObject: String)
