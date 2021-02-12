@@ -140,7 +140,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
           repoUrl.repoUrl.split(":").last.split("/")
       names.takeRight(2) match {
         case Array(org, name) =>
-          GitHub.Repo(GitHub.RepoOrg(org), GitHub.RepoName(name.stripSuffix(".git"))).asRight
+          GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name.stripSuffix(".git"))).asRight
         case _                =>
           GitHubError.invalidGitHubRepoUrl(repoUrl).asLeft
       }
@@ -475,16 +475,16 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
               GitHubRelease.Prerelease.no,
             ),
             GitHub.GitHubRepoWithAuth(
-              GitHub.GitHubRepo(
+              GitHub.Repo(
                 GitHub
-                  .GitHubRepo
+                  .Repo
                   .Org(
-                    repo.repoOrg.org
+                    repo.org.org
                   ),
                 GitHub
-                  .GitHubRepo
-                  .Repo(
-                    repo.repoName.name
+                  .Repo
+                  .Name(
+                    repo.name.name
                   ),
               ),
               GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
@@ -525,9 +525,9 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
         )(r => List(s"Get GitHub repo org and name: ${GitHub.Repo.repoNameString(r)}"))
 
       repoWithAuth   = GitHub.GitHubRepoWithAuth(
-                         GitHub.GitHubRepo(
-                           GitHub.GitHubRepo.Org(repo.repoOrg.org),
-                           GitHub.GitHubRepo.Repo(repo.repoName.name),
+                         GitHub.Repo(
+                           GitHub.Repo.Org(repo.org.org),
+                           GitHub.Repo.Name(repo.name.name),
                          ),
                          GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
                        )

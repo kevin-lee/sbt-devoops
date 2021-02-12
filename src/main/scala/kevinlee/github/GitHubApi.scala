@@ -191,7 +191,7 @@ object GitHubApi {
       tagName: Git.TagName,
       repo: GitHub.GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
-      val url         = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/tags/${tagName.value}"
+      val url         = s"$baseUrl/repos/${repo.toRepoNameString}/releases/tags/${tagName.value}"
       val httpRequest = HttpRequest.withHeaders(
         HttpRequest.Method.get,
         HttpRequest.Uri(url),
@@ -213,7 +213,7 @@ object GitHubApi {
       params: GitHubRelease.CreateRequestParams,
       repo: GitHub.GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
-      val url         = s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases"
+      val url         = s"$baseUrl/repos/${repo.toRepoNameString}/releases"
       val httpRequest = HttpRequest
         .withHeadersAndJsonBody[GitHubRelease.CreateRequestParams](
           HttpRequest.Method.post,
@@ -237,8 +237,7 @@ object GitHubApi {
       params: GitHubRelease.UpdateRequestParams,
       repo: GitHub.GitHubRepoWithAuth,
     ): F[Either[GitHubError, Option[GitHubRelease.Response]]] = {
-      val url         =
-        s"$baseUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/${params.releaseId.releaseId}"
+      val url         = s"$baseUrl/repos/${repo.toRepoNameString}/releases/${params.releaseId.releaseId}"
       val httpRequest = HttpRequest
         .withHeadersAndJsonBody[GitHubRelease.UpdateRequestParams](
           HttpRequest.Method.patch,
@@ -263,8 +262,7 @@ object GitHubApi {
       params: GitHubRelease.UploadAssetParams,
       repo: GitHub.GitHubRepoWithAuth,
     )(implicit ec: ExecutionContext): F[Either[GitHubError, (File, Option[GitHubRelease.Asset])]] = {
-      val url         =
-        s"$baseUploadUrl/repos/${repo.gitHubRepo.org.org}/${repo.gitHubRepo.repo.repo}/releases/${params.releaseId.releaseId}/assets"
+      val url         = s"$baseUploadUrl/repos/${repo.toRepoNameString}/releases/${params.releaseId.releaseId}/assets"
       val httpRequest = HttpRequest
         .withHeadersParamsAndFileBody(
           HttpRequest.Method.post,
