@@ -12,46 +12,45 @@ import kevinlee.http.HttpRequest
 /** @author Kevin Lee
   * @since 2019-03-09
   */
-@SuppressWarnings(Array(
-  "org.wartremover.warts.ExplicitImplicitTypes",
-  "org.wartremover.warts.ImplicitConversion",
-  "org.wartremover.warts.ImplicitParameter",
-  "org.wartremover.warts.PublicInference",
-))
+@SuppressWarnings(
+  Array(
+    "org.wartremover.warts.ExplicitImplicitTypes",
+    "org.wartremover.warts.ImplicitConversion",
+    "org.wartremover.warts.ImplicitParameter",
+    "org.wartremover.warts.PublicInference",
+  )
+)
 object GitHub {
 
   final case class OAuthToken(token: String) extends AnyVal {
     override def toString: String = "***Protected***"
   }
 
-  @newtype case class RepoOrg(org: String)
-  @newtype case class RepoName(name: String)
-
-  final case class Repo(repoOrg: RepoOrg, repoName: RepoName)
-
-  object Repo {
-    def repoNameString(repo: Repo): String = s"${repo.repoOrg.org}/${repo.repoName.name}"
-  }
-
   @newtype case class Changelog(changelog: String)
 
   @newtype case class ChangelogLocation(changeLogLocation: String)
 
-  final case class GitHubRepo(
-    org: GitHubRepo.Org,
-    repo: GitHubRepo.Repo,
+  final case class Repo(
+    org: Repo.Org,
+    name: Repo.Name,
   )
 
-  object GitHubRepo {
+  object Repo {
 
     @newtype case class Org(org: String)
 
-    @newtype case class Repo(repo: String)
+    @newtype case class Name(name: String)
+
+    def repoNameString(repo: Repo): String = s"${repo.org.org}/${repo.name.name}"
+
+    implicit final class RepoOps(val repo: Repo) extends AnyVal {
+      def toRepoNameString: String = Repo.repoNameString(repo)
+    }
 
   }
 
   final case class GitHubRepoWithAuth(
-    gitHubRepo: GitHubRepo,
+    gitHubRepo: Repo,
     accessToken: Option[GitHubRepoWithAuth.AccessToken],
   )
 
@@ -70,6 +69,10 @@ object GitHub {
               "Authorization" -> s"token ${token.accessToken}"
             )
           )
+    }
+
+    implicit final class RepoOps(val repo: GitHubRepoWithAuth) extends AnyVal {
+      def toRepoNameString: String = Repo.repoNameString(repo.gitHubRepo)
     }
 
   }
