@@ -3,6 +3,7 @@ package kevinlee.github.data
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.string
+import io.circe.generic.semiauto._
 import io.circe.refined._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, HCursor, Json}
@@ -47,6 +48,66 @@ object GitHub {
       def toRepoNameString: String = Repo.repoNameString(repo)
     }
 
+    final case class Tag(
+      name: Tag.Name,
+      commit: Tag.Commit,
+      zipballUrl: Tag.ZipballUrl,
+      tarballUrl: Tag.TarballUrl,
+      nodeId: Tag.NodeId,
+    )
+    object Tag {
+      @newtype case class Name(name: String)
+      object Name {
+        implicit val encoder: Encoder[Name] = deriving
+        implicit val decoder: Decoder[Name] = deriving
+      }
+
+      final case class Commit(sha: String, url: String)
+      object Commit {
+        @newtype case class Sha(sha: String)
+        @newtype case class Url(url: String)
+
+        implicit val encoder: Encoder[Commit] = deriveEncoder
+        implicit val decoder: Decoder[Commit] = deriveDecoder
+      }
+
+      @newtype case class ZipballUrl(zipballUrl: String)
+      object ZipballUrl {
+        implicit val encoder: Encoder[ZipballUrl] = deriving
+        implicit val decoder: Decoder[ZipballUrl] = deriving
+      }
+      @newtype case class TarballUrl(tarballUrl: String)
+      object TarballUrl {
+        implicit val encoder: Encoder[TarballUrl] = deriving
+        implicit val decoder: Decoder[TarballUrl] = deriving
+      }
+      @newtype case class NodeId(nodeId: String)
+      object NodeId     {
+        implicit val encoder: Encoder[NodeId] = deriving
+        implicit val decoder: Decoder[NodeId] = deriving
+      }
+
+      implicit final val encoder: Encoder[Tag] =
+        tag =>
+          Json.obj(
+            "name"        -> tag.name.asJson,
+            "commit"      -> tag.commit.asJson,
+            "zipball_url" -> tag.zipballUrl.asJson,
+            "tarball_url" -> tag.tarballUrl.asJson,
+            "node_id"     -> tag.nodeId.asJson,
+          )
+
+      implicit final val decoder: Decoder[Tag] =
+        (c: HCursor) =>
+          for {
+            name       <- c.downField("name").as[Name]
+            commit     <- c.downField("commit").as[Commit]
+            zipballUrl <- c.downField("zipball_url").as[ZipballUrl]
+            tarballUrl <- c.downField("tarball_url").as[TarballUrl]
+            nodeId     <- c.downField("node_id").as[NodeId]
+          } yield Tag(name, commit, zipballUrl, tarballUrl, nodeId)
+
+    }
   }
 
   final case class GitHubRepoWithAuth(
