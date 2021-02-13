@@ -291,7 +291,8 @@ object GitHubApi {
     }
 
     private def defaultHeaders: List[HttpRequest.Header] = List(
-      HttpRequest.Header("accept" -> DefaultAccept)
+      HttpRequest.Header("accept" -> DefaultAccept),
+      HttpRequest.Header("User-Agent" -> "sbt-devoops")
     )
 
     @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
