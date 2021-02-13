@@ -6,7 +6,9 @@ import cats.effect.Timer
 import cats.syntax.all._
 import effectie.cats.EffectConstructor
 import effectie.cats.Effectful._
+import effectie.cats.EitherTSupport._
 import kevinlee.git.Git
+import kevinlee.github.data.GitHub.Repo
 import kevinlee.github.data.GitHubRelease.ReleaseId
 import kevinlee.github.data._
 import kevinlee.http.{HttpClient, HttpRequest}
@@ -19,6 +21,10 @@ import scala.concurrent.duration._
   * @since 2021-01-14
   */
 trait GitHubApi[F[_]] {
+
+  def getTags(
+    repo: GitHub.GitHubRepoWithAuth
+  ): F[Either[GitHubError, List[GitHub.Repo.Tag]]]
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def release(
@@ -85,6 +91,33 @@ object GitHubApi {
       map.addMimeTypes("application/xml pom xml")
       map
     }
+
+    override def getTags(
+      repo: GitHub.GitHubRepoWithAuth
+    ): F[Either[GitHubError, List[Repo.Tag]]] = (for {
+      url <- eitherTRight[GitHubError](s"$baseUrl/repos/${repo.toRepoNameString}/tags")
+
+      httpRequest <- eitherTRight[GitHubError](
+                       HttpRequest.withHeaders(
+                         HttpRequest.Method.get,
+                         HttpRequest.Uri(url),
+                         defaultHeaders ++
+                           repo
+                             .accessToken
+                             .toHeaderList,
+                       )
+                     )
+
+      response <- EitherT(
+                    httpClient
+                      .request[List[GitHub.Repo.Tag]](httpRequest)
+                      .map(
+                        _.toEmptyListIfNotFound
+                          .leftMap(GitHubError.fromHttpError)
+                          .flatMap(res => res.asRight[GitHubError])
+                      )
+                  )
+    } yield response).value
 
     @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
     override def release(
@@ -195,7 +228,7 @@ object GitHubApi {
       val httpRequest = HttpRequest.withHeaders(
         HttpRequest.Method.get,
         HttpRequest.Uri(url),
-        HttpRequest.Header("accept" -> DefaultAccept) ::
+        defaultHeaders ++
           repo
             .accessToken
             .toHeaderList,
@@ -218,7 +251,7 @@ object GitHubApi {
         .withHeadersAndJsonBody[GitHubRelease.CreateRequestParams](
           HttpRequest.Method.post,
           HttpRequest.Uri(url),
-          HttpRequest.Header("accept" -> DefaultAccept) ::
+          defaultHeaders ++
             repo
               .accessToken
               .toHeaderList,
@@ -242,7 +275,7 @@ object GitHubApi {
         .withHeadersAndJsonBody[GitHubRelease.UpdateRequestParams](
           HttpRequest.Method.patch,
           HttpRequest.Uri(url),
-          HttpRequest.Header("accept" -> DefaultAccept) ::
+          defaultHeaders ++
             repo
               .accessToken
               .toHeaderList,
@@ -256,6 +289,10 @@ object GitHubApi {
             .flatMap(res => res.asRight[GitHubError])
         )
     }
+
+    private def defaultHeaders: List[HttpRequest.Header] = List(
+      HttpRequest.Header("accept" -> DefaultAccept)
+    )
 
     @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
     override def uploadAssetToRelease(

@@ -159,11 +159,30 @@ object HttpError {
         httpErrorOrA
     }
 
+  def toEmptyListIfNotFound[A](httpErrorOrA: Either[HttpError, List[A]]): Either[HttpError, List[A]] =
+    httpErrorOrA match {
+      case Right(a) =>
+        a.asRight[HttpError]
+
+      case Left(HttpError.NotFound(_, _)) =>
+        List.empty[A].asRight[HttpError]
+
+      case Left(_) =>
+        httpErrorOrA
+    }
+
   implicit final class EitherHttpErrorOps[A](
     val httpError: Either[HttpError, Option[A]]
   ) extends AnyVal {
     def toOptionIfNotFound: Either[HttpError, Option[A]] =
       HttpError.toOptionIfNotFound(httpError)
+  }
+
+  implicit final class EitherHttpErrorListOps[A](
+    val httpError: Either[HttpError, List[A]]
+  ) extends AnyVal {
+    def toEmptyListIfNotFound: Either[HttpError, List[A]] =
+      HttpError.toEmptyListIfNotFound(httpError)
   }
 
 }
