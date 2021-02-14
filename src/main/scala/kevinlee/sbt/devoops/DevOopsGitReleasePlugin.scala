@@ -8,20 +8,19 @@ import effectie.cats.Effectful._
 import effectie.cats._
 import just.semver.SemVer
 import kevinlee.git.Git
-import kevinlee.git.Git.{BranchName, RepoUrl, Repository, TagName}
+import kevinlee.git.Git.{BranchName, Repository, TagName}
 import kevinlee.github.data._
 import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.devoops.data.SbtTaskResult.SbtTaskHistory
-import kevinlee.sbt.devoops.data.{SbtTask, SbtTaskError, SbtTaskResult}
+import kevinlee.sbt.devoops.data.{GitHubReleaseKeys, GitHubReleaseOps, SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.client.blaze.BlazeClientBuilder
 import sbt.Keys._
-import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting, SettingKey, TaskKey, settingKey, taskKey}
+import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting}
 
-import java.io.FileInputStream
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
@@ -34,135 +33,7 @@ object DevOopsGitReleasePlugin extends AutoPlugin {
   override def requires: Plugins      = empty
   override def trigger: PluginTrigger = noTrigger
 
-  object autoImport {
-    lazy val gitTagFrom: SettingKey[String] = settingKey[String]("The name of branch to tag from. (Default: main)")
-
-    lazy val gitTagDescription: SettingKey[Option[String]] = settingKey[Option[String]](
-      "description for git tagging (Default: None)"
-    )
-
-    lazy val gitTagName: TaskKey[String] = taskKey[String](
-      """git tag name (default: parse the project version as semantic version and render with the prefix 'v'. e.g.) version := "1.0.0" / gitTagName := "v1.0.0""""
-    )
-
-    lazy val gitTagPushRepo: TaskKey[String] = taskKey[String]("The name of Git repo to push the tag (default: origin)")
-
-    lazy val gitTag: TaskKey[Unit] = taskKey[Unit]("task to create a git tag from the branch set in gitTagFrom")
-
-    lazy val devOopsCiDir: SettingKey[String] = settingKey[String](
-      "The ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. (default: ci)"
-    )
-
-    lazy val devOopsPackagedArtifacts: TaskKey[List[String]] = taskKey(
-      s"""A list of packaged artifacts to be copied to PROJECT_HOME/$${devOopsCiDir.value}/dist (default: List(s"target/scala-*/$${name.value}*.jar") )"""
-    )
-
-    lazy val devOopsCopyReleasePackages: TaskKey[Vector[File]] = taskKey[Vector[File]](
-      s"task to copy packaged artifacts to the location specified (default: devOopsPackagedArtifacts.value to PROJECT_HOME/$${devOopsCiDir.value}/dist"
-    )
-
-    lazy val changelogLocation: SettingKey[String] = settingKey[String](
-      "The location of changelog file. (default: PROJECT_HOME/changelogs)"
-    )
-
-    lazy val gitHubAuthTokenEnvVar: SettingKey[String] = settingKey[String](
-      "The environment variable name for GitHub auth token (default: GITHUB_TOKEN)"
-    )
-
-    lazy val gitHubAuthTokenFile: SettingKey[Option[File]] = settingKey[Option[File]](
-      "The path to GitHub OAuth token file. The file should contain oauth=OAUTH_TOKEN (default: Some($USER/.github)) If you want to get the file in user's home, do Some(new File(Io.getUserHome, \".github\"))"
-    )
-
-    lazy val gitHubRequestTimeout: TaskKey[FiniteDuration] = taskKey[FiniteDuration](
-      "Timeout value for any request sent to GitHub (default: 2.minutes)"
-    )
-
-    lazy val gitHubRelease: TaskKey[Unit] = taskKey[Unit](
-      "Release the current version without creating a tag. It also uploads the changelog to GitHub."
-    )
-
-    lazy val gitTagAndGitHubRelease: TaskKey[Unit] = taskKey[Unit](
-      "Release the current version. It creates a tag with the project version and uploads the changelog to GitHub."
-    )
-
-    lazy val gitHubReleaseUploadArtifacts: TaskKey[Unit] = taskKey[Unit](
-      "Upload the packaged files to the GitHub release with the current version. The tag with the project version and the GitHub release of it should exist to run this task."
-    )
-
-    def decideVersion(projectVersion: String, decide: String => String): String =
-      decide(projectVersion)
-
-    def copyFiles(
-      taskName: String,
-      caseSensitivity: CaseSensitivity,
-      projectBaseDir: File,
-      filePaths: List[String],
-      targetDir: File,
-    ): Either[SbtTaskError, Vector[File]] =
-      scala.util.Try {
-        val files  = Io.findAllFiles(
-          caseSensitivity,
-          projectBaseDir,
-          filePaths,
-        )
-        val copied = Io.copy(files, targetDir)
-        println(s""">> copyPackages - Files copied from:
-                   |${files.mkString("  - ", "\n  - ", "\n")}
-                   |  to
-                   |${copied.mkString("  - ", "\n  - ", "\n")}
-                   |""".stripMargin)
-        copied
-      } match {
-        case scala.util.Success(files) =>
-          files.asRight
-        case scala.util.Failure(error) =>
-          SbtTaskError.ioError(taskName, error).asLeft
-      }
-
-    def readOAuthToken(maybeFile: Option[File]): Either[GitHubError, GitHub.OAuthToken] =
-      maybeFile match {
-        case Some(file) =>
-          val props = new java.util.Properties()
-          props.load(new FileInputStream(file))
-          Option(props.getProperty("oauth"))
-            .fold[Either[GitHubError, GitHub.OAuthToken]](GitHubError.noCredential.asLeft)(token =>
-              GitHub.OAuthToken(token).asRight
-            )
-        case None       =>
-          GitHubError.noCredential.asLeft
-      }
-
-    def getRepoFromUrl(repoUrl: RepoUrl): Either[GitHubError, GitHub.Repo] = {
-      val names =
-        if (repoUrl.repoUrl.startsWith("http"))
-          repoUrl.repoUrl.split("/")
-        else
-          repoUrl.repoUrl.split(":").last.split("/")
-      names.takeRight(2) match {
-        case Array(org, name) =>
-          GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name.stripSuffix(".git"))).asRight
-        case _                =>
-          GitHubError.invalidGitHubRepoUrl(repoUrl).asLeft
-      }
-    }
-
-    def getChangelog(dir: File, tagName: TagName): Either[GitHubError, GitHub.Changelog] = {
-      val changelogName = s"${tagName.value.stripPrefix("v")}.md"
-      val changelog     = new File(dir, changelogName)
-      if (!changelog.exists) {
-        GitHubError.changelogNotFound(changelog.getCanonicalPath, tagName).asLeft
-      } else {
-        lazy val changelogSource = scala.io.Source.fromFile(changelog)
-        try {
-          val log = changelogSource.getLines().mkString("\n")
-          GitHub.Changelog(log).asRight
-        } finally {
-          changelogSource.close()
-        }
-      }
-    }
-
-  }
+  object autoImport extends GitHubReleaseKeys with GitHubReleaseOps
 
   import autoImport._
 
