@@ -7,7 +7,7 @@ import sbt.{AutoPlugin, PluginTrigger, Plugins}
   */
 @deprecated(
   message =
-    "kevinlee.sbt.devoops.DevOopsGitReleasePlugin is deprecated. Please use devoops.DevOopsGitHubReleasePlugin instead.",
+    "DevOopsGitReleasePlugin is deprecated. Please use DevOopsGitHubReleasePlugin instead.",
   since = "2.0.0",
 )
 object DevOopsGitReleasePlugin extends AutoPlugin {
