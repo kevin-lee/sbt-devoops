@@ -27,7 +27,7 @@ import scala.concurrent.duration._
 /** @author Kevin Lee
   * @since 2019-01-01
   */
-object DevOopsGitReleasePlugin extends AutoPlugin {
+object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
   // $COVERAGE-OFF$
   override def requires: Plugins      = empty
