@@ -1,4 +1,4 @@
-package kevinlee.sbt.devoops.data
+package devoops.data
 
 import just.semver.{ParseError, SemVer}
 import kevinlee.git.GitCommandError

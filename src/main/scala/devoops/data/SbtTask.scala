@@ -1,4 +1,4 @@
-package kevinlee.sbt.devoops.data
+package devoops.data
 
 import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
 import cats._
