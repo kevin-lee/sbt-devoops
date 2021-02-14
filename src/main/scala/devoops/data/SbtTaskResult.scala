@@ -1,4 +1,4 @@
-package kevinlee.sbt.devoops.data
+package devoops.data
 
 import cats.data._
 import kevinlee.git.{GitCmd, GitCmdAndResult, GitCommandResult}

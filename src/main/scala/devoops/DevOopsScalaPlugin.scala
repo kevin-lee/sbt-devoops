@@ -1,4 +1,4 @@
-package kevinlee.sbt.devoops
+package devoops
 
 import just.semver.{ParseError, SemVer}
 import kevinlee.sbt.SbtCommon._

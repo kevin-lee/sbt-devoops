@@ -1,4 +1,4 @@
-package kevinlee.sbt.devoops
+package devoops
 
 import cats._
 import cats.effect.{ContextShift, IO, Timer}
@@ -13,8 +13,8 @@ import kevinlee.github.data._
 import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
-import kevinlee.sbt.devoops.data.SbtTaskResult.SbtTaskHistory
-import kevinlee.sbt.devoops.data.{GitHubReleaseKeys, GitHubReleaseOps, SbtTask, SbtTaskError, SbtTaskResult}
+import devoops.data.SbtTaskResult.SbtTaskHistory
+import devoops.data.{GitHubReleaseKeys, GitHubReleaseOps, SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.client.blaze.BlazeClientBuilder

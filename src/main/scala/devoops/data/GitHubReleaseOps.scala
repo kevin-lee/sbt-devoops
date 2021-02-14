@@ -1,4 +1,4 @@
-package kevinlee.sbt.devoops.data
+package devoops.data
 
 import cats.syntax.all._
 import kevinlee.git.Git.{RepoUrl, TagName}
