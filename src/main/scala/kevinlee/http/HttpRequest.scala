@@ -3,6 +3,7 @@ package kevinlee.http;
 import cats.effect.{Blocker, ContextShift, Sync}
 import cats.syntax.all._
 import cats.{Applicative, Show}
+import devoops.data.DevOopsLogLevel
 import fs2.Chunk
 import io.circe.Encoder
 import io.estatico.newtype.macros._
@@ -24,7 +25,7 @@ final case class HttpRequest(
   params: List[HttpRequest.Param],
   body: Option[HttpRequest.Body],
 ) {
-  override def toString: String = HttpRequest.show.show(this)
+  override def toString: String = HttpRequest.show(DevOopsLogLevel.info).show(this)
 }
 
 @SuppressWarnings(
@@ -69,17 +70,24 @@ object HttpRequest {
 
   lazy val sensitiveHeadersFromHttp4sInLowerCase: Set[String] = Http4sHeaders.SensitiveHeaders.map(_.value.toLowerCase)
 
-  implicit final val show: Show[HttpRequest] = { httpRequest =>
-    val headerString = httpRequest
-      .headers
-      .map { header =>
-        val (name, value) = header.header
-        if (shouldProtect(name))
-          s"($name: ***Protected***)"
+  implicit def show(implicit sbtLogLevel: DevOopsLogLevel): Show[HttpRequest] = { httpRequest =>
+    val headerString =
+      (
+        if (sbtLogLevel.isDebug)
+          httpRequest
+            .headers
+            .map { header =>
+              val (name, value) = header.header
+              if (shouldProtect(name))
+                s"($name: ***Protected***)"
+              else
+                s"($name: $value)"
+            }
+            .mkString("[", ", ", "]")
         else
-          s"($name: $value)"
-      }
-      .mkString("[", ", ", "]")
+          "***[Not Available in Non-Debug]***"
+      )
+
     val paramsString = httpRequest
       .params
       .map { param =>

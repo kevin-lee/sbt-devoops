@@ -4,6 +4,7 @@ import cats.Monad
 import cats.data.EitherT
 import cats.effect._
 import cats.syntax.all._
+import devoops.data.DevOopsLogLevel
 import effectie.cats.EffectConstructor
 import effectie.cats.EitherTSupport._
 import fs2.text
@@ -21,10 +22,12 @@ import org.http4s.headers._
   */
 trait HttpClient[F[_]] {
 
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def request[A](
     httpRequest: HttpRequest
   )(
-    implicit entityDecoderA: Decoder[A]
+    implicit entityDecoderA: Decoder[A],
+    sbtLogLevel: DevOopsLogLevel
   ): F[Either[HttpError, A]]
 
 }
@@ -43,17 +46,21 @@ object HttpClient {
     client: Client[F]
   ) extends HttpClient[F] {
 
+    @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
     override def request[A](
       httpRequest: HttpRequest
     )(
-      implicit entityDecoderA: Decoder[A]
+      implicit entityDecoderA: Decoder[A],
+      sbtLogLevel: DevOopsLogLevel
     ): F[Either[HttpError, A]] =
       sendRequest[A](httpRequest).value
 
+    @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
     private[this] def sendRequest[A](
       httpRequest: HttpRequest
     )(
-      implicit entityDecoderA: Decoder[A]
+      implicit entityDecoderA: Decoder[A],
+      sbtLogLevel: DevOopsLogLevel
     ): EitherT[F, HttpError, A] =
       for {
         request <- EitherT.fromEither(

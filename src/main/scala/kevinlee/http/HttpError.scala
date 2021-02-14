@@ -2,6 +2,7 @@ package kevinlee.http
 
 import cats.Show
 import cats.syntax.all._
+import devoops.data.DevOopsLogLevel
 import kevinlee.ops.instances._
 
 /** @author Kevin Lee
@@ -95,8 +96,8 @@ object HttpError {
   def methodUnsupportedForFileUpload(httpRequest: HttpRequest): HttpError =
     MethodUnsupportedForFileUpload(httpRequest)
 
-  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  implicit final val show: Show[HttpError] = {
+  @SuppressWarnings(Array("org.wartremover.warts.ToString", "org.wartremover.warts.ImplicitParameter"))
+  implicit def show(implicit sbtLogLevel: DevOopsLogLevel): Show[HttpError] = {
     case InvalidUri(uriString: String, errorMessage: String) =>
       s"InvalidUri(uriString: $uriString, errorMessage: $errorMessage)"
 

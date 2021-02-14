@@ -2,6 +2,7 @@ package kevinlee.github.data
 
 import cats.data.NonEmptyList
 import cats.syntax.all._
+import devoops.data.DevOopsLogLevel
 import io.circe.parser._
 import kevinlee.git.Git.{RepoUrl, TagName}
 import kevinlee.git.GitCommandError
@@ -130,7 +131,8 @@ object GitHubError {
   def unexpectedFailure(httpError: HttpError): GitHubError =
     UnexpectedFailure(httpError)
 
-  def render(gitHubError: GitHubError): String = gitHubError match {
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+  def render(gitHubError: GitHubError)(implicit sbtLogLevel: DevOopsLogLevel): String = gitHubError match {
     case NoCredential =>
       "No GitHub access credential found - Check out the document for GitHub Auth Token"
 
@@ -184,17 +186,28 @@ object GitHubError {
 
     case ForbiddenRequest(httpRequest, httpResponse) =>
       s"""The request has been forbidden by GitHub API.
-         | Request: ${httpRequest.show}
-         |Response: ${httpResponse.show}
-         |""".stripMargin
+         |""".stripMargin ++ (
+        if (sbtLogLevel.isDebug)
+          s"""---
+             | Request: ${httpRequest.show}
+             |Response: ${httpResponse.show}
+             |""".stripMargin
+        else
+          ""
+        )
 
     case UnprocessableEntity(httpRequest, httpResponse, responseBodyJson) =>
       s"""Unprocessable Entity:
          |responseBody: ${responseBodyJson.fold("")(_.show)}
-         |---
-         |Request: ${httpRequest.show}
-         |Response: ${httpResponse.show}
-         |""".stripMargin
+         |""".stripMargin ++ (
+        if (sbtLogLevel.isDebug)
+          s"""---
+             | Request: ${httpRequest.show}
+             |Response: ${httpResponse.show}
+             |""".stripMargin
+        else
+          ""
+      )
 
     case AuthFailure(message) =>
       s"""Authentication to access GitHub API has failed.

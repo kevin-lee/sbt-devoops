@@ -8,6 +8,11 @@ import scala.concurrent.duration.FiniteDuration
   * @since 2021-02-14
   */
 trait GitHubReleaseKeys {
+
+  lazy val devOopsLogLevel: SettingKey[String] = settingKey(
+    "Log level for DevOops tasks. It can be one of debug, info, warn and error (default: info)"
+  )
+
   lazy val gitTagFrom: SettingKey[String] = settingKey[String]("The name of branch to tag from. (Default: main)")
 
   lazy val gitTagDescription: SettingKey[Option[String]] = settingKey[Option[String]](

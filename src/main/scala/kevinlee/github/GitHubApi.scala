@@ -4,6 +4,7 @@ import cats.Monad
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.Timer
 import cats.syntax.all._
+import devoops.data.DevOopsLogLevel
 import effectie.cats.EffectConstructor
 import effectie.cats.Effectful._
 import effectie.cats.EitherTSupport._
@@ -66,7 +67,10 @@ trait GitHubApi[F[_]] {
 
 object GitHubApi {
 
-  def apply[F[_]: Monad: EffectConstructor](httpClient: HttpClient[F]): GitHubApi[F] =
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+  def apply[F[_]: Monad: EffectConstructor](httpClient: HttpClient[F])(
+    implicit sbtLogLevel: DevOopsLogLevel
+  ): GitHubApi[F] =
     new GitHubApiF[F](httpClient)
 
   /*
@@ -76,9 +80,11 @@ object GitHubApi {
   def githubWithAbuseRateLimit[F[_]: Monad: Timer](): F[Unit] =
     Timer[F].sleep(1.second).as(())
 
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   final class GitHubApiF[F[_]: Monad: EffectConstructor](
     val httpClient: HttpClient[F]
-  ) extends GitHubApi[F] {
+  )(implicit sbtLogLevel: DevOopsLogLevel)
+      extends GitHubApi[F] {
     // TODO: make it configurable
     val baseUrl: String       = "https://api.github.com"
     val baseUploadUrl: String = "https://uploads.github.com"
@@ -291,8 +297,8 @@ object GitHubApi {
     }
 
     private def defaultHeaders: List[HttpRequest.Header] = List(
-      HttpRequest.Header("accept" -> DefaultAccept),
-      HttpRequest.Header("User-Agent" -> "sbt-devoops")
+      HttpRequest.Header("accept"     -> DefaultAccept),
+      HttpRequest.Header("User-Agent" -> "sbt-devoops"),
     )
 
     @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
