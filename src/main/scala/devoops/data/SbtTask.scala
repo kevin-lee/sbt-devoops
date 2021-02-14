@@ -38,9 +38,10 @@ trait SbtTask[F[_]] {
     fw: B => W
   ): EitherT[WriterT[F, W, *], A, B]
 
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def handleSbtTask(
     sbtTaskResult: F[(SbtTaskHistory, Either[SbtTaskError, Unit])]
-  ): F[Unit]
+  )(implicit sbtLogLevel: DevOopsLogLevel): F[Unit]
 
   def handleGitHubTask[A](
     gitHubTaskResult: GitHubTask.GitHubTaskResult[F, A]
@@ -76,7 +77,7 @@ object SbtTask {
 
   final class SbtTaskF[F[_]: EffectConstructor: CanCatch: Monad] extends SbtTask[F] {
 
-    def fromNonSbtTask[A](fa: F[Either[SbtTaskError, A]])(
+    override def fromNonSbtTask[A](fa: F[Either[SbtTaskError, A]])(
       history: A => List[SbtTaskResult]
     ): Result[F, A] = EitherT {
       WriterT(
@@ -84,7 +85,7 @@ object SbtTask {
       )
     }
 
-    def fromGitTask[A](
+    override def fromGitTask[A](
       taskResult: Git.CmdResult[F, A]
     ): Result[F, A] =
       EitherT(
@@ -94,7 +95,7 @@ object SbtTask {
           .mapWritten(_.map(SbtTaskResult.gitCommandTaskResult))
       )
 
-    def toLeftWhen[A](
+    override def toLeftWhen[A](
       condition: => Boolean,
       whenFalse: => A,
     ): EitherT[SbtTaskHistoryWriter[F, *], A, Unit] =
@@ -111,7 +112,7 @@ object SbtTask {
         )
       }
 
-    def eitherTWithWriter0[W: Monoid, A, B](r: Either[A, B])(
+    override def eitherTWithWriter0[W: Monoid, A, B](r: Either[A, B])(
       fw: B => W
     ): EitherT[Writer[W, ?], A, B] =
       EitherT[Writer[W, ?], A, B] {
@@ -126,7 +127,7 @@ object SbtTask {
         Writer(w, r)
       }
 
-    def eitherTWithWriter[W: Monoid, A, B](r: F[Either[A, B]])(
+    override def eitherTWithWriter[W: Monoid, A, B](r: F[Either[A, B]])(
       fw: B => W
     ): EitherT[WriterT[F, W, *], A, B] =
       EitherT {
@@ -144,25 +145,13 @@ object SbtTask {
         WriterT(wf)
       }
 
-    def handleSbtTask(
+    @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+    override def handleSbtTask(
       sbtTaskResult: F[(SbtTaskHistory, Either[SbtTaskError, Unit])]
-    ): F[Unit] =
+    )(implicit sbtLogLevel: DevOopsLogLevel): F[Unit] =
       sbtTaskResult.flatMap {
         case (history, Left(error)) =>
-          val message =
-            if (history.isEmpty)
-              "no task"
-            else
-              "the following tasks"
-          effectOf(
-            println(
-              s"""Failure]
-                 |>> sbt task failed after finishing $message
-                 |${SbtTaskResult.render(SbtTaskResult.sbtTaskResults(history))}
-                 |${SbtTaskError.render(error)}
-                 |""".stripMargin
-            )
-          ) >> effectOf(SbtTaskError.error[Unit](error))
+          effectOf(SbtTaskError.errorWithHistory[Unit](error, history))
 
         case (history, Right(())) =>
           effectOf(
@@ -172,7 +161,7 @@ object SbtTask {
           )
       }
 
-    def handleGitHubTask[A](
+    override def handleGitHubTask[A](
       gitHubTaskResult: GitHubTask.GitHubTaskResult[F, A]
     ): Result[F, A] =
       EitherT[SbtTaskHistoryWriter[F, *], SbtTaskError, A](

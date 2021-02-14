@@ -4,6 +4,8 @@ import cats._
 import cats.effect.{ContextShift, IO, Timer}
 import cats.instances.all._
 import cats.syntax.all._
+import devoops.data.SbtTaskResult.SbtTaskHistory
+import devoops.data.{DevOopsLogLevel, GitHubReleaseKeys, GitHubReleaseOps, SbtTask, SbtTaskError, SbtTaskResult}
 import effectie.cats.Effectful._
 import effectie.cats._
 import just.semver.SemVer
@@ -13,8 +15,6 @@ import kevinlee.github.data._
 import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
-import devoops.data.SbtTaskResult.SbtTaskHistory
-import devoops.data.{GitHubReleaseKeys, GitHubReleaseOps, SbtTask, SbtTaskError, SbtTaskResult}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.client.blaze.BlazeClientBuilder
@@ -38,6 +38,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
   import autoImport._
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
+    devOopsLogLevel := DevOopsLogLevel.info.render,
     gitTagFrom := "main",
     gitTagDescription := None,
     gitTagName := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}"),
@@ -49,6 +50,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val tagDesc        = gitTagDescription.value
       lazy val pushRepo       = Repository(gitTagPushRepo.value)
       lazy val projectVersion = version.value
+
+      implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
       val run1: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] =
         getTagVersion[IO](basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
@@ -63,6 +66,9 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     devOopsCiDir := "ci",
     devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar"),
     devOopsCopyReleasePackages := {
+
+      implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
+
       val result: Vector[File] =
         copyFiles(
           "devOopsCopyReleasePackages",
@@ -92,6 +98,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
       implicit val timer: Timer[IO]     = IO.timer(ec)
+
+      implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -152,6 +160,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
       implicit val timer: Timer[IO]     = IO.timer(ec)
 
+      implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
+
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
 
       BlazeClientBuilder[IO](ec)
@@ -197,6 +207,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
       implicit val timer: Timer[IO]     = IO.timer(ec)
+
+      implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]

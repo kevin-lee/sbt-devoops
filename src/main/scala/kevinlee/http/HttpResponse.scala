@@ -2,6 +2,7 @@ package kevinlee.http
 
 import cats.Show
 import cats.syntax.all._
+import devoops.data.DevOopsLogLevel
 import io.circe.parser.decode
 import io.circe.{Decoder, Encoder, Json}
 import io.estatico.newtype.macros._
@@ -68,18 +69,25 @@ object HttpResponse {
         )
   }
 
-  implicit final val show: Show[HttpResponse] = { httpResponse =>
-    val headerString = httpResponse
-      .headers
-      .map { header =>
-        val (name, value) = header.header
-        if (shouldProtect(name))
-          s"($name: ***Protected***)"
+  implicit def show(implicit sbtLogLevel: DevOopsLogLevel): Show[HttpResponse] = { httpResponse =>
+    val headerString =
+      (
+        if (sbtLogLevel.isDebug)
+          httpResponse
+            .headers
+            .map { header =>
+              val (name, value) = header.header
+              if (shouldProtect(name))
+                s"($name: ***Protected***)"
+              else
+                s"($name: $value)"
+            }
+            .mkString("[", ", ", "]")
         else
-          s"($name: $value)"
-      }
-      .mkString("[", ", ", "]")
-    val bodyString   = httpResponse.body.fold("")(_.body)
+          "***[Not Available in Non-Debug]***"
+      )
+
+    val bodyString = httpResponse.body.fold("")(_.body)
     s"HttpRequest(method=${httpResponse.status.show}, headers=$headerString, body=$bodyString)"
   }
 

@@ -1,5 +1,6 @@
 package devoops.data
 
+import devoops.data.SbtTaskResult.SbtTaskHistory
 import just.semver.{ParseError, SemVer}
 import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
@@ -43,7 +44,8 @@ object SbtTaskError {
   def ioError(name: String, throwable: Throwable): SbtTaskError =
     IoError(name, throwable)
 
-  def render(sbtTaskError: SbtTaskError): String = sbtTaskError match {
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+  def render(sbtTaskError: SbtTaskError)(implicit sbtLogLevel: DevOopsLogLevel): String = sbtTaskError match {
 
     case GitCommandTaskError(err) =>
       s">> ${GitCommandError.render(err)}"
@@ -77,13 +79,39 @@ object SbtTaskError {
          |""".stripMargin
   }
 
+//  /** Throws a MessageOnlyException after rendering the given SbtTaskError
+//    * @param sbtTaskError the given SbtTaskError to render
+//    * @tparam A This is only to make the compiler happy for the call-site.
+//    *           It doesn't mean anything since this method is throwing a MessageOnlyException
+//    * @return Nothing. It throws a MessageOnlyException.
+//    */
+//  def error[A](sbtTaskError: SbtTaskError): A =
+//    messageOnlyException(render(sbtTaskError))
+
   /** Throws a MessageOnlyException after rendering the given SbtTaskError
     * @param sbtTaskError the given SbtTaskError to render
+    *  @param history The history of previously successful sbt task results
     * @tparam A This is only to make the compiler happy for the call-site.
     *           It doesn't mean anything since this method is throwing a MessageOnlyException
     * @return Nothing. It throws a MessageOnlyException.
     */
-  def error[A](sbtTaskError: SbtTaskError): A =
-    messageOnlyException(render(sbtTaskError))
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+  def errorWithHistory[A](sbtTaskError: SbtTaskError, history: SbtTaskHistory)(implicit sbtLogLevel: DevOopsLogLevel): A = {
+    val message =
+      if (history.isEmpty)
+        "no task"
+      else
+        "the following tasks"
+
+    messageOnlyException(
+      s"""Failure]
+         |>> sbt task failed after finishing $message
+         |${SbtTaskResult.render(SbtTaskResult.sbtTaskResults(history))}
+         |---
+         |>> Failed:
+         |${SbtTaskError.render(sbtTaskError)}
+         |""".stripMargin
+    )
+  }
 
 }
