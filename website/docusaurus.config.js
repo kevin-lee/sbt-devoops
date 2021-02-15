@@ -27,7 +27,7 @@ const websiteConfig = {
         alt: 'sbt-devoops Logo',
         src: 'img/sbt-devoops-logo-32x32.png',
       },
-      links: [
+      items: [
         {
           to: 'docs/',
           activeBasePath: 'docs',
@@ -87,8 +87,6 @@ const websiteConfig = {
       '@docusaurus/preset-classic',
       {
         docs: {
-          // It is recommended to set document id as docs home page (`docs/` path).
-          homePageId: 'getting-started',
           sidebarPath: require.resolve('./sidebars.js'),
         },
         blog: {
