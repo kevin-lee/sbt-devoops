@@ -29,7 +29,18 @@ const websiteConfig = {
       },
       items: [
         {
-          to: 'docs/',
+          type: 'docsVersionDropdown',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+          dropdownItemsAfter: [
+            {
+              to: '/versions',
+              label: 'All versions',
+            },
+          ],
+        },
+        {
+          to: 'docs/1.0.3/',
           activeBasePath: 'docs',
           label: 'Docs',
           position: 'right',
@@ -88,6 +99,16 @@ const websiteConfig = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
+          // "lastVersion": "current",
+          "versions": {
+            "1.0.3": {
+              "label": "DevOops 1.0.3",
+              "path": "1.0.3",
+            },
+            "current": {
+              "label": "DevOops 2.0.0",
+            },
+          },
         },
         blog: {
           showReadingTime: true,

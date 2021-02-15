@@ -28,4 +28,4 @@ To use `DevOopsGitReleasePlugin`, add the following line to `build.sbt`.
 enablePlugins(DevOopsGitReleasePlugin)
 ```
 
-For more about how to set up and use, please check out the next pages [DevOopsGitReleasePlugin - Config and Run](gh-release-plugin/config-and-run).
+For more about how to set up and use, please check out the next pages [DevOopsGitReleasePlugin - Config and Run](versioned_docs/version-1.0.3/gh-release-plugin/config-and-run).
