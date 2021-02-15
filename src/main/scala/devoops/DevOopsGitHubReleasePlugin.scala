@@ -5,7 +5,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.instances.all._
 import cats.syntax.all._
 import devoops.data.SbtTaskResult.SbtTaskHistory
-import devoops.data.{DevOopsLogLevel, GitHubReleaseKeys, GitHubReleaseOps, SbtTask, SbtTaskError, SbtTaskResult}
+import devoops.data._
 import effectie.cats.Effectful._
 import effectie.cats._
 import just.semver.SemVer
@@ -39,16 +39,16 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     devOopsLogLevel := DevOopsLogLevel.info.render,
-    gitTagFrom := "main",
-    gitTagDescription := None,
-    gitTagName := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}"),
-    gitTagPushRepo := "origin",
-    gitTag := {
+    devOopsGitTagFrom := "main",
+    devOopsGitTagDescription := None,
+    devOopsGitTagName := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}"),
+    devOopsGitTagPushRepo := "origin",
+    devOopsGitTag := {
       lazy val basePath       = baseDirectory.value
-      lazy val tagFrom        = BranchName(gitTagFrom.value)
-      lazy val tagName        = TagName(gitTagName.value)
-      lazy val tagDesc        = gitTagDescription.value
-      lazy val pushRepo       = Repository(gitTagPushRepo.value)
+      lazy val tagFrom        = BranchName(devOopsGitTagFrom.value)
+      lazy val tagName        = TagName(devOopsGitTagName.value)
+      lazy val tagDesc        = devOopsGitTagDescription.value
+      lazy val pushRepo       = Repository(devOopsGitTagPushRepo.value)
       lazy val projectVersion = version.value
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
@@ -84,17 +84,17 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         }
       result
     },
-    changelogLocation := "changelogs",
-    gitHubAuthTokenEnvVar := "GITHUB_TOKEN",
-    gitHubAuthTokenFile :=
+    devOopsChangelogLocation := "changelogs",
+    devOopsGitHubAuthTokenEnvVar := "GITHUB_TOKEN",
+    devOopsGitHubAuthTokenFile :=
       Some(new File(Io.getUserHome, ".github")),
-    gitHubRequestTimeout := 2.minutes,
-    gitHubRelease := {
-      lazy val tagName                  = TagName(gitTagName.value)
-      lazy val authTokenEnvVar          = gitHubAuthTokenEnvVar.value
-      lazy val authTokenFile            = gitHubAuthTokenFile.value
+    devOopsGitHubRequestTimeout := 2.minutes,
+    devOopsGitHubRelease := {
+      lazy val tagName                  = TagName(devOopsGitTagName.value)
+      lazy val authTokenEnvVar          = devOopsGitHubAuthTokenEnvVar.value
+      lazy val authTokenFile            = devOopsGitHubAuthTokenFile.value
       lazy val baseDir                  = baseDirectory.value
-      lazy val requestTimeout           = gitHubRequestTimeout.value
+      lazy val requestTimeout           = devOopsGitHubRequestTimeout.value
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
       implicit val timer: Timer[IO]     = IO.timer(ec)
@@ -132,8 +132,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
                          runGitHubRelease(
                            tagName,
                            baseDir,
-                           GitHub.ChangelogLocation(changelogLocation.value),
-                           Repository(gitTagPushRepo.value),
+                           GitHub.ChangelogLocation(devOopsChangelogLocation.value),
+                           Repository(devOopsGitTagPushRepo.value),
                            oauth,
                            GitHubApi[IO](HttpClient[IO](client)),
                          )
@@ -145,16 +145,16 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         .handleSbtTask(result)
         .unsafeRunSync()
     },
-    gitTagAndGitHubRelease := {
-      lazy val tagName         = TagName(gitTagName.value)
-      lazy val tagDesc         = gitTagDescription.value
-      lazy val tagFrom         = BranchName(gitTagFrom.value)
-      lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
-      lazy val authTokenFile   = gitHubAuthTokenFile.value
+    devOopsGitTagAndGitHubRelease := {
+      lazy val tagName         = TagName(devOopsGitTagName.value)
+      lazy val tagDesc         = devOopsGitTagDescription.value
+      lazy val tagFrom         = BranchName(devOopsGitTagFrom.value)
+      lazy val authTokenEnvVar = devOopsGitHubAuthTokenEnvVar.value
+      lazy val authTokenFile   = devOopsGitHubAuthTokenFile.value
       lazy val baseDir         = baseDirectory.value
-      lazy val pushRepo        = Repository(gitTagPushRepo.value)
+      lazy val pushRepo        = Repository(devOopsGitTagPushRepo.value)
       lazy val projectVersion  = version.value
-      lazy val requestTimeout  = gitHubRequestTimeout.value
+      lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
 
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
@@ -184,7 +184,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
                          runGitHubRelease(
                            tagName,
                            baseDir,
-                           GitHub.ChangelogLocation(changelogLocation.value),
+                           GitHub.ChangelogLocation(devOopsChangelogLocation.value),
                            pushRepo,
                            oauth,
                            GitHubApi[IO](HttpClient[IO](client)),
@@ -195,14 +195,14 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         }
         .unsafeRunSync()
     },
-    gitHubReleaseUploadArtifacts := {
-      lazy val tagName         = TagName(gitTagName.value)
+    devOopsGitHubReleaseUploadArtifacts := {
+      lazy val tagName         = TagName(devOopsGitTagName.value)
       lazy val assets          = devOopsCopyReleasePackages.value
-      lazy val authTokenEnvVar = gitHubAuthTokenEnvVar.value
-      lazy val authTokenFile   = gitHubAuthTokenFile.value
+      lazy val authTokenEnvVar = devOopsGitHubAuthTokenEnvVar.value
+      lazy val authTokenFile   = devOopsGitHubAuthTokenFile.value
       lazy val baseDir         = baseDirectory.value
       lazy val artifacts       = devOopsPackagedArtifacts.value
-      lazy val requestTimeout  = gitHubRequestTimeout.value
+      lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
 
       implicit val ec: ExecutionContext = ExecutionContext.global
       implicit val cs: ContextShift[IO] = IO.contextShift(ec)
@@ -249,7 +249,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
                            tagName,
                            assets,
                            baseDir,
-                           Repository(gitTagPushRepo.value),
+                           Repository(devOopsGitTagPushRepo.value),
                            oauth,
                            GitHubApi[IO](HttpClient[IO](client)),
                          )
