@@ -5,7 +5,14 @@ sidebar_label: Config and Run
 ---
 
 ## `devOopsLogLevel`
-// TODO: Add it
+To set the log level for GitHub release tasks (default: `info`).
+If it's `debug`, the log may contain the HTTP request headers which may also contain some confidential info like auth token.
+
+It should be one of
+* `debug`
+* `info`
+* `warn`
+* `error`
 
 
 ## Enable DevOopsGitHubReleasePlugin
@@ -225,75 +232,15 @@ It does
 **NOTE: It does not create any tag and if the tag with the project version (e.g. version: 1.0.0 => tag: v1.0.0) does not exist, `devOopsGitHubRelease` fails**
 To also upload the packaged artifacts please have a look at [devOopsGitHubReleaseUploadArtifacts](devOopsGitHubReleaseUploadArtifacts).
 
-e.g.) 
-```sbtshell
-sbt:test-project> devOopsGitHubRelease
->> copyPackages - Files copied from:
-  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0.jar
-  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-sources.jar
-  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-javadoc.jar
-
-  to
-  - ci/dist/test-project_2.13-0.1.0-javadoc.jar
-  - ci/dist/test-project_2.13-0.1.0-sources.jar
-  - ci/dist/test-project_2.13-0.1.0.jar
-
-
-task success>
->> git fetch --tags
->> git tag
-  |  v0.1.0
-  |  v0.1.0-SNAPSHOT
->> task success>
->> Get GitHub OAuth tokense 7s
-
->> task success>
->> Get changelog
-
->> task success>
->> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
-
->> task success>
->> Get GitHub repo org and name: Kevin-Lee/test-project
-
->> task success>
->> Connect GitHub with OAuth
-
->> task success>
->> GitHub release: v0.1.0
-
->> task success>
->> Files uploaded:
-    - ci/dist/test-project_2.13-0.1.0-javadoc.jar
-    - ci/dist/test-project_2.13-0.1.0-sources.jar
-    - ci/dist/test-project_2.13-0.1.0.jar
-
->> task success>
->> Changelog uploaded:
-    # 0.1.0 - 2019-10-16
-
-    Test Release
-
-[success] Total time: 8 s, completed 16 Oct. 2019, 5:23:06 pm
-```
-
 e.g.) `devOopsGitHubRelease`
 ```sbtshell
-```sbtshell
-sbt:test-project> gitHubRelease
->> copyPackages - Files copied from:
-  -
-
-  to
-  -
-  | => root / devOopsPackagedArtifacts 0s
-
+sbt:test-project> devOopsGitHubRelease
 task success>
 >> git fetch --tags
 >> git tag
   |  v0.1.0
-  |  v0.1.0-SNAPSHOT
->> task success>tHubRelease 4s
+  |  v0.1.1
+>> task success>
 >> Get GitHub OAuth token
 
 >> task success>
@@ -306,47 +253,47 @@ task success>
 >> Get GitHub repo org and name: Kevin-Lee/test-project
 
 >> task success>
->> Connect GitHub with OAuth
-
->> task success>
->> GitHub release: v0.1.0
-
->> task success>
->> No files to upload
+>> GitHub release: v0.1.1
 
 >> task success>
 >> Changelog uploaded:
-    # 0.1.0 - 2019-10-16
+    # 0.1.0 - 2021-01-31
 
-    Test Release
+    Another Test Release
 
-[success] Total time: 5 s, completed 16 Oct. 2019, 5:09:42 pm
+[success] Total time: 4 s, completed 17 Feb. 2021, 7:06:11 pm
 ```
 
 e.g.) When there's no tag with the current version.
 ```sbtshell
->> copyPackages - Files copied from:
-  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0.jar
-  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-sources.jar
-  - /user/home/test-project/target/scala-2.13/test-project_2.13-0.1.0-javadoc.jar
-
-  to=> root / gitTagPushRepo 0s
-  - ci/dist/test-project_2.13-0.1.0-javadoc.jar
-  - ci/dist/test-project_2.13-0.1.0-sources.jar
-  - ci/dist/test-project_2.13-0.1.0.jar
-
-
-Failure]
->> sbt task failed after finishing the following tasks
-task success>
->> git fetch --tags
->> git tag => v0.1.0-SNAPSHOT
-  | => root / gitHubRelease 2s
-task failed> git command: tag v0.1.0 does not exist. tags: [v0.1.0-SNAPSHOT]
-
-[error] task failed> git command: tag v0.1.0 does not exist. tags: [v0.1.0-SNAPSHOT]
-[error] (gitHubRelease) task failed> git command: tag v0.1.0 does not exist. tags: [v0.1.0-SNAPSHOT]
-[error] Total time: 2 s, completed 16 Oct. 2019, 5:18:05 pm
+sbt:test-project> devOopsGitHubRelease
+[error] Failure]
+[error] >> sbt task failed after finishing the following tasks
+[error] task success>
+[error] >> git fetch --tags
+[error] >> git tag
+[error]   v0.1.0
+[error]   v0.1.1
+[error] >> task success>
+[error] >> Get GitHub OAuth token
+[error]
+[error] >> task success>
+[error] >> Get changelog
+[error]
+[error] >> task success>
+[error] >> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
+[error]
+[error] >> task success>
+[error] >> Get GitHub repo org and name: Kevin-Lee/test-project
+[error]
+[error]
+[error] ---
+[error] >> Failed:
+[error] Unprocessable Entity:
+[error] responseBody: {
+[error]   "message" : "Validation Failed",
+[error]   "documentation_url" : "https://docs.github.com/rest/reference/repos#create-a-release"
+[error] }
 ```
 
 
@@ -358,30 +305,21 @@ It does
 
 e.g.) `devOopsGitTagAndGitHubRelease`
 ```sbtshell
-sbt:test-project> gitTagAndGitHubRelease
->> copyPackages - Files copied from:
-  -
-
-  to
-  -
-  | => root / gitTagName 0s
-  | => root / devOopsPackagedArtifacts 0s
-task success>
->> non sbt task success> The semantic version from the project version has been parsed. version: 0.1.0
->> git rev-parse --abbrev-ref HEAD => master
->> git fetch --tags
->> git tag v0.1.0
->> git push origin v0.1.0
-  |  To github.com:Kevin-Lee/test-project.git
-  |   * [new tag]         v0.1.0 -> v0.1.0
-
+sbt:test-project> devOopsGitTagAndGitHubRelease
 task success>
 >> task success>
 >> Get GitHub OAuth token
 
+>> non sbt task success> The semantic version from the project version has been parsed. version: 0.1.1
+>> git rev-parse --abbrev-ref HEAD => some-branch
+>> git fetch --tags
+>> git tag v0.1.1
+>> git push origin v0.1.1
+  |  To github.com:Kevin-Lee/test-project.git
+  |   * [new tag]         v0.1.1 -> v0.1.1
 >> task success>
 >> Get changelog
-  | => root / gitTagAndGitHubRelease 2s
+
 >> task success>
 >> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
 
@@ -389,22 +327,70 @@ task success>
 >> Get GitHub repo org and name: Kevin-Lee/test-project
 
 >> task success>
->> Connect GitHub with OAuth
-
->> task success>
->> GitHub release: v0.1.0
-
->> task success>
->> No files to upload
+>> GitHub release: v0.1.1
 
 >> task success>
 >> Changelog uploaded:
-    # 0.1.0 - 2019-10-16
+    # 0.1.0 - 2021-01-31
 
-    Test Release
+    Another Test Release
 
-[success] Total time: 10 s, completed 16 Oct. 2019, 1:18:15 pm
+[success] Total time: 10 s, completed 17 Feb. 2021, 7:16:59 pm
 ```
 
 ### `devOopsGitHubReleaseUploadArtifacts`
+This is an sbt task to upload packaged artifacts to the existing GitHub release.
+It can fail if the release for the tag named with the current project version does not exist.
 
+e.g.)
+You probably want to package the artifacts.
+```sbtshell
+sbt:test-project> packagedArtifacts
+[info] Wrote /Users/some.user/test-project/target/scala-2.13/test-project_2.13-0.1.1.pom
+[info] Main Scala API documentation to /Users/some.user/test-project/target/scala-2.13/api...
+[warn] multiple main classes detected: run 'show discoveredMainClasses' to see the list
+[info] Main Scala API documentation successful.
+[success] Total time: 3 s, completed 17 Feb. 2021, 7:20:58 pm
+```
+
+Now let's upload the artifacts to GitHub release.
+```sbtshell
+sbt:test-project> devOopsGitHubReleaseUploadArtifacts
+>> copyPackages - Files copied from:
+  - /Users/some.user/test-project/target/scala-2.13/test-project_2.13-0.1.1-javadoc.jar
+  - /Users/some.user/test-project/target/scala-2.13/test-project_2.13-0.1.1-sources.jar
+  - /Users/some.user/test-project/target/scala-2.13/test-project_2.13-0.1.1.jar
+
+  to
+  - ci/dist/test-project_2.13-0.1.1-javadoc.jar
+  - ci/dist/test-project_2.13-0.1.1-sources.jar
+  - ci/dist/test-project_2.13-0.1.1.jar
+
+task success>
+>> git fetch --tags
+>> git tag
+  |  v0.1.0
+  |  v0.1.1
+>> task success>
+>> Get GitHub OAuth token
+
+>> task success>
+>> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
+
+>> task success>
+>> Get GitHub repo org and name: Kevin-Lee/test-project
+
+>> task success>
+>> try to find a GitHub release with the given tag: v0.1.1
+
+>> task success>
+>> GitHub release: v0.1.1
+
+>> task success>
+>> Files uploaded:
+    - test-project_2.13-0.1.1-javadoc.jar @ https://github.com/Kevin-Lee/test-project/releases/download/v0.1.1/test-project_2.13-0.1.1-javadoc.jar
+    - test-project_2.13-0.1.1-sources.jar @ https://github.com/Kevin-Lee/test-project/releases/download/v0.1.1/test-project_2.13-0.1.1-sources.jar
+    - test-project_2.13-0.1.1.jar @ https://github.com/Kevin-Lee/test-project/releases/download/v0.1.1/test-project_2.13-0.1.1.jar
+
+[success] Total time: 16 s, completed 17 Feb. 2021, 7:21:18 pm
+```
