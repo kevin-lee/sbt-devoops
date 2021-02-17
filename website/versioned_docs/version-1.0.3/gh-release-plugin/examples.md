@@ -1,6 +1,6 @@
 ---
 id: examples
-title: DevOopsGitHubReleasePlugin Examples
+title: DevOopsGitReleasePlugin Examples
 sidebar_label: Examples
 ---
 import useBaseUrl from '@docusaurus/useBaseUrl';
@@ -9,7 +9,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 `PROJECT_ROOT/project/plugins.sbt`
 ```scala
-addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.0.0")
+addSbtPlugin("io.kevinlee" % "sbt-devoops" % "1.0.3")
 ```
 
 ## A Single Project
@@ -25,7 +25,7 @@ ThisBuild / scalaVersion := "2.13.3"
 ThisBuild / version := "0.1.0"
 
 lazy val root = (project in file("."))
-  .enablePlugins(DevOopsGitHubReleasePlugin)
+  .enablePlugins(DevOopsGitReleasePlugin)
   .settings(
     name := "test-project",
     libraryDependencies += "some" %% "lib" % "1.0.0"
@@ -76,7 +76,7 @@ jobs:
     strategy:
       matrix:
         scala:
-          - { version: "2.13.3", binary-version: "2.13", java-version: "11" }
+          - { version: "2.12.11", binary-version: "2.12", java-version: "8" }
 
     steps:
     - uses: actions/checkout@v2
@@ -84,16 +84,23 @@ jobs:
       with:
         java-version: ${{ matrix.scala.java-version }}
 
-    - name: Cache SBT
-      uses: actions/cache@v2
+
+    - name: Cache Coursier
+      uses: actions/cache@v1
       with:
-        path: |
-          ~/.ivy2/cache
-          ~/.cache/coursier
-          ~/.sbt
-        key: ${{ runner.os }}-sbt-${{ matrix.scala.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+        path: ~/.cache/coursier
+        key: ${{ runner.os }}-coursier-scala-${{ matrix.scala.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
         restore-keys: |
-          ${{ runner.os }}-sbt-${{ matrix.scala.binary-version }}-
+          ${{ runner.os }}-coursier-scala-${{ matrix.scala.binary-version }}-
+  
+    - name: Cache Ivy
+      uses: actions/cache@v1
+      with:
+        path: ~/.ivy2/cache
+        key: ${{ runner.os }}-ivy-scala-${{ matrix.scala.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-ivy-scala-${{ matrix.scala.binary-version }}-
+
 
     - name: sbt GitHub Release
       env:
@@ -106,14 +113,13 @@ jobs:
           clean \
           test \
           packagedArtifacts \
-          devOopsGitHubRelease \
-          devOopsGitHubReleaseUploadArtifacts
+          gitHubRelease
 
 ```
 
-If you want to manually run it, you need run at least the following three tasks.
+If you want to manually run it, you need run at least the following two tasks.
 ```bash
-sbt packagedArtifacts devOopsGitHubRelease devOopsGitHubReleaseUploadArtifacts
+sbt packagedArtifacts gitHubRelease
 ```
 
 ## A Project with Multiple Sub-projects
