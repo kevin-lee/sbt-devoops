@@ -40,7 +40,7 @@ const websiteConfig = {
           ],
         },
         {
-          to: 'docs/1.0.3/',
+          to: 'docs/',
           activeBasePath: 'docs',
           label: 'Docs',
           position: 'right',
@@ -99,7 +99,7 @@ const websiteConfig = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          // "lastVersion": "current",
+          "lastVersion": "current",
           "versions": {
             "1.0.3": {
               "label": "DevOops 1.0.3",

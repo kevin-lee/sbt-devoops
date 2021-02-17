@@ -18,14 +18,14 @@ SBT Plugin to help release artifacts and changelogs
 ## Get sbt-devoops
 In the `project/plugins.sbt`, add the following line,
 ```scala
-addSbtPlugin("io.kevinlee" % "sbt-devoops" % "1.0.3")
+addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.0.0")
 ```
 
-### DevOopsGitReleasePlugin
+### DevOopsGitHubReleasePlugin
 
-To use `DevOopsGitReleasePlugin`, add the following line to `build.sbt`.
+To use `DevOopsGitHubReleasePlugin`, add the following line to `build.sbt`.
 ```scala
-enablePlugins(DevOopsGitReleasePlugin)
+enablePlugins(DevOopsGitHubReleasePlugin)
 ```
 
-For more about how to set up and use, please check out the next pages [DevOopsGitReleasePlugin - Config and Run](gh-release-plugin/config-and-run).
+For more about how to set up and use, please check out the next pages [DevOopsGitHubReleasePlugin - Config and Run](gh-release-plugin/config-and-run).
