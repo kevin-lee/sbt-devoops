@@ -6,7 +6,7 @@ import wartremover.{Wart, Warts}
   */
 object ProjectInfo {
 
-  val ProjectVersion: String = "1.0.3"
+  val ProjectVersion: String = "2.0.0"
 
   val commonScalacOptions: Seq[String] = Seq(
       "-deprecation"
