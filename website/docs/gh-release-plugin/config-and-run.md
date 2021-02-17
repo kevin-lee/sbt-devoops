@@ -221,7 +221,7 @@ devOopsGitHubAuthTokenFile := Some(new File(Io.getUserHome, ".github"))
 
 
 ### `devOopsGitHubRequestTimeout`
-// TODO Add it
+Timeout for the GitHub release tasks. If it exceeds, the task may fail. (Default: 2 minutes) 
 
 ### `devOopsGitHubRelease`
 It is an sbt task to release the current version by uploading the changelog to GitHub.
@@ -230,7 +230,7 @@ It does
 * Upload the changelog to GitHub release, but it does not upload any packaged artifacts.
 
 **NOTE: It does not create any tag and if the tag with the project version (e.g. version: 1.0.0 => tag: v1.0.0) does not exist, `devOopsGitHubRelease` fails**
-To also upload the packaged artifacts please have a look at [devOopsGitHubReleaseUploadArtifacts](devOopsGitHubReleaseUploadArtifacts).
+To also upload the packaged artifacts please have a look at [devOopsGitHubReleaseUploadArtifacts](#devoopsgithubreleaseuploadartifacts).
 
 e.g.) `devOopsGitHubRelease`
 ```sbtshell
