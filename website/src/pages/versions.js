@@ -20,15 +20,16 @@ function Version() {
   const pastVersions = versions.filter(
     (version) => version !== latestVersion && version.name !== 'current',
   );
-  const stableVersion = pastVersions.shift();
+  // const stableVersion = pastVersions.shift();
+  const stableVersion = currentVersion;
   const repoUrl = `https://github.com/${siteConfig.organizationName}/${siteConfig.projectName}`;
 
   return (
     <Layout
       title="Versions"
-      description="Docusaurus 2 Versions page listing all documented site versions">
+      description="DevOops Versions page listing all documented site versions">
       <main className="container margin-vert--lg">
-        <h1>Docusaurus documentation versions</h1>
+        <h1>DevOops documentation versions</h1>
 
         {stableVersion && (
           <div className="margin-bottom--lg">
@@ -39,12 +40,12 @@ function Version() {
             <table>
               <tbody>
               <tr>
-                <th>{stableVersion.name}</th>
+                <th>{stableVersion.label}</th>
                 <td>
                   <Link to={stableVersion.path}>Documentation</Link>
                 </td>
                 <td>
-                  <a href={`${repoUrl}/releases/tag/v${stableVersion.name}`}>
+                  <a href={`${repoUrl}/releases/tag/v${stableVersion.label}`}>
                     Release Notes
                   </a>
                 </td>
@@ -53,7 +54,7 @@ function Version() {
             </table>
           </div>
         )}
-
+        {/*
         <div className="margin-bottom--lg">
           <h3 id="latest">Next version (Unreleased)</h3>
           <p>
@@ -71,13 +72,14 @@ function Version() {
             </tbody>
           </table>
         </div>
+        */}
 
         {pastVersions.length > 0 && (
           <div className="margin-bottom--lg">
             <h3 id="archive">Past versions (Not maintained anymore)</h3>
             <p>
               Here you can find documentation for previous versions of
-              Docusaurus.
+              DevOops.
             </p>
             <table>
               <tbody>
@@ -98,6 +100,95 @@ function Version() {
             </table>
           </div>
         )}
+        {<div className="margin-bottom--lg">
+          <h3 id="archive">Past versions without documentation (Not maintained anymore)</h3>
+          <p>
+            Here you can find documentation for previous versions of
+            DevOops.
+          </p>
+          <table>
+            <tbody>
+              <tr key="1.0.2">
+                <th>1.0.2</th>
+                <td>
+                  Check out the doc for 1.0.3 instead.
+                </td>
+                <td>
+                  <a href={`${repoUrl}/releases/tag/v1.0.2`}>
+                    Release Notes
+                  </a>
+                </td>
+              </tr>
+              <tr key="1.0.1">
+                <th>1.0.1</th>
+                <td>
+                  Check out the doc for 1.0.3 instead.
+                </td>
+                <td>
+                  <a href={`${repoUrl}/releases/tag/v1.0.1`}>
+                    Release Notes
+                  </a>
+                </td>
+              </tr>
+              <tr key="1.0.0">
+                <th>1.0.0</th>
+                <td>
+                  Check out the doc for 1.0.3 instead.
+                </td>
+                <td>
+                  <a href={`${repoUrl}/releases/tag/v1.0.0`}>
+                    Release Notes
+                  </a>
+                </td>
+              </tr>
+              <tr key="0.3.1">
+                <th>0.3.1</th>
+                <td>
+                  Check out the doc for 1.0.3 instead.
+                </td>
+                <td>
+                  <a href={`${repoUrl}/releases/tag/v0.3.1`}>
+                    Release Notes
+                  </a>
+                </td>
+              </tr>
+              <tr key="0.3.0">
+                <th>0.3.0</th>
+                <td>
+                  Check out the doc for 1.0.3 instead.
+                </td>
+                <td>
+                  <a href={`${repoUrl}/releases/tag/v0.3.0`}>
+                    Release Notes
+                  </a>
+                </td>
+              </tr>
+              <tr key="0.2.0">
+                <th>0.2.0</th>
+                <td>
+                  Check out the doc for 1.0.3 instead.
+                </td>
+                <td>
+                  <a href={`${repoUrl}/releases/tag/v0.2.0`}>
+                    Release Notes
+                  </a>
+                </td>
+              </tr>
+              <tr key="0.1.0">
+                <th>0.1.0</th>
+                <td>
+                  Check out the doc for 1.0.3 instead.
+                </td>
+                <td>
+                  <a href={`${repoUrl}/releases/tag/v0.1.0`}>
+                    Release Notes
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>}
+
       </main>
     </Layout>
   );

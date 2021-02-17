@@ -102,11 +102,11 @@ const websiteConfig = {
           "lastVersion": "current",
           "versions": {
             "1.0.3": {
-              "label": "DevOops 1.0.3",
+              "label": "1.0.3",
               "path": "1.0.3",
             },
             "current": {
-              "label": "DevOops 2.0.0",
+              "label": "2.0.0",
             },
           },
         },
