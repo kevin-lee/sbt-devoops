@@ -139,20 +139,23 @@ object DevOopsScalaPlugin extends AutoPlugin {
     val aggressiveScalacOptions2_11: Seq[String] = Seq(
       "-explaintypes"                     // Explain type errors in more detail.
     , "-Xlint:_"
-    , "-Ywarn-extra-implicit"             // Warn when more than one implicit parameter section is defined.
     , "-Ywarn-infer-any"                  // Warn when a type argument is inferred to be `Any`.
     , "-Ywarn-nullary-unit"               // Warn when nullary methods return Unit.
-    , "-Ywarn-unused:implicits"           // Warn if an implicit parameter is unused.
-    , "-Ywarn-unused:imports"             // Warn if an import selector is not referenced.
-    , "-Ywarn-unused:locals"              // Warn if a local definition is unused.
-    , "-Ywarn-unused:params"              // Warn if a value parameter is unused.
-    , "-Ywarn-unused:patvars"             // Warn if a variable bound in a pattern is unused.
-    , "-Ywarn-unused:privates"            // Warn if a private member is unused.
+    , "-Ywarn-unused"
     , "-Ywarn-unused-import"
     , "-Ypartial-unification"
     )
 
-    val aggressiveScalacOptions2_12: Seq[String] = aggressiveScalacOptions2_11
+    val aggressiveScalacOptions2_12: Seq[String] =
+      (aggressiveScalacOptions2_11 ++ Seq(
+        "-Ywarn-extra-implicit"             // Warn when more than one implicit parameter section is defined.
+      , "-Ywarn-unused:implicits"           // Warn if an implicit parameter is unused.
+      , "-Ywarn-unused:imports"             // Warn if an import selector is not referenced.
+      , "-Ywarn-unused:locals"              // Warn if a local definition is unused.
+      , "-Ywarn-unused:params"              // Warn if a value parameter is unused.
+      , "-Ywarn-unused:patvars"             // Warn if a variable bound in a pattern is unused.
+      , "-Ywarn-unused:privates"            // Warn if a private member is unused.
+      )).distinct
 
     lazy val useAggressiveScalacOptions: SettingKey[Boolean] = settingKey("The flag to add aggressive scalac options")
   }
@@ -203,11 +206,13 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
       useAggressiveScalacOptions := false
-    , scalacOptions ++= crossVersionProps(
-        essentialOptions ++ defaultOptions
-      , SemVer.parseUnsafe(scalaVersion.value)
-      )(versionSpecificScalacOptions(useAggressiveScalacOptions.value))
-    , scalacOptions in (Compile, console) := essentialOptions
+    , scalacOptions ++= (
+        crossVersionProps(
+          essentialOptions ++ defaultOptions
+        , SemVer.parseUnsafe(scalaVersion.value)
+        )(versionSpecificScalacOptions(useAggressiveScalacOptions.value))
+      ).distinct
+    , Compile / console / scalacOptions := essentialOptions.distinct
     , updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error)
     , libraryDependencies ++=
       (SemVer.parse(scalaVersion.value) match {
