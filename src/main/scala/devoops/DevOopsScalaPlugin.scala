@@ -42,6 +42,9 @@ object DevOopsScalaPlugin extends AutoPlugin {
       ).mkString(",")
 
     val scala3Options: Seq[String] = Seq(
+      "-unchecked",
+      "-deprecation",
+      "-feature",
       "-Xfatal-warnings",
       scala3cLanguageOptions,
       "-explain",
@@ -183,52 +186,56 @@ object DevOopsScalaPlugin extends AutoPlugin {
     useAggressiveScalacOptions: Boolean
   ): PartialFunction[(SemVer.Major, SemVer.Minor, SemVer.Patch), Seq[String]] = {
       case (SemVer.Major(2), SemVer.Minor(10), _) =>
-        defaultOptions2_10
+        essentialOptions ++ defaultOptions ++ defaultOptions2_10
 
       case (SemVer.Major(2), SemVer.Minor(11), _) =>
-        if (useAggressiveScalacOptions) {
-          defaultOptionsBefore2_13 ++ aggressiveScalacOptions2_11
-        } else {
-          defaultOptionsBefore2_13 ++ scalacOptions2_11
-        }
+        essentialOptions ++ defaultOptions ++ (
+          if (useAggressiveScalacOptions) {
+            defaultOptionsBefore2_13 ++ aggressiveScalacOptions2_11
+          } else {
+            defaultOptionsBefore2_13 ++ scalacOptions2_11
+          }
+        )
 
       case (SemVer.Major(2), SemVer.Minor(12), _) =>
-        if (useAggressiveScalacOptions) {
-          defaultOptionsBefore2_13 ++ aggressiveScalacOptions2_12
-        } else {
-          defaultOptionsBefore2_13 ++ scalacOptions2_12
-        }
+        essentialOptions ++ defaultOptions ++ (
+          if (useAggressiveScalacOptions) {
+            defaultOptionsBefore2_13 ++ aggressiveScalacOptions2_12
+          } else {
+            defaultOptionsBefore2_13 ++ scalacOptions2_12
+          }
+        )
 
       case (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(patch)) if patch >= 3 =>
-        if (useAggressiveScalacOptions) {
-          defaultOptions2_13_3_and_higher ++ aggressiveScalacOptions2_13
-        } else {
-          defaultOptions2_13_3_and_higher ++ scalacOptions2_13
-        }
+        essentialOptions ++ defaultOptions ++ (
+          if (useAggressiveScalacOptions) {
+            defaultOptions2_13_3_and_higher ++ aggressiveScalacOptions2_13
+          } else {
+            defaultOptions2_13_3_and_higher ++ scalacOptions2_13
+          }
+        )
 
       case (SemVer.Major(2), SemVer.Minor(13), _) =>
-        if (useAggressiveScalacOptions) {
-          defaultOptions2_13 ++ aggressiveScalacOptions2_13
-        } else {
-          defaultOptions2_13 ++ scalacOptions2_13
-        }
+        essentialOptions ++ defaultOptions ++ (
+          if (useAggressiveScalacOptions) {
+            defaultOptions2_13 ++ aggressiveScalacOptions2_13
+          } else {
+            defaultOptions2_13 ++ scalacOptions2_13
+          }
+        )
 
       case (SemVer.Major(3), SemVer.Minor(0), _) =>
         scala3Options
 
       case _ =>
-        if (useAggressiveScalacOptions) {
-          defaultOptions2_13_3_and_higher ++ aggressiveScalacOptions2_13
-        } else {
-          defaultOptions2_13_3_and_higher ++ scalacOptions2_13
-        }
+        Seq.empty[String]
     }
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
       useAggressiveScalacOptions := false
-    , scalacOptions ++= (
+    , scalacOptions := (
         crossVersionProps(
-          essentialOptions ++ defaultOptions
+          scalacOptions.value
         , SemVer.parseUnsafe(scalaVersion.value)
         )(versionSpecificScalacOptions(useAggressiveScalacOptions.value))
       ).distinct
@@ -239,13 +246,13 @@ object DevOopsScalaPlugin extends AutoPlugin {
         case Right(SemVer(SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7), _, _)) =>
           Seq("com.milessabin" % "si2712fix-plugin_2.10.7" % "1.2.0" % "plugin->default(compile)")
         case Right(_: SemVer) =>
-          Seq.empty
+          Seq.empty[ModuleID]
         case Left(error) =>
           sLog.value.warn(
             "Parsing scalaVersion failed when setting up partial-unification\n" +
             s"Parse failure info: ${ParseError.render(error)}"
           )
-          Seq.empty
+          Seq.empty[ModuleID]
       })
   )
 
