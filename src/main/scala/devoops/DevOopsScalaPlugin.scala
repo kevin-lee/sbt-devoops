@@ -30,6 +30,23 @@ object DevOopsScalaPlugin extends AutoPlugin {
     , "-Xfatal-warnings"                  // Fail the compilation if there are any warnings.
     )
 
+    lazy private val scala3cLanguageOptions =
+      "-language:" + List(
+        "dynamics",
+        "existentials",
+        "higherKinds",
+        "reflectiveCalls",
+        "experimental.macros",
+        "implicitConversions",
+        "strictEquality",
+      ).mkString(",")
+
+    val scala3Options: Seq[String] = Seq(
+      "-Xfatal-warnings",
+      scala3cLanguageOptions,
+      "-explain",
+    )
+
     val defaultOptions2_10: Seq[String] = Seq(
       "-Ywarn-dead-code"                  // Warn when dead code is identified.
     , "-Ywarn-value-discard"              // Warn when non-Unit expression results are unused.
@@ -195,6 +212,9 @@ object DevOopsScalaPlugin extends AutoPlugin {
         } else {
           defaultOptions2_13 ++ scalacOptions2_13
         }
+
+      case (SemVer.Major(3), SemVer.Minor(0), _) =>
+        scala3Options
 
       case _ =>
         if (useAggressiveScalacOptions) {
