@@ -178,6 +178,20 @@ object DevOopsScalaPlugin extends AutoPlugin {
       )).distinct
 
     lazy val useAggressiveScalacOptions: SettingKey[Boolean] = settingKey("The flag to add aggressive scalac options")
+
+    lazy val noPublish: SettingsDefinition = Seq(
+      publish := {},
+      publishLocal := {},
+      publishArtifact := false,
+      sbt.Keys.`package` / skip := true,
+      packagedArtifacts / skip := true,
+      publish / skip := true,
+    )
+
+    lazy val noDoc: SettingsDefinition = Seq(
+      Compile / doc / sources := Seq.empty[File],
+      Compile / packageDoc / publishArtifact := false,
+    )
   }
 
   import autoImport._
