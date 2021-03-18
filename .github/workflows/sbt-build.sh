@@ -15,6 +15,8 @@ else
   echo "Build projects"
   echo "--------------------------------------------"
   echo ""
+  export SOURCE_DATE_EPOCH=$(date +%s)
+  echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
   if [[ "$CI_BRANCH" == "main" || "$CI_BRANCH" == "release" ]]
   then
     if [[ "$coveralls" == "coveralls" ]]
