@@ -39,6 +39,9 @@ jobs:
           BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
           BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
         run: |
+          echo "====================="
+          echo "| Publish: Start    |"
+          echo "====================="
           echo "Run] sbt publish for Scala ${{ matrix.scala.version }}"
           export SOURCE_DATE_EPOCH=$(date +%s)
           echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
@@ -48,5 +51,9 @@ jobs:
             ^^${{ matrix.scala.sbt-version }} \
             -v \
             clean \
-            publish
+            publish \
+            devOopsGitHubRelease
+
+          echo "====================="
+          echo "| Publish: Done     |"
           echo "====================="

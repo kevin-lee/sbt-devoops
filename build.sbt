@@ -3,7 +3,7 @@ import ProjectInfo._
 import sbt.ScmInfo
 
 lazy val root = (project in file("."))
-  .enablePlugins(DocusaurPlugin)
+  .enablePlugins(DevOopsGitHubReleasePlugin, DocusaurPlugin)
   .settings(
     organization := "io.kevinlee"
   , name         := props.ProjectName

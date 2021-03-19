@@ -11,3 +11,5 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
 addSbtPlugin("org.lyranthe.sbt" % "partial-unification" % "1.1.2")
 
 addSbtPlugin("io.kevinlee" % "sbt-docusaur" % "0.3.0")
+
+addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.1.0")
