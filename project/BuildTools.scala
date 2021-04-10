@@ -23,8 +23,8 @@ object BuildTools {
     libraryDependencies +=
       sbtPluginExtra(
         m = organization %% name % versionSpecific(CrossVersion.partialVersion(scalaVersion.value)),
-        sbtV = (sbtBinaryVersion in pluginCrossBuild).value,
-        scalaV = (scalaBinaryVersion in update).value
+        sbtV = (pluginCrossBuild / sbtBinaryVersion).value,
+        scalaV = (update / scalaBinaryVersion).value
       )
 
   sealed trait Prefix {
