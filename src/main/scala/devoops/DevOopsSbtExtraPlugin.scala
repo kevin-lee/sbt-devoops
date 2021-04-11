@@ -1,6 +1,7 @@
 package devoops
 
-import sbt.{Def, _}
+import sbt._
+import sbt.Keys._
 import cats.Eq
 import cats.syntax.eq.catsSyntaxEq
 
@@ -39,6 +40,20 @@ object DevOopsSbtExtraPlugin extends AutoPlugin {
       isCurrentProjectRoot := isCurrentProject.value && isRootProject.value,
     )
 
+    lazy val noPublish: SettingsDefinition = Seq(
+      publish := {},
+      publishM2 := {},
+      publishLocal := {},
+      publishArtifact := false,
+      sbt.Keys.`package` / skip := true,
+      packagedArtifacts / skip := true,
+      publish / skip := true,
+    )
+
+    lazy val noDoc: SettingsDefinition = Seq(
+      Compile / doc / sources := Seq.empty[File],
+      Compile / packageDoc / publishArtifact := false,
+    )
   }
 
   import autoImport._
