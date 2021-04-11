@@ -3,7 +3,6 @@ package devoops
 import just.semver.{ParseError, SemVer}
 import kevinlee.sbt.SbtCommon._
 import sbt.Keys._
-import sbt.plugins.JvmPlugin
 import sbt.{AutoPlugin, CircularDependencyLevel, Compile, PluginTrigger, Setting, SettingKey, plugins, settingKey, _}
 
 /**
@@ -13,7 +12,7 @@ import sbt.{AutoPlugin, CircularDependencyLevel, Compile, PluginTrigger, Setting
 object DevOopsScalaPlugin extends AutoPlugin {
 
   // $COVERAGE-OFF$
-  override def requires: JvmPlugin.type = plugins.JvmPlugin
+  override def requires: Plugins      = plugins.JvmPlugin
   override def trigger: PluginTrigger = allRequirements
 
   object autoImport {
@@ -179,19 +178,6 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
     lazy val useAggressiveScalacOptions: SettingKey[Boolean] = settingKey("The flag to add aggressive scalac options")
 
-    lazy val noPublish: SettingsDefinition = Seq(
-      publish := {},
-      publishLocal := {},
-      publishArtifact := false,
-      sbt.Keys.`package` / skip := true,
-      packagedArtifacts / skip := true,
-      publish / skip := true,
-    )
-
-    lazy val noDoc: SettingsDefinition = Seq(
-      Compile / doc / sources := Seq.empty[File],
-      Compile / packageDoc / publishArtifact := false,
-    )
   }
 
   import autoImport._
