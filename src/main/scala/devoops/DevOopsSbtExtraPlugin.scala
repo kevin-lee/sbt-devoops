@@ -2,8 +2,6 @@ package devoops
 
 import sbt._
 import sbt.Keys._
-import cats.Eq
-import cats.syntax.eq.catsSyntaxEq
 
 /** @author Kevin Lee
   * @since 2021-04-10
@@ -14,7 +12,6 @@ object DevOopsSbtExtraPlugin extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
 
   object autoImport {
-    implicit val projectRefEq: Eq[ProjectRef] = Eq.fromUniversalEquals[ProjectRef]
 
     val rootProjectRef: Def.Initialize[ProjectRef] = Def.setting {
       val rootBuildUri  = Keys.loadedBuild.value.root
@@ -34,9 +31,10 @@ object DevOopsSbtExtraPlugin extends AutoPlugin {
       "Check if this project is the root project as well as currently selected."
     )
 
+    @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     val commonSettings: SettingsDefinition = Def.settings(
-      isRootProject := Keys.thisProjectRef.value === rootProjectRef.value,
-      isCurrentProject := Keys.thisProjectRef.value === currentProjectRef.value,
+      isRootProject := Keys.thisProjectRef.value == rootProjectRef.value,
+      isCurrentProject := Keys.thisProjectRef.value == currentProjectRef.value,
       isCurrentProjectRoot := isCurrentProject.value && isRootProject.value,
     )
 
