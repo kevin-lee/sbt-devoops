@@ -1,14 +1,11 @@
-name: Release
+name: "[M] GH Release"
 
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
 
 jobs:
 
-  publish:
-#    needs: build
+  manual-gh-release:
 
     runs-on: ubuntu-latest
 
@@ -34,27 +31,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-sbt-${{ matrix.scala.binary-version }}-
 
-      - name: sbt Publish
+      - name: sbt devOopsGitHubRelease
         env:
-          BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-          BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_AUTH_TOKEN }}
         run: |
-          echo "====================="
-          echo "| Publish: Start    |"
-          echo "====================="
-          echo "Run] sbt publish for Scala ${{ matrix.scala.version }}"
-          export SOURCE_DATE_EPOCH=$(date +%s)
-          echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
-          echo 'sbt -J-Xmx2048m ++${{ matrix.scala.version }}! ^^${{ matrix.scala.sbt-version }} -v clean publish"'
+          echo "=========================="
+          echo "| GH Release Only: Start |"
+          echo "=========================="
+          echo "Run] sbt devOopsGitHubRelease for Scala ${{ matrix.scala.version }}"
+          echo 'sbt -J-Xmx2048m ++${{ matrix.scala.version }}! -v devOopsGitHubRelease"'
           sbt -J-Xmx2048m \
             ++${{ matrix.scala.version }}! \
-            ^^${{ matrix.scala.sbt-version }} \
             -v \
-            clean \
-            publish \
             devOopsGitHubRelease
 
-          echo "====================="
-          echo "| Publish: Done     |"
-          echo "====================="
+          echo "========================="
+          echo "| GH Release Only: Done |"
+          echo "========================="
