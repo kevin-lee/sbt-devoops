@@ -2,7 +2,8 @@
 
 [![Build Status](https://github.com/Kevin-Lee/sbt-devoops/workflows/Build%20All/badge.svg)](https://github.com/Kevin-Lee/sbt-devoops/actions?workflow=Build+All)
 [![Release Status](https://github.com/Kevin-Lee/sbt-devoops/workflows/Release/badge.svg)](https://github.com/Kevin-Lee/sbt-devoops/actions?workflow=Release)
-[ ![Download](https://api.bintray.com/packages/kevinlee/sbt-plugins/sbt-devoops/images/download.svg) ](https://bintray.com/kevinlee/sbt-plugins/sbt-devoops/_latestVersion)
+
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.kevinlee/sbt-devoops/badge.svg)](https://search.maven.org/artifact/io.kevinlee/sbt-devoops)
 [![Latest version](https://index.scala-lang.org/kevin-lee/sbt-devoops/sbt-devoops/latest.svg)](https://index.scala-lang.org/kevin-lee/sbt-devoops/sbt-devoops)
 
 SBT Plugin to help CI and CD

@@ -9,7 +9,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 `PROJECT_ROOT/project/plugins.sbt`
 ```scala
-addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.0.0")
+addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.3.0")
 ```
 
 ## A Single Project
