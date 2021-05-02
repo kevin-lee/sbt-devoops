@@ -114,8 +114,8 @@ object SbtTask {
 
     override def eitherTWithWriter0[W: Monoid, A, B](r: Either[A, B])(
       fw: B => W
-    ): EitherT[Writer[W, ?], A, B] =
-      EitherT[Writer[W, ?], A, B] {
+    ): EitherT[Writer[W, *], A, B] =
+      EitherT[Writer[W, *], A, B] {
         val w =
           r match {
             case Left(a) =>

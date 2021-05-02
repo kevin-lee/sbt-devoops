@@ -6,8 +6,6 @@ import wartremover.{Wart, Warts}
   */
 object ProjectInfo {
 
-  val ProjectVersion: String = "2.2.0"
-
   val commonScalacOptions: Seq[String] = Seq(
       "-deprecation"
     , "-unchecked"

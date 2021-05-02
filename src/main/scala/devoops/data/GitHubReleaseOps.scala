@@ -6,6 +6,7 @@ import kevinlee.github.data.{GitHub, GitHubError}
 import kevinlee.sbt.io.{CaseSensitivity, Io}
 
 import java.io.{File, FileInputStream}
+import scala.io.Codec
 
 /** @author Kevin Lee
   * @since 2021-02-14
@@ -75,7 +76,7 @@ trait GitHubReleaseOps {
     if (!changelog.exists) {
       GitHubError.changelogNotFound(changelog.getCanonicalPath, tagName).asLeft
     } else {
-      lazy val changelogSource = scala.io.Source.fromFile(changelog)
+      lazy val changelogSource = scala.io.Source.fromFile(changelog)(Codec.UTF8)
       try {
         val log = changelogSource.getLines().mkString("\n")
         GitHub.Changelog(log).asRight

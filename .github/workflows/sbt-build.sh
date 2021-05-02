@@ -2,74 +2,65 @@
 
 set -x
 
-if [ "$#" -lt 2 ]
-  then
-    echo "Scala version and sbt version are missing. Please enter the Scala and sbt versions, and optionally whether to send coveralls."
-    echo "sbt-build.sh 2.12.10 1.3.3 coveralls"
-    exit 1
-else
-  SCALA_VERSION=$1
-  SBT_VERSION=$2
-  coveralls=${3:-}
-  echo "============================================"
-  echo "Build projects"
-  echo "--------------------------------------------"
-  echo ""
-  export SOURCE_DATE_EPOCH=$(date +%s)
-  echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
-  if [[ "$CI_BRANCH" == "main" || "$CI_BRANCH" == "release" ]]
-  then
-    if [[ "$coveralls" == "coveralls" ]]
-    then
-      sbt -J-Xmx2048m \
-        ++${SCALA_VERSION}! \
-        ^^${SBT_VERSION} \
-        clean \
-        coverage \
-        test \
-        coverageReport \
-        coverageAggregate \
-        packagedArtifacts
-    else
-      sbt -J-Xmx2048m \
-        ++${SCALA_VERSION}! \
-        ^^${SBT_VERSION} \
-        clean \
-        test \
-        packagedArtifacts
-    fi
-  else
-    if [[ "$coveralls" == "coveralls" ]]
-    then
-      sbt -J-Xmx2048m \
-        ++${SCALA_VERSION}! \
-        ^^${SBT_VERSION} \
-        clean \
-        coverage \
-        test \
-        coverageReport \
-        coverageAggregate \
-        package
-    else
-      sbt -J-Xmx2048m \
-        ++${SCALA_VERSION}! \
-        ^^${SBT_VERSION} \
-        clean \
-        test \
-        package
-    fi
-  fi
-
+coveralls=${1:-}
+echo "============================================"
+echo "Build projects"
+echo "--------------------------------------------"
+echo ""
+export SOURCE_DATE_EPOCH=$(date +%s)
+echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
+if [[ "$CI_BRANCH" == "main" || "$CI_BRANCH" == "release" ]]
+then
   if [[ "$coveralls" == "coveralls" ]]
   then
-    sbt -J-Xmx2048m \
-      ++${SCALA_VERSION}! \
-      ^^${SBT_VERSION} \
-      coveralls
+    sbt \
+      -J-XX:MaxMetaspaceSize=1024m \
+      -J-Xmx2048m \
+      clean \
+      coverage \
+      test \
+      coverageReport \
+      coverageAggregate \
+      packagedArtifacts
+  else
+    sbt \
+      -J-XX:MaxMetaspaceSize=1024m \
+      -J-Xmx2048m \
+      clean \
+      test \
+      packagedArtifacts
   fi
-
-
-  echo "============================================"
-  echo "Building projects: Done"
-  echo "============================================"
+else
+  if [[ "$coveralls" == "coveralls" ]]
+  then
+    sbt \
+      -J-XX:MaxMetaspaceSize=1024m \
+      -J-Xmx2048m \
+      clean \
+      coverage \
+      test \
+      coverageReport \
+      coverageAggregate \
+      package
+  else
+    sbt \
+      -J-XX:MaxMetaspaceSize=1024m \
+      -J-Xmx2048m \
+      clean \
+      test \
+      package
+  fi
 fi
+
+if [[ "$coveralls" == "coveralls" ]]
+then
+  sbt \
+    -J-XX:MaxMetaspaceSize=1024m \
+    -J-Xmx2048m \
+    coveralls
+fi
+
+
+echo "============================================"
+echo "Building projects: Done"
+echo "============================================"
