@@ -40,7 +40,7 @@ object DevOopsJavaPlugin extends AutoPlugin {
       "-encoding",
       "UTF-8",
     ),
-    javacOptions in (Compile, compile) ++= Seq(
+    Compile / compile / javacOptions ++= Seq(
       "-target",
       javaVersion.value,
       "-Xlint:unchecked",

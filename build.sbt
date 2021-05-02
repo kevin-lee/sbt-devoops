@@ -3,12 +3,11 @@ import ProjectInfo._
 import sbt.ScmInfo
 
 lazy val root = (project in file("."))
-  .enablePlugins(DevOopsGitHubReleasePlugin, DocusaurPlugin)
+  .enablePlugins(SbtPlugin, DevOopsGitHubReleasePlugin, DocusaurPlugin)
   .settings(
     organization := "io.kevinlee",
     name := props.ProjectName,
     scalaVersion := props.ProjectScalaVersion,
-    version := ProjectVersion,
     description := "DevOops - DevOps tool for GitHub",
     developers := List(
       Developer(
@@ -25,7 +24,6 @@ lazy val root = (project in file("."))
         s"git@github.com:${props.GitHubUsername}/${props.ProjectName}.git",
       ).some,
     startYear := 2018.some,
-    sbtPlugin := true,
     Global / sbtVersion := props.GlobalSbtVersion,
     crossSbtVersions := props.CrossSbtVersions,
     addCompilerPlugin("org.scalamacros" % "paradise"           % "2.1.1" cross CrossVersion.full),
@@ -40,7 +38,7 @@ lazy val root = (project in file("."))
     Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
     Compile / compile / wartremoverErrors ++= commonWarts,
     Test / compile / wartremoverErrors ++= commonWarts,
-    addCompilerPlugin("org.typelevel"   % "kind-projector"     % "0.10.3" cross CrossVersion.binary),
+    addCompilerPlugin("org.typelevel"   % "kind-projector"     % "0.11.3" cross CrossVersion.full),
     addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.3.1"),
     libraryDependencies ++=
       crossVersionProps(
@@ -64,13 +62,10 @@ lazy val root = (project in file("."))
           Seq.empty
       },
     testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework")),
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    publishMavenStyle := false,
-    bintrayPackageLabels := Seq("sbt", "plugin"),
-    bintrayVcsUrl := s"""git@github.com:${props.GitHubUsername}/${props.ProjectName}.git""".some,
-    bintrayRepository := "sbt-plugins",
+    licenses := List("MIT" -> url("http://opensource.org/licenses/MIT")),
+    publishMavenStyle := true,
     console / initialCommands := """import kevinlee.sbt._""",
-    writeVersion := versionWriter(Def.spaceDelimited("filename").parsed)(ProjectVersion),
+    writeVersion := versionWriter(Def.spaceDelimited("filename").parsed)(version.value),
     coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 10)) =>
         false
@@ -90,27 +85,25 @@ lazy val props =
     val ProjectName: String    = "sbt-devoops"
 
     val ProjectScalaVersion: String     = "2.12.12"
-    val CrossScalaVersions: Seq[String] = Seq(ProjectScalaVersion).distinct
+    val CrossScalaVersions: Seq[String] = List(ProjectScalaVersion).distinct
 
     val GlobalSbtVersion: String = "1.3.4"
 
-    val CrossSbtVersions: Seq[String] = Seq(GlobalSbtVersion).distinct
+    val CrossSbtVersions: Seq[String] = List(GlobalSbtVersion).distinct
 
-    val hedgehogVersion: String = "0.6.1"
+    val hedgehogVersion: String = "0.6.7"
 
-    val catsVersion = "2.3.1"
+    val catsVersion       = "2.6.0"
+    val catsEffectVersion = "2.5.0"
 
-    val catsEffectVersion = "2.3.1"
+    val effectieVersion = "1.10.0"
+    val loggerFVersion  = "1.10.0"
 
-    val effectieVersion = "1.8.0"
-
-    val loggerFVersion = "1.7.0"
-
-    val refinedVersion = "0.9.19"
+    val refinedVersion = "0.9.24"
 
     val circeVersion = "0.13.0"
 
-    val http4sVersion = "0.21.16"
+    val http4sVersion = "0.21.22"
 
     val IncludeTest: String = "compile->compile;test->test"
   }
@@ -118,48 +111,47 @@ lazy val props =
 lazy val libs =
   new {
 
-    val hedgehogLibs: Seq[ModuleID] = Seq(
+    lazy val hedgehogLibs = List(
       "qa.hedgehog" %% "hedgehog-core"   % props.hedgehogVersion % Test,
       "qa.hedgehog" %% "hedgehog-runner" % props.hedgehogVersion % Test,
       "qa.hedgehog" %% "hedgehog-sbt"    % props.hedgehogVersion % Test,
     )
 
-    val newtype: ModuleID = "io.estatico" %% "newtype" % "0.4.4"
+    lazy val newtype = "io.estatico" %% "newtype" % "0.4.4"
 
     lazy val refined = Seq(
       "eu.timepit" %% "refined"      % props.refinedVersion,
       "eu.timepit" %% "refined-cats" % props.refinedVersion,
     )
 
-    val cats: ModuleID = "org.typelevel" %% "cats-core" % props.catsVersion
+    lazy val cats       = "org.typelevel" %% "cats-core"   % props.catsVersion
+    lazy val catsEffect = "org.typelevel" %% "cats-effect" % props.catsEffectVersion
 
-    val catsEffect: ModuleID = "org.typelevel" %% "cats-effect" % props.catsEffectVersion
+    lazy val effectie = "io.kevinlee" %% "effectie-cats-effect" % props.effectieVersion
 
-    val effectie: ModuleID = "io.kevinlee" %% "effectie-cats-effect" % props.effectieVersion
-
-    val loggerF: List[ModuleID] = List(
+    lazy val loggerF = List(
       "io.kevinlee" %% "logger-f-cats-effect" % props.loggerFVersion,
       "io.kevinlee" %% "logger-f-sbt-logging" % props.loggerFVersion,
     )
 
-    lazy val http4sClient: List[ModuleID] = List(
+    lazy val http4sClient = List(
       "org.http4s" %% "http4s-dsl"          % props.http4sVersion,
       "org.http4s" %% "http4s-blaze-client" % props.http4sVersion,
       "org.http4s" %% "http4s-circe"        % props.http4sVersion,
     )
 
-    lazy val circe: List[ModuleID] = List(
+    lazy val circe = List(
       "io.circe" %% "circe-generic" % props.circeVersion,
       "io.circe" %% "circe-parser"  % props.circeVersion,
       "io.circe" %% "circe-literal" % props.circeVersion,
       "io.circe" %% "circe-refined" % props.circeVersion,
     )
 
-    val semVer: ModuleID = "io.kevinlee" %% "just-semver" % "0.1.0"
+    lazy val semVer = "io.kevinlee" %% "just-semver" % "0.1.2"
 
-    val commonsIo: ModuleID = "commons-io" % "commons-io" % "2.1"
+    lazy val commonsIo = "commons-io" % "commons-io" % "2.1"
 
-    val javaxActivation212: List[ModuleID] = List(
+    lazy val javaxActivation212 = List(
       "javax.activation" % "activation"           % "1.1.1",
       "javax.activation" % "javax.activation-api" % "1.2.0",
     )

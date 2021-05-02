@@ -13,6 +13,7 @@ import org.http4s.util.CaseInsensitiveString
 import org.http4s.{MediaType, Request, Header => Http4sHeader, Headers => Http4sHeaders, Uri => Http4sUri}
 
 import java.net.URL
+import java.util.Locale
 import scala.concurrent.ExecutionContext
 
 /** @author Kevin Lee
@@ -68,7 +69,8 @@ object HttpRequest {
     implicit final val show: Show[Method] = render
   }
 
-  lazy val sensitiveHeadersFromHttp4sInLowerCase: Set[String] = Http4sHeaders.SensitiveHeaders.map(_.value.toLowerCase)
+  lazy val sensitiveHeadersFromHttp4sInLowerCase: Set[String] =
+    Http4sHeaders.SensitiveHeaders.map(_.value.toLowerCase(Locale.ENGLISH))
 
   implicit def show(implicit sbtLogLevel: DevOopsLogLevel): Show[HttpRequest] = { httpRequest =>
     val headerString =
