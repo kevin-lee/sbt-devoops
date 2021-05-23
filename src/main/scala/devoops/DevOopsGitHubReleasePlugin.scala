@@ -64,7 +64,15 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
     },
     devOopsCiDir := "ci",
-    devOopsPackagedArtifacts := List(s"target/scala-*/${name.value}*.jar"),
+    devOopsArtifactNamePrefix := name.value,
+    devOopsPackagedArtifacts := {
+      val filenamePrefix = devOopsArtifactNamePrefix.value
+      List(
+        s"target/scala-*/${filenamePrefix}*.jar",
+        s"*/target/scala-*/${filenamePrefix}*.jar",
+        s"*/*/target/scala-*/${filenamePrefix}*.jar",
+      )
+    },
     devOopsCopyReleasePackages := {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
