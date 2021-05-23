@@ -40,14 +40,25 @@ object DevOopsScalaPlugin extends AutoPlugin {
         "strictEquality",
       ).mkString(",")
 
-    val scala3Options: Seq[String] = Seq(
+    lazy private val aggressiveScala3cLanguageOptions =
+      s"$scala3cLanguageOptions,strictEquality"
+
+    val scala3OptionsEssential: Seq[String] = Seq(
       "-unchecked",
       "-deprecation",
       "-feature",
       "-Xfatal-warnings",
-      scala3cLanguageOptions,
       "-explain",
     )
+    val scala3Options: Seq[String] = scala3OptionsEssential ++
+      Seq(
+        scala3cLanguageOptions,
+      )
+
+    val aggressiveScala3Options: Seq[String] = scala3OptionsEssential ++
+      Seq(
+        aggressiveScala3cLanguageOptions,
+      )
 
     val defaultOptions2_10: Seq[String] = Seq(
       "-Ywarn-dead-code"                  // Warn when dead code is identified.
@@ -176,7 +187,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
       , "-Ywarn-unused:privates"            // Warn if a private member is unused.
       )).distinct
 
-    lazy val useAggressiveScalacOptions: SettingKey[Boolean] = settingKey("The flag to add aggressive scalac options")
+    lazy val useAggressiveScalacOptions: SettingKey[Boolean] = settingKey("The flag to add aggressive scalac options (default: false)")
 
   }
 
@@ -225,7 +236,11 @@ object DevOopsScalaPlugin extends AutoPlugin {
         )
 
       case (SemVer.Major(3), SemVer.Minor(0), _) =>
-        scala3Options
+        if (useAggressiveScalacOptions) {
+          aggressiveScala3Options
+        } else {
+          scala3Options
+        }
 
       case _ =>
         Seq.empty[String]
