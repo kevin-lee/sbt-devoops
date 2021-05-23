@@ -33,8 +33,19 @@ trait GitHubReleaseKeys {
     "The ci directory which contains the files created in build to upload to GitHub release (e.g. packaged jar files) It can be either an absolute or relative path. (default: ci)"
   )
 
+  lazy val devOopsArtifactNamePrefix: SettingKey[String] = settingKey[String](
+    "The artifact filename prefix used in the default devOopsPackagedArtifacts (default: devOopsArtifactNamePrefix := name.value)"
+  )
+
   lazy val devOopsPackagedArtifacts: TaskKey[List[String]] = taskKey(
-    s"""A list of packaged artifacts to be copied to PROJECT_HOME/$${devOopsCiDir.value}/dist (default: List(s"target/scala-*/$${name.value}*.jar") )"""
+    s"""A list of packaged artifacts to be copied to PROJECT_HOME/$${devOopsCiDir.value}/dist
+       |  - default:
+       |     List(
+       |       s"target/scala-*/$${devOopsArtifactNamePrefix.value}*.jar", // root project
+       |       s"*/target/scala-*/$${devOopsArtifactNamePrefix.value}*.jar", // sub-projects
+       |       s"*/*/target/scala-*/$${devOopsArtifactNamePrefix.value}*.jar", // Scala.js projects (sub/js/target/..., sub/jvm/target/...)
+       |     )
+       |""".stripMargin
   )
 
   lazy val devOopsCopyReleasePackages: TaskKey[Vector[File]] = taskKey[Vector[File]](
