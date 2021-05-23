@@ -26,7 +26,6 @@ lazy val root = (project in file("."))
     startYear := 2018.some,
     Global / sbtVersion := props.GlobalSbtVersion,
     crossSbtVersions := props.CrossSbtVersions,
-    addCompilerPlugin("org.scalamacros" % "paradise"           % "2.1.1" cross CrossVersion.full),
     scalacOptions ++= crossVersionProps(commonScalacOptions, scalaVersion.value) {
       case Some((2, 12)) =>
         Seq("-Ywarn-unused-import", "-Ywarn-numeric-widen", "-language:implicitConversions")
@@ -38,8 +37,6 @@ lazy val root = (project in file("."))
     Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
     Compile / compile / wartremoverErrors ++= commonWarts,
     Test / compile / wartremoverErrors ++= commonWarts,
-    addCompilerPlugin("org.typelevel"   % "kind-projector"     % "0.11.3" cross CrossVersion.full),
-    addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.3.1"),
     libraryDependencies ++=
       crossVersionProps(
         List(
@@ -81,31 +78,40 @@ lazy val root = (project in file("."))
 lazy val props =
   new {
 
-    val GitHubUsername: String = "Kevin-Lee"
-    val ProjectName: String    = "sbt-devoops"
+    final val GitHubUsername = "Kevin-Lee"
+    final val ProjectName    = "sbt-devoops"
 
-    val ProjectScalaVersion: String     = "2.12.12"
-    val CrossScalaVersions: Seq[String] = List(ProjectScalaVersion).distinct
+    final val ProjectScalaVersion = "2.12.12"
+    final val CrossScalaVersions  = List(ProjectScalaVersion).distinct
 
-    val GlobalSbtVersion: String = "1.3.4"
+    final val GlobalSbtVersion = "1.3.4"
 
-    val CrossSbtVersions: Seq[String] = List(GlobalSbtVersion).distinct
+    final val CrossSbtVersions = List(GlobalSbtVersion).distinct
 
-    val hedgehogVersion: String = "0.6.7"
+    final val hedgehogVersion = "0.7.0"
 
-    val catsVersion       = "2.6.0"
-    val catsEffectVersion = "2.5.0"
+    final val newtypeVersion = "0.4.4"
 
-    val effectieVersion = "1.10.0"
-    val loggerFVersion  = "1.10.0"
+    final val catsVersion       = "2.6.1"
+    final val catsEffectVersion = "2.5.1"
 
-    val refinedVersion = "0.9.24"
+    final val effectieVersion = "1.11.0"
+    final val loggerFVersion  = "1.11.0"
 
-    val circeVersion = "0.13.0"
+    final val refinedVersion = "0.9.25"
 
-    val http4sVersion = "0.21.22"
+    final val circeVersion = "0.13.0"
 
-    val IncludeTest: String = "compile->compile;test->test"
+    final val http4sVersion = "0.21.23"
+
+    final val justSemVerVersion = "0.2.0"
+
+    final val commonsIoVersion = "2.8.0"
+
+    final val activationVersion    = "1.1.1"
+    final val activationApiVersion = "1.2.0"
+
+    final val IncludeTest = "compile->compile;test->test"
   }
 
 lazy val libs =
@@ -117,7 +123,7 @@ lazy val libs =
       "qa.hedgehog" %% "hedgehog-sbt"    % props.hedgehogVersion % Test,
     )
 
-    lazy val newtype = "io.estatico" %% "newtype" % "0.4.4"
+    lazy val newtype = "io.estatico" %% "newtype" % props.newtypeVersion
 
     lazy val refined = Seq(
       "eu.timepit" %% "refined"      % props.refinedVersion,
@@ -147,13 +153,13 @@ lazy val libs =
       "io.circe" %% "circe-refined" % props.circeVersion,
     )
 
-    lazy val semVer = "io.kevinlee" %% "just-semver" % "0.1.2"
+    lazy val semVer = "io.kevinlee" %% "just-semver" % props.justSemVerVersion
 
-    lazy val commonsIo = "commons-io" % "commons-io" % "2.1"
+    lazy val commonsIo = "commons-io" % "commons-io" % props.commonsIoVersion
 
     lazy val javaxActivation212 = List(
-      "javax.activation" % "activation"           % "1.1.1",
-      "javax.activation" % "javax.activation-api" % "1.2.0",
+      "javax.activation" % "activation"           % props.activationVersion,
+      "javax.activation" % "javax.activation-api" % props.activationApiVersion,
     )
 
   }
