@@ -40,7 +40,6 @@ object DevOopsScalaPlugin extends AutoPlugin {
         "reflectiveCalls",
         "experimental.macros",
         "implicitConversions",
-        "strictEquality",
       ).mkString(",")
 
     lazy private val aggressiveScala3cLanguageOptions =
