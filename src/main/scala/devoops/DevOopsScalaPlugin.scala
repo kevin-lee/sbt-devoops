@@ -18,15 +18,18 @@ object DevOopsScalaPlugin extends AutoPlugin {
   object autoImport {
 
     val essentialOptions: Seq[String] = Seq(
-      "-language:higherKinds"             // Allow higher-kinded types
-    , "-encoding", "UTF-8"                // Specify character encoding used by source files.
+      "-language:higherKinds",             // Allow higher-kinded types
+      "-language:existentials",            // Existential types (besides wildcard types) can be written and inferred
+      "-language:experimental.macros",     // Allow macro definition (besides implementation and application)
+      "-language:implicitConversions",     // Allow definition of implicit functions called views
+      "-encoding", "UTF-8",                // Specify character encoding used by source files.
     )
 
     val defaultOptions: Seq[String] = Seq(
-      "-deprecation"                      // Emit warning and location for usages of deprecated APIs.
-    , "-unchecked"                        // Enable additional warnings where generated code depends on assumptions.
-    , "-feature"                          // Emit warning and location for usages of features that should be imported explicitly.
-    , "-Xfatal-warnings"                  // Fail the compilation if there are any warnings.
+      "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
+      "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
+      "-feature",                          // Emit warning and location for usages of features that should be imported explicitly.
+      "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
     )
 
     lazy private val scala3cLanguageOptions =
