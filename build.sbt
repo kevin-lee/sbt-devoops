@@ -26,14 +26,6 @@ lazy val root = (project in file("."))
     startYear := 2018.some,
     Global / sbtVersion := props.GlobalSbtVersion,
     crossSbtVersions := props.CrossSbtVersions,
-    scalacOptions ++= crossVersionProps(commonScalacOptions, scalaVersion.value) {
-      case Some((2, 12)) =>
-        Seq("-Ywarn-unused-import", "-Ywarn-numeric-widen", "-language:implicitConversions")
-      case Some((2, 11)) =>
-        Seq("-Ywarn-numeric-widen")
-      case _             =>
-        Nil
-    },
     Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
     Compile / compile / wartremoverErrors ++= commonWarts,
     Test / compile / wartremoverErrors ++= commonWarts,
