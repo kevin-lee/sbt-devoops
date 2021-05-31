@@ -284,6 +284,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(2)) |
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(1)) |
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(0)) |
+               (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(14)) |
                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(13)) |
                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(12)) |
                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(11)) |
@@ -311,7 +312,8 @@ object DevOopsScalaPlugin extends AutoPlugin {
           compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
         ) ++ (
           (semVer.major, semVer.minor, semVer.patch) match {
-            case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(13)) |
+            case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(14)) |
+                 (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(13)) |
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(12)) |
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(11)) |
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(10)) |
