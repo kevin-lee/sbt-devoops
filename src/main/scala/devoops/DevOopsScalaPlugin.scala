@@ -322,10 +322,27 @@ object DevOopsScalaPlugin extends AutoPlugin {
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(7)) |
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(6)) |
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(5)) |
+                 (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(4)) |
+                 (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(3)) |
+                 (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(2)) |
                  (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(12)) |
+                 (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(11)) |
                  (SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7)) =>
               List(
                 compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+              )
+            case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(1)) |
+                 (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(0)) =>
+              List(
+                compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+              )
+            case (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(patch)) if patch >= 0 && patch <= 10 =>
+              List(
+                compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+              )
+            case (SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(patch)) if patch >= 2 && patch <= 6 =>
+              List(
+                compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
               )
             case (_, _, _) =>
               List.empty[ModuleID]
