@@ -173,7 +173,6 @@ object DevOopsScalaPlugin extends AutoPlugin {
     , "-Xlint:_"
     , "-Ywarn-infer-any"                  // Warn when a type argument is inferred to be `Any`.
     , "-Ywarn-nullary-unit"               // Warn when nullary methods return Unit.
-    , "-Ywarn-unused"
     , "-Ywarn-unused-import"
     , "-Ypartial-unification"
     )
