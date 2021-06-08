@@ -141,7 +141,6 @@ lazy val libs =
     lazy val circe = List(
       "io.circe" %% "circe-generic" % props.circeVersion,
       "io.circe" %% "circe-parser"  % props.circeVersion,
-      "io.circe" %% "circe-literal" % props.circeVersion,
       "io.circe" %% "circe-refined" % props.circeVersion,
     )
 
@@ -151,7 +150,6 @@ lazy val libs =
 
     lazy val javaxActivation212 = List(
       "javax.activation" % "activation"           % props.activationVersion,
-      "javax.activation" % "javax.activation-api" % props.activationApiVersion,
     )
 
   }
