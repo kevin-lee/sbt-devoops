@@ -5,7 +5,7 @@ Close #0 - Summary
 
 ***
 
-# DevOops v0.0.0
+# sbt-devoops v0.0.0
 ## Done
 * Blah (#999)
 *
