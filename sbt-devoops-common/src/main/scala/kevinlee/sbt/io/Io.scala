@@ -1,6 +1,5 @@
 package kevinlee.sbt.io
 
-import cats.implicits._
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import org.apache.commons.io.filefilter.WildcardFileFilter
 import sbt.{DirectoryFilter, File, IO, file}
@@ -83,10 +82,11 @@ object Io {
   }
 
   def extractFilenames(filename: String): List[String] = {
+    @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     @tailrec
     def allFilenames(file: File, files: List[String]): List[String] =
       (Option(file.getParentFile), file.getName) match {
-        case (Some(parent), name) if parent.getPath === "/" =>
+        case (Some(parent), name) if parent.getPath == "/" =>
           name :: files
 
         case (Some(parent), name) =>
