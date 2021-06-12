@@ -1,6 +1,6 @@
 package kevinlee
 
-import cats.implicits._
+import cats.syntax.all._
 import hedgehog._
 import just.semver.AdditionalInfo.{BuildMetaInfo, PreRelease}
 import just.semver.SemVer.{Major, Minor, Patch}
