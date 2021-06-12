@@ -19,7 +19,7 @@ SBT Plugin to help release artifacts and changelogs
 ## Get sbt-devoops
 In the `project/plugins.sbt`, add the following line,
 ```scala
-addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.4.1")
+addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.5.0")
 ```
 
 ### DevOopsGitHubReleasePlugin
