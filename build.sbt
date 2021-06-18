@@ -25,6 +25,7 @@ ThisBuild / testFrameworks ~=
 Global / sbtVersion := props.GlobalSbtVersion
 
 lazy val sbtDevOops = Project(props.ProjectName, file("."))
+  .enablePlugins(SbtPlugin)
   .enablePlugins(DevOopsGitHubReleasePlugin, DocusaurPlugin)
   .settings(
     organization := props.Org,
@@ -35,8 +36,16 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     docusaurBuildDir := docusaurDir.value / "build",
     gitHubPagesOrgName := props.GitHubUsername,
     gitHubPagesRepoName := props.ProjectName,
+    publishMavenStyle := true,
   )
   .dependsOn(
+    sbtDevOopsCommon,
+    sbtDevOopsScala,
+    sbtDevOopsSbtExtra,
+    sbtDevOopsGitHub,
+    sbtDevOopsJava,
+  )
+  .aggregate(
     sbtDevOopsCommon,
     sbtDevOopsScala,
     sbtDevOopsSbtExtra,
@@ -74,6 +83,7 @@ lazy val sbtDevOopsJava = subProject(props.SubProjectNameJava, file(props.SubPro
 
 def subProject(projectName: String, path: File) = Project(projectName, path)
   .settings(
+    organization := props.Org,
     name := projectName,
     Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
     Compile / compile / wartremoverErrors ++= commonWarts,
