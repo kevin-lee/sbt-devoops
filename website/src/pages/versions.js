@@ -19,10 +19,40 @@ function Version() {
   const currentVersion = versions.find((version) => version.name === 'current');
   const pastVersions = versions.filter(
     (version) => version !== latestVersion && version.name !== 'current',
-  );
+  ).concat([
+    {
+      "name": "2.4.1",
+      "label": "2.4.1",
+    },
+    {
+      "name": "2.4.0",
+      "label": "2.4.0",
+    },
+    {
+      "name": "2.3.0",
+      "label": "2.3.0",
+    },
+    {
+      "name": "2.2.0",
+      "label": "2.2.0",
+    },
+    {
+      "name": "2.1.0",
+      "label": "2.1.0",
+    },
+    {
+      "name": "2.0.0",
+      "label": "2.0.0",
+    },
+  ]).sort((a, b) => a.name > b.name ? -1 : (a.name === b.name ? 0 : 1) );
+  console.log(JSON.stringify(pastVersions));
   // const stableVersion = pastVersions.shift();
   const stableVersion = currentVersion;
   const repoUrl = `https://github.com/${siteConfig.organizationName}/${siteConfig.projectName}`;
+
+  const docLink = path => path ? <Link to={path}>Documentation</Link> : <span>&nbsp;</span>;
+
+  const spaces = howMany => <span dangerouslySetInnerHTML={{__html: "&nbsp;".repeat(howMany)}} />;
 
   return (
     <Layout
@@ -87,7 +117,7 @@ function Version() {
                 <tr key={version.name}>
                   <th>{version.label}</th>
                   <td>
-                    <Link to={version.path}>Documentation</Link>
+                    {docLink(version.path)}
                   </td>
                   <td>
                     <a href={`${repoUrl}/releases/tag/v${version.name}`}>
@@ -111,7 +141,7 @@ function Version() {
               <tr key="1.0.2">
                 <th>1.0.2</th>
                 <td>
-                  Check out the doc for 1.0.3 instead.
+                  {spaces(27)}
                 </td>
                 <td>
                   <a href={`${repoUrl}/releases/tag/v1.0.2`}>
@@ -122,7 +152,7 @@ function Version() {
               <tr key="1.0.1">
                 <th>1.0.1</th>
                 <td>
-                  Check out the doc for 1.0.3 instead.
+                  {spaces(27)}
                 </td>
                 <td>
                   <a href={`${repoUrl}/releases/tag/v1.0.1`}>
@@ -133,7 +163,7 @@ function Version() {
               <tr key="1.0.0">
                 <th>1.0.0</th>
                 <td>
-                  Check out the doc for 1.0.3 instead.
+                  {spaces(27)}
                 </td>
                 <td>
                   <a href={`${repoUrl}/releases/tag/v1.0.0`}>
@@ -144,7 +174,7 @@ function Version() {
               <tr key="0.3.1">
                 <th>0.3.1</th>
                 <td>
-                  Check out the doc for 1.0.3 instead.
+                  {spaces(27)}
                 </td>
                 <td>
                   <a href={`${repoUrl}/releases/tag/v0.3.1`}>
@@ -155,7 +185,7 @@ function Version() {
               <tr key="0.3.0">
                 <th>0.3.0</th>
                 <td>
-                  Check out the doc for 1.0.3 instead.
+                  {spaces(27)}
                 </td>
                 <td>
                   <a href={`${repoUrl}/releases/tag/v0.3.0`}>
@@ -166,7 +196,7 @@ function Version() {
               <tr key="0.2.0">
                 <th>0.2.0</th>
                 <td>
-                  Check out the doc for 1.0.3 instead.
+                  {spaces(27)}
                 </td>
                 <td>
                   <a href={`${repoUrl}/releases/tag/v0.2.0`}>
@@ -177,7 +207,7 @@ function Version() {
               <tr key="0.1.0">
                 <th>0.1.0</th>
                 <td>
-                  Check out the doc for 1.0.3 instead.
+                  {spaces(27)}
                 </td>
                 <td>
                   <a href={`${repoUrl}/releases/tag/v0.1.0`}>
