@@ -17,16 +17,9 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 SBT Plugin to help release artifacts and changelogs
 
 ## Get sbt-devoops
-
-:::tip Note
-
-Documentation for `2.6.0` is a work in progress.
-
-:::
-
 In the `project/plugins.sbt`, add the following line,
 ```scala
-addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.6.0")
+addSbtPlugin("io.kevinlee" % "sbt-devoops" % "2.5.0")
 ```
 
 ### DevOopsGitHubReleasePlugin

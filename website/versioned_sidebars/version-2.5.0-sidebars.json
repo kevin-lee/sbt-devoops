@@ -1,0 +1,22 @@
+{
+  "version-2.5.0/docs": [
+    {
+      "type": "category",
+      "label": "DevOops",
+      "collapsed": false,
+      "items": ["version-2.5.0/getting-started"]
+    },
+    {
+      "type": "category",
+      "label": "DevOopsGitReleasePlugin",
+      "collapsed": false,
+      "items": ["version-2.5.0/gh-release-plugin/config-and-run", "version-2.5.0/gh-release-plugin/examples"]
+    },
+    {
+      "DevOopsScalaPlugin": ["version-2.5.0/scala-plugin/how-to-use"]
+    },
+    {
+      "DevOopsJavaPlugin": ["version-2.5.0/java-plugin/how-to-use"]
+    }
+  ]
+}
