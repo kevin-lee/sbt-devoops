@@ -35,6 +35,12 @@ const websiteConfig = {
       },
       items: [
         {
+          to: 'docs/',
+          activeBasePath: 'docs',
+          label: 'Docs',
+          position: 'left',
+        },
+        {
           type: 'docsVersionDropdown',
           position: 'right',
           dropdownActiveClassDisabled: true,
@@ -46,14 +52,9 @@ const websiteConfig = {
           ],
         },
         {
-          to: 'docs/',
-          activeBasePath: 'docs',
-          label: 'Docs',
-          position: 'right',
-        },
-        {
           href: 'https://github.com/Kevin-Lee/sbt-devoops',
-          label: 'GitHub',
+          className: 'header-github-link',
+          'aria-label': 'GitHub',
           position: 'right',
         },
       ],
