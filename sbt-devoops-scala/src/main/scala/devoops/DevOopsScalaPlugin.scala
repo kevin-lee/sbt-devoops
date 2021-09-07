@@ -51,6 +51,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
       "-feature",
       "-Xfatal-warnings",
       "-explain",
+      "-source:future",
     )
     val scala3Options: Seq[String] = scala3OptionsEssential ++
       Seq(
