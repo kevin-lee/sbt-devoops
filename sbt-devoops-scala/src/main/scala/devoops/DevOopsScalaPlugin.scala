@@ -285,6 +285,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(2)) |
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(1)) |
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(0)) |
+               (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(15)) |
                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(14)) |
                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(13)) |
                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(12)) |
@@ -294,7 +295,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(8)) |
                (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(12)) =>
             List(
-              compilerPlugin("org.typelevel" % "kind-projector" % "0.13.0" cross CrossVersion.full),
+              compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
             )
           case (SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7)) =>
             List(
@@ -313,7 +314,8 @@ object DevOopsScalaPlugin extends AutoPlugin {
           compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
         ) ++ (
           (semVer.major, semVer.minor, semVer.patch) match {
-            case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(14)) |
+            case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(15)) |
+                 (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(14)) |
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(13)) |
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(12)) |
                  (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(11)) |
