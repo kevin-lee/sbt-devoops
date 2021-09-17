@@ -51,7 +51,6 @@ object DevOopsScalaPlugin extends AutoPlugin {
       "-feature",
       "-Xfatal-warnings",
       "-explain",
-      "-source:future",
     )
     val scala3Options: Seq[String] = scala3OptionsEssential ++
       Seq(
@@ -191,12 +190,14 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
     lazy val useAggressiveScalacOptions: SettingKey[Boolean] = settingKey("The flag to add aggressive scalac options (default: false)")
 
+    lazy val enableSourceFutureForScala3: SettingKey[Boolean] = settingKey("The flag to add '-source:future' scalac option for Scala 3 (default: false)")
   }
 
   import autoImport._
 
   def versionSpecificScalacOptions(
-    useAggressiveScalacOptions: Boolean
+    useAggressiveScalacOptions: Boolean,
+    enableSourceFutureForScala3: Boolean
   ): PartialFunction[(SemVer.Major, SemVer.Minor, SemVer.Patch), Seq[String]] = {
       case (SemVer.Major(2), SemVer.Minor(10), _) =>
         essentialOptions ++ defaultOptions ++ defaultOptions2_10
@@ -238,10 +239,11 @@ object DevOopsScalaPlugin extends AutoPlugin {
         )
 
       case (SemVer.Major(3), SemVer.Minor(0), _) =>
+        val additionalOptions = if (enableSourceFutureForScala3) List("-source:future") else List.empty[String]
         if (useAggressiveScalacOptions) {
-          aggressiveScala3Options
+          aggressiveScala3Options ++ additionalOptions
         } else {
-          scala3Options
+          scala3Options ++ additionalOptions
         }
 
       case _ =>
@@ -250,11 +252,12 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
       useAggressiveScalacOptions := false
+    , enableSourceFutureForScala3 := false
     , scalacOptions := (
         crossVersionProps(
           scalacOptions.value
         , SemVer.parseUnsafe(scalaVersion.value)
-        )(versionSpecificScalacOptions(useAggressiveScalacOptions.value))
+        )(versionSpecificScalacOptions(useAggressiveScalacOptions.value, enableSourceFutureForScala3.value))
       ).distinct
     , Compile / console / scalacOptions := essentialOptions.distinct
     , updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error)
