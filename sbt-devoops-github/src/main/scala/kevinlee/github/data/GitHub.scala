@@ -1,5 +1,9 @@
 package kevinlee.github.data
 
+import cats.Monad
+import cats.syntax.all.none
+import effectie.cats.Effectful.effectOf
+import effectie.cats.Fx
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.string
@@ -8,7 +12,12 @@ import io.circe.refined._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.estatico.newtype.macros.{newsubtype, newtype}
+import just.sysprocess.{ProcessResult, SysProcess}
 import kevinlee.http.HttpRequest
+import loggerf.cats._
+import cats.syntax.all._
+import effectie.cats.Effectful._
+import loggerf.syntax._
 
 /** @author Kevin Lee
   * @since 2019-03-09
@@ -22,6 +31,51 @@ import kevinlee.http.HttpRequest
   )
 )
 object GitHub {
+
+  def findRemoteRepo[F[_]: Monad: Fx: Log](): F[Option[String]] = for {
+    sysProcess     <- effectOf(SysProcess.singleSysProcess(none, "git", "ls-remote", "--get-url", "origin"))
+    runResult      <- effectOf(SysProcess.run(sysProcess))
+    resultInEither <- ProcessResult
+                        .toEither(runResult) {
+                          case ProcessResult.Success(result) =>
+                            result.asRight[String]
+
+                          case ProcessResult.Failure(code, error) =>
+                            s"Failed: code: $code, ${error.mkString("\n")}".asLeft[List[String]]
+
+                          case ProcessResult.FailureWithNonFatal(nonFatalThrowable) =>
+                            nonFatalThrowable.getMessage.asLeft[List[String]]
+                        }
+                        .pure[F]
+    result         <- resultInEither match {
+                        case Right(result) => pureOf(result.mkString.trim.some)
+                        case Left(err)     => log(pureOf(err))(info) >> pureOf(none[String])
+                      }
+  } yield result
+
+  def findGitHubRepoOrgAndName[F[_]: Monad: Fx](remoteRepo: String): F[Option[GitHub.Repo]] = {
+
+    val identifier  = """([^\/]+?)"""
+    val GitHubHttps = raw"""https://github.com/$identifier/$identifier(?:\.git)?""".r
+    val GitHubGit   = raw"""git://github.com:$identifier/$identifier(?:\.git)?""".r
+    val GitHubSsh   = raw"""git@github.com:$identifier/$identifier(?:\.git)?""".r
+
+    for {
+      result <- remoteRepo match {
+                  case GitHubHttps(org, name) =>
+                    pureOf(GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some)
+
+                  case GitHubGit(org, name) =>
+                    pureOf(GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some)
+
+                  case GitHubSsh(org, name) =>
+                    pureOf(GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some)
+
+                  case _ =>
+                    pureOf(none[GitHub.Repo])
+                }
+    } yield result
+  }
 
   final case class OAuthToken(token: String) extends AnyVal {
     override def toString: String = "***Protected***"
