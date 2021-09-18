@@ -28,12 +28,12 @@ import loggerf.syntax._
     "org.wartremover.warts.ImplicitConversion",
     "org.wartremover.warts.ImplicitParameter",
     "org.wartremover.warts.PublicInference",
-  )
+  ),
 )
 object GitHub {
 
   def findRemoteRepo[F[_]: Monad: Fx: Log](): F[Option[String]] = for {
-    sysProcess     <- effectOf(SysProcess.singleSysProcess(none, "git", "ls-remote", "--get-url", "origin"))
+    sysProcess     <- pureOf(SysProcess.singleSysProcess(none, "git", "ls-remote", "--get-url", "origin"))
     runResult      <- effectOf(SysProcess.run(sysProcess))
     resultInEither <- ProcessResult
                         .toEither(runResult) {
@@ -49,7 +49,7 @@ object GitHub {
                         .pure[F]
     result         <- resultInEither match {
                         case Right(result) => pureOf(result.mkString.trim.some)
-                        case Left(err)     => log(pureOf(err))(info) >> pureOf(none[String])
+                        case Left(err)     => log(pureOf(err))(debug) >> pureOf(none[String])
                       }
   } yield result
 
@@ -96,10 +96,13 @@ object GitHub {
 
     @newtype case class Name(name: String)
 
-    def repoNameString(repo: Repo): String = s"${repo.org.org}/${repo.name.name}"
+    implicit final class RepoOps(private val repo: Repo) extends AnyVal {
+      def toRepoNameString: String = s"${repo.org.org}/${repo.name.name}"
 
-    implicit final class RepoOps(val repo: Repo) extends AnyVal {
-      def toRepoNameString: String = Repo.repoNameString(repo)
+      def toTupleOfString: (String, String) = (repo.org.org, repo.name.name)
+
+      def orgToString: String = repo.org.org
+      def nameToString: String = repo.name.name
     }
 
     final case class Tag(
@@ -181,13 +184,13 @@ object GitHub {
           .toList
           .map(token =>
             HttpRequest.Header(
-              "Authorization" -> s"token ${token.accessToken}"
-            )
+              "Authorization" -> s"token ${token.accessToken}",
+            ),
           )
     }
 
     implicit final class RepoOps(val repo: GitHubRepoWithAuth) extends AnyVal {
-      def toRepoNameString: String = Repo.repoNameString(repo.gitHubRepo)
+      def toRepoNameString: String = repo.gitHubRepo.toRepoNameString
     }
 
   }
@@ -244,7 +247,7 @@ object GitHub {
                 .avatarUrl
                 .toList
                 .map(avatarUrl => "avatar_url" -> avatarUrl.asJson)
-          ): _*
+          ): _*,
         )
     implicit final val decoder: Decoder[User] =
       (c: HCursor) =>
