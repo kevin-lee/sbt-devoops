@@ -128,8 +128,10 @@ lazy val props =
     final val catsVersion       = "2.6.1"
     final val catsEffectVersion = "2.5.1"
 
-    final val effectieVersion = "1.11.0"
-    final val loggerFVersion  = "1.11.0"
+    final val extrasCatsVersion = "0.1.0"
+
+    final val effectieVersion = "1.15.0"
+    final val loggerFVersion  = "1.15.0"
 
     final val refinedVersion = "0.9.25"
 
@@ -138,6 +140,8 @@ lazy val props =
     final val http4sVersion = "0.21.23"
 
     final val justSemVerVersion = "0.3.0"
+
+    final val justSysprocessVersion = "0.8.0"
 
     final val commonsIoVersion = "2.8.0"
 
@@ -166,6 +170,8 @@ lazy val libs =
     lazy val cats       = "org.typelevel" %% "cats-core"   % props.catsVersion
     lazy val catsEffect = "org.typelevel" %% "cats-effect" % props.catsEffectVersion
 
+    lazy val extrasCats = "io.kevinlee" %% "extras-cats" % props.extrasCatsVersion
+
     lazy val effectie = "io.kevinlee" %% "effectie-cats-effect" % props.effectieVersion
 
     lazy val loggerF = List(
@@ -187,6 +193,8 @@ lazy val libs =
 
     lazy val semVer = "io.kevinlee" %% "just-semver" % props.justSemVerVersion
 
+    lazy val justSysprocess = "io.kevinlee" %% "just-sysprocess" % props.justSysprocessVersion
+
     lazy val commonsIo = "commons-io" % "commons-io" % props.commonsIoVersion
 
     lazy val javaxActivation212 = List(
@@ -200,7 +208,9 @@ lazy val libs =
         newtype,
         cats,
         catsEffect,
+        extrasCats,
         effectie,
+        justSysprocess,
       ) ++
         hedgehogLibs ++
         loggerF ++
