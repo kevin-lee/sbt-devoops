@@ -1,6 +1,5 @@
 import BuildTools._
 import ProjectInfo._
-import sbt.ScmInfo
 
 ThisBuild / scalaVersion := props.ProjectScalaVersion
 ThisBuild / crossSbtVersions := props.CrossSbtVersions
