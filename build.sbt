@@ -136,7 +136,7 @@ lazy val props =
 
     final val circeVersion = "0.13.0"
 
-    final val http4sVersion = "0.21.23"
+    final val http4sVersion = "0.21.28"
 
     final val justSemVerVersion = "0.3.0"
 
