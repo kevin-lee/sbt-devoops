@@ -91,7 +91,6 @@ def subProject(projectName: String, path: File) = Project(projectName, path)
       (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct),
     licenses := List("MIT" -> url("http://opensource.org/licenses/MIT")),
     publishMavenStyle := true,
-    console / initialCommands := """import kevinlee.sbt._""",
     coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 10)) =>
         false
