@@ -353,7 +353,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       repo <-
         SbtTask[F].eitherTWithWriter(
           effectOf(getRepoFromUrl(url))
-        )(r => List(s"Get GitHub repo org and name: ${GitHub.Repo.repoNameString(r)}"))
+        )(r => List(s"Get GitHub repo org and name: ${r.toRepoNameString}"))
 
       gitHubRelease <-
         SbtTask[F].eitherTWithWriter(
@@ -413,7 +413,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       repo <-
         SbtTask[F].eitherTWithWriter(
           effectOf(getRepoFromUrl(url))
-        )(r => List(s"Get GitHub repo org and name: ${GitHub.Repo.repoNameString(r)}"))
+        )(r => List(s"Get GitHub repo org and name: ${r.toRepoNameString}"))
 
       repoWithAuth   = GitHub.GitHubRepoWithAuth(
                          GitHub.Repo(
