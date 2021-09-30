@@ -139,7 +139,7 @@ lazy val props =
 
     final val justSemVerVersion = "0.3.0"
 
-    final val justSysprocessVersion = "0.8.0"
+    final val justSysprocessVersion = "1.0.0"
 
     final val commonsIoVersion = "2.8.0"
 
