@@ -1,22 +1,21 @@
 package kevinlee.github.data
 
 import cats.Monad
-import cats.syntax.all.none
-import effectie.cats.Effectful.effectOf
+import cats.syntax.all._
+import effectie.cats.Effectful._
 import effectie.cats.Fx
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.string
+import extras.cats.syntax.either._
 import io.circe.generic.semiauto._
 import io.circe.refined._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.estatico.newtype.macros.{newsubtype, newtype}
-import just.sysprocess.{ProcessResult, SysProcess}
+import just.sysprocess.{ProcessError, ProcessResult, SysProcess}
 import kevinlee.http.HttpRequest
 import loggerf.cats._
-import cats.syntax.all._
-import effectie.cats.Effectful._
 import loggerf.syntax._
 
 /** @author Kevin Lee
@@ -33,24 +32,23 @@ import loggerf.syntax._
 object GitHub {
 
   def findRemoteRepo[F[_]: Monad: Fx: Log](): F[Option[String]] = for {
-    sysProcess     <- pureOf(SysProcess.singleSysProcess(none, "git", "ls-remote", "--get-url", "origin"))
-    runResult      <- effectOf(SysProcess.run(sysProcess))
-    resultInEither <- ProcessResult
-                        .toEither(runResult) {
-                          case ProcessResult.Success(result) =>
-                            result.asRight[String]
+    sysProcess <- pureOf(SysProcess.singleSysProcess(none, "git", "ls-remote", "--get-url", "origin"))
+    result     <- effectOf(sysProcess.run())
+                    .eitherT
+                    .transform {
+                      case Right(ProcessResult(result)) =>
+                        result.asRight[String]
 
-                          case ProcessResult.Failure(code, error) =>
-                            s"Failed: code: $code, ${error.mkString("\n")}".asLeft[List[String]]
+                      case Left(ProcessError.Failure(code, error)) =>
+                        s"Failed: code: $code, ${error.mkString("\n")}".asLeft[List[String]]
 
-                          case ProcessResult.FailureWithNonFatal(nonFatalThrowable) =>
-                            nonFatalThrowable.getMessage.asLeft[List[String]]
-                        }
-                        .pure[F]
-    result         <- resultInEither match {
-                        case Right(result) => pureOf(result.mkString.trim.some)
-                        case Left(err)     => log(pureOf(err))(debug) >> pureOf(none[String])
-                      }
+                      case Left(ProcessError.FailureWithNonFatal(nonFatalThrowable)) =>
+                        nonFatalThrowable.getMessage.asLeft[List[String]]
+                    }
+                    .foldF(
+                      err => log(pureOf(err))(debug) >> pureOf(none[String]),
+                      result => pureOf(result.mkString.trim.some),
+                    )
   } yield result
 
   def findGitHubRepoOrgAndName[F[_]: Monad: Fx](remoteRepo: String): F[Option[GitHub.Repo]] = {
@@ -101,7 +99,7 @@ object GitHub {
 
       def toTupleOfString: (String, String) = (repo.org.org, repo.name.name)
 
-      def orgToString: String = repo.org.org
+      def orgToString: String  = repo.org.org
       def nameToString: String = repo.name.name
     }
 
