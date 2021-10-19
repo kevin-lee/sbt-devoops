@@ -276,7 +276,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
       }),
     libraryDependencies ++= {
       val scalaV = scalaVersion.value
-      if (scalaV.startsWith("3.0")) {
+      if (scalaV.startsWith("3.")) {
         List.empty[ModuleID]
       } else {
         val semVer = SemVer.parseUnsafe(scalaV)
