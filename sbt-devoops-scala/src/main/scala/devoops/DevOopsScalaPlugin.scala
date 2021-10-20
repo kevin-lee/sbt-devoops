@@ -238,7 +238,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
           }
         )
 
-      case (SemVer.Major(3), SemVer.Minor(0), _) =>
+      case (SemVer.Major(3), _, _) =>
         val additionalOptions = if (enableSourceFutureForScala3) List("-source:future") else List.empty[String]
         if (useAggressiveScalacOptions) {
           aggressiveScala3Options ++ additionalOptions
@@ -276,7 +276,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
       }),
     libraryDependencies ++= {
       val scalaV = scalaVersion.value
-      if (scalaV.startsWith("3.")) {
+      if (scalaV.startsWith("3")) {
         List.empty[ModuleID]
       } else {
         val semVer = SemVer.parseUnsafe(scalaV)
