@@ -281,7 +281,8 @@ object DevOopsScalaPlugin extends AutoPlugin {
       } else {
         val semVer = SemVer.parseUnsafe(scalaV)
         ((semVer.major, semVer.minor, semVer.patch) match {
-          case (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(6)) |
+          case (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(7)) |
+               (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(6)) |
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(5)) |
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(4)) |
                (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(3)) |
