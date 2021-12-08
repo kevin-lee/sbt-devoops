@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://sbt-devoops.kevinly.dev/blog</id>
+    <title>sbt-devoops Blog</title>
+    <updated>2015-10-25T23:29:00.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://sbt-devoops.kevinly.dev/blog"/>
+    <subtitle>sbt-devoops Blog</subtitle>
+    <icon>https://sbt-devoops.kevinly.dev/img/favicon.png</icon>
+</feed>
