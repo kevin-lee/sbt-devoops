@@ -41,10 +41,10 @@ object HttpRequest {
   sealed trait Method
 
   object Method {
-    case object Get    extends Method
-    case object Post   extends Method
-    case object Put    extends Method
-    case object Patch  extends Method
+    case object Get extends Method
+    case object Post extends Method
+    case object Put extends Method
+    case object Patch extends Method
     case object Delete extends Method
 
     def get: Method    = Get
@@ -54,13 +54,13 @@ object HttpRequest {
     def delete: Method = Delete
 
     def render(method: Method): String = method match {
-      case Get    =>
+      case Get =>
         "GET"
-      case Post   =>
+      case Post =>
         "POST"
-      case Put    =>
+      case Put =>
         "PUT"
-      case Patch  =>
+      case Patch =>
         "PATCH"
       case Delete =>
         "DELETE"
@@ -132,7 +132,7 @@ object HttpRequest {
       val http4sHeaders = httpRequest.headers.map(_.toHttp4s)
       val uriWithParams =
         httpRequest.params match {
-          case Nil    =>
+          case Nil =>
             uri
           case params =>
             params.foldLeft(uri) { (uri, param) =>
@@ -140,7 +140,7 @@ object HttpRequest {
             }
         }
       httpRequest.httpMethod match {
-        case HttpRequest.Method.Get    =>
+        case HttpRequest.Method.Get =>
           httpRequest
             .body
             .fold(GET.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
@@ -160,7 +160,7 @@ object HttpRequest {
 //              case HttpRequest.Body.Multipart(_) =>
 //                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
             }
-        case HttpRequest.Method.Post   =>
+        case HttpRequest.Method.Post =>
           httpRequest
             .body
             .fold(POST.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
@@ -224,7 +224,7 @@ object HttpRequest {
 //                  )
 //                  .asRight[HttpError]
             }
-        case HttpRequest.Method.Put    =>
+        case HttpRequest.Method.Put =>
           httpRequest
             .body
             .fold(PUT.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
@@ -244,7 +244,7 @@ object HttpRequest {
 //              case HttpRequest.Body.Multipart(_) =>
 //                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
             }
-        case HttpRequest.Method.Patch  =>
+        case HttpRequest.Method.Patch =>
           httpRequest
             .body
             .fold(PATCH.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
@@ -303,7 +303,7 @@ object HttpRequest {
   sealed trait Body
 
   object Body {
-    final case class Json(json: io.circe.Json)                  extends Body
+    final case class Json(json: io.circe.Json) extends Body
     // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
 //    final case class Multipart(multipartData: MultipartData) extends Body
     final case class File(file: java.io.File, blocker: Blocker) extends Body

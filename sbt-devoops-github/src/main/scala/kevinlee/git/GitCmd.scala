@@ -8,14 +8,14 @@ import kevinlee.git.Git.{BranchName, Description, Repository, TagName}
 sealed trait GitCmd
 
 object GitCmd {
-  final case object CurrentBranchName                                             extends GitCmd
-  final case class Checkout(branchName: BranchName)                               extends GitCmd
-  final case object FetchTags                                                     extends GitCmd
-  final case object GetTag                                                        extends GitCmd
-  final case class Tag(tagName: TagName)                                          extends GitCmd
+  final case object CurrentBranchName extends GitCmd
+  final case class Checkout(branchName: BranchName) extends GitCmd
+  final case object FetchTags extends GitCmd
+  final case object GetTag extends GitCmd
+  final case class Tag(tagName: TagName) extends GitCmd
   final case class TagWithDescription(tagName: TagName, description: Description) extends GitCmd
-  final case class Push(repository: Repository, tagName: TagName)                 extends GitCmd
-  final case class RemoteGetUrl(repository: Repository)                           extends GitCmd
+  final case class Push(repository: Repository, tagName: TagName) extends GitCmd
+  final case class RemoteGetUrl(repository: Repository) extends GitCmd
 
   def currentBranchName: GitCmd = CurrentBranchName
 

@@ -188,7 +188,7 @@ object Git {
         val fOf = r.map { eth =>
           val w: CmdHistory                    =
             eth match {
-              case Left(error)           =>
+              case Left(error) =>
                 List.empty[GitCmdAndResult]
               case Right((cmdResult, a)) =>
                 List(GitCmdAndResult(gitCmd, cmdResult))

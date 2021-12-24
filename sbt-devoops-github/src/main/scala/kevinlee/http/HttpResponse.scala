@@ -63,7 +63,7 @@ object HttpResponse {
           decode[FailedResponseBodyJson](body.body) match {
             case Right(responseBodyJson) =>
               responseBodyJson.some
-            case Left(err)               =>
+            case Left(err) =>
               none[FailedResponseBodyJson]
           }
         )

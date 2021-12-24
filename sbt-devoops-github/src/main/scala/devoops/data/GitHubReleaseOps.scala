@@ -52,7 +52,7 @@ trait GitHubReleaseOps {
           .fold[Either[GitHubError, GitHub.OAuthToken]](GitHubError.noCredential.asLeft)(token =>
             GitHub.OAuthToken(token).asRight
           )
-      case None       =>
+      case None =>
         GitHubError.noCredential.asLeft
     }
 
@@ -65,7 +65,7 @@ trait GitHubReleaseOps {
     names.takeRight(2) match {
       case Array(org, name) =>
         GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name.stripSuffix(".git"))).asRight
-      case _                =>
+      case _ =>
         GitHubError.invalidGitHubRepoUrl(repoUrl).asLeft
     }
   }

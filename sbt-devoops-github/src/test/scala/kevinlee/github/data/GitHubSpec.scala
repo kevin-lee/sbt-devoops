@@ -27,8 +27,8 @@ object GitHubSpec extends Properties {
   private def genName: Gen[String] = Gen.string(
     Gen.frequency1(
       96 -> Gen.alphaNum,
-      2  -> Gen.constant('-'),
-      2  -> Gen.constant('_'),
+      2 -> Gen.constant('-'),
+      2 -> Gen.constant('_'),
     ),
     Range.linear(4, 20),
   )

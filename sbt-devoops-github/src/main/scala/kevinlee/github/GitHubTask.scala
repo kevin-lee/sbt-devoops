@@ -6,8 +6,7 @@ import kevinlee.git.{Git, GitCmdAndResult}
 import kevinlee.github.GitHubTask.GitHubTaskResult
 import kevinlee.github.data.GitHubError
 
-/**
-  * @author Kevin Lee
+/** @author Kevin Lee
   * @since 2019-03-31
   */
 trait GitHubTask[F[_]] {
@@ -36,7 +35,8 @@ object GitHubTask {
       taskResult: Git.CmdResult[F, A]
     ): GitHubTaskResult[F, A] =
       EitherT[GitHubTaskHistoryWriter[F, *], GitHubError, A](
-        taskResult.leftMap(GitHubError.causedByGitCommandError)
+        taskResult
+          .leftMap(GitHubError.causedByGitCommandError)
           .value
           .mapWritten(_.map(GitCmdAndResult.render))
       )

@@ -42,7 +42,7 @@ sealed trait ProcessResult {
 
 object ProcessResult {
 
-  final case class Success(outputs: List[String])                        extends ProcessResult {
+  final case class Success(outputs: List[String]) extends ProcessResult {
     val code: Int = 0
   }
   final case class Failure(override val code: Int, errors: List[String]) extends ProcessResult
