@@ -12,8 +12,8 @@ sealed trait DevOopsLogLevel
 object DevOopsLogLevel {
 
   case object Debug extends DevOopsLogLevel
-  case object Info  extends DevOopsLogLevel
-  case object Warn  extends DevOopsLogLevel
+  case object Info extends DevOopsLogLevel
+  case object Warn extends DevOopsLogLevel
   case object Error extends DevOopsLogLevel
 
   def debug: DevOopsLogLevel = Debug
@@ -24,9 +24,9 @@ object DevOopsLogLevel {
   def render(devOopsLogLevel: DevOopsLogLevel): String = devOopsLogLevel match {
     case DevOopsLogLevel.Debug =>
       "debug"
-    case DevOopsLogLevel.Info  =>
+    case DevOopsLogLevel.Info =>
       "info"
-    case DevOopsLogLevel.Warn  =>
+    case DevOopsLogLevel.Warn =>
       "warn"
     case DevOopsLogLevel.Error =>
       "error"
@@ -35,13 +35,13 @@ object DevOopsLogLevel {
   def fromStringUnsafe(devOopsLogLevel: String): DevOopsLogLevel = devOopsLogLevel match {
     case "debug" | "DEBUG" | "Debug" =>
       DevOopsLogLevel.debug
-    case "info" | "INFO" | "Info"    =>
+    case "info" | "INFO" | "Info" =>
       DevOopsLogLevel.info
-    case "warn" | "WARN" | "Warn"    =>
+    case "warn" | "WARN" | "Warn" =>
       DevOopsLogLevel.warn
     case "error" | "ERROR" | "Error" =>
       DevOopsLogLevel.error
-    case _                           =>
+    case _ =>
       SbtCommon.messageOnlyException(
         s"Unknown DevOopsLogLevel. It should be one of debug, info, warn and error. [input: $devOopsLogLevel)"
       )

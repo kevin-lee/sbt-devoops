@@ -137,7 +137,7 @@ object GitHub {
         implicit val decoder: Decoder[TarballUrl] = deriving
       }
       @newtype case class NodeId(nodeId: String)
-      object NodeId     {
+      object NodeId {
         implicit val encoder: Encoder[NodeId] = deriving
         implicit val decoder: Decoder[NodeId] = deriving
       }
@@ -145,11 +145,11 @@ object GitHub {
       implicit final val encoder: Encoder[Tag] =
         tag =>
           Json.obj(
-            "name"        -> tag.name.asJson,
-            "commit"      -> tag.commit.asJson,
+            "name" -> tag.name.asJson,
+            "commit" -> tag.commit.asJson,
             "zipball_url" -> tag.zipballUrl.asJson,
             "tarball_url" -> tag.tarballUrl.asJson,
-            "node_id"     -> tag.nodeId.asJson,
+            "node_id" -> tag.nodeId.asJson,
           )
 
       implicit final val decoder: Decoder[Tag] =
@@ -203,22 +203,22 @@ object GitHub {
 
   object User {
     @newsubtype case class Id(id: Long)
-    object Id        {
+    object Id {
       implicit val encoder: Encoder[Id] = deriving
       implicit val decoder: Decoder[Id] = deriving
     }
     @newtype case class Login(login: String Refined NonEmpty)
-    object Login     {
+    object Login {
       implicit val encoder: Encoder[Login] = deriving
       implicit val decoder: Decoder[Login] = deriving
     }
     @newtype case class Url(url: String Refined string.Url)
-    object Url       {
+    object Url {
       implicit val encoder: Encoder[Url] = deriving
       implicit val decoder: Decoder[Url] = deriving
     }
     @newtype case class Name(name: String)
-    object Name      {
+    object Name {
       implicit val encoder: Encoder[Name] = deriving
       implicit val decoder: Decoder[Name] = deriving
     }
@@ -233,9 +233,9 @@ object GitHub {
         Json.obj(
           (
             List(
-              "id"    -> author.id.asJson,
+              "id" -> author.id.asJson,
               "login" -> author.login.asJson,
-              "url"   -> author.url.asJson,
+              "url" -> author.url.asJson,
             ) ++
               author
                 .name

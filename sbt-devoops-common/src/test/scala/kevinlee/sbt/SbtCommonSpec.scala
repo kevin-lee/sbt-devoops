@@ -28,27 +28,27 @@ object SbtCommonSpec extends Properties {
   )
 
   def testNoMatchingVersion: Property = for {
-    semVers           <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
+    semVers <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
     (semVer1, semVer2) = semVers
-    ss1               <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss1")
-    ss2               <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
+    ss1 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss1")
+    ss2 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
   } yield {
     val expected = ss1
     val actual   =
       SbtCommon.crossVersionProps(ss1, semVer2) {
         case (semVer1.major, semVer1.minor, semVer1.patch) =>
           ss2
-        case _                              =>
+        case _ =>
           Seq()
       }
     actual ==== expected
   }
 
   def testNoMatchingVersionNonExhaustiveCase: Property = for {
-    semVers           <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
+    semVers <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
     (semVer1, semVer2) = semVers
-    ss1               <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss1")
-    ss2               <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
+    ss1 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss1")
+    ss2 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
   } yield {
     try {
       SbtCommon.crossVersionProps(ss1, semVer2) {
@@ -77,11 +77,11 @@ object SbtCommonSpec extends Properties {
   }
 
   def testOneOfTwoVersionsMatches: Property = for {
-    semVers           <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
+    semVers <- Gens.genMinMaxSemVers.log("(semVer1, semVer2)")
     (semVer1, semVer2) = semVers
-    ss1               <- Gens.genAlphabetString(10).list(Range.linear(1, 7)).log("ss1")
-    ss2               <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
-    ss3               <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss3")
+    ss1 <- Gens.genAlphabetString(10).list(Range.linear(1, 7)).log("ss1")
+    ss2 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss2")
+    ss3 <- Gens.genAlphabetString(10).list(Range.linear(1, 5)).log("ss3")
   } yield {
     val expected = ss1 ++ ss3
     val actual   =

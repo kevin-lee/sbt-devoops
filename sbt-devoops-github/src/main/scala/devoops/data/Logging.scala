@@ -12,13 +12,13 @@ object Logging {
     val (debugF, infoF, warnF, errorF) = logLevel match {
       case Some(DevOopsLogLevel.Debug) =>
         ((message: String) => println(s"[DEBUG] $message"), ignoreLogging, ignoreLogging, ignoreLogging)
-      case Some(DevOopsLogLevel.Info)  =>
+      case Some(DevOopsLogLevel.Info) =>
         (ignoreLogging, (message: String) => println(s"[INFO] $message"), ignoreLogging, ignoreLogging)
-      case Some(DevOopsLogLevel.Warn)  =>
+      case Some(DevOopsLogLevel.Warn) =>
         (ignoreLogging, ignoreLogging, (message: String) => println(s"[WARN] $message"), ignoreLogging)
       case Some(DevOopsLogLevel.Error) =>
         (ignoreLogging, ignoreLogging, ignoreLogging, (message: String) => println(s"[ERROR] $message"))
-      case None                        =>
+      case None =>
         (ignoreLogging, ignoreLogging, ignoreLogging, ignoreLogging)
     }
     new CanLog {

@@ -35,7 +35,7 @@ object GitHubRelease {
             requestParams.name.toList.map(name => "name" -> name.asJson) ++
             requestParams.body.toList.map(body => "body" -> body.asJson) ++
             List(
-              "draft"      -> requestParams.draft.asJson,
+              "draft" -> requestParams.draft.asJson,
               "prerelease" -> requestParams.prerelease.asJson,
             )): _*
         )
@@ -66,7 +66,7 @@ object GitHubRelease {
         Json.obj(
           (
             List(
-              "tag_name"   -> requestParams.tagName.asJson,
+              "tag_name" -> requestParams.tagName.asJson,
               "release_id" -> requestParams.releaseId.asJson,
             ) ++
               requestParams.name.toList.map(name => "name" -> name.asJson) ++
@@ -128,7 +128,7 @@ object GitHubRelease {
   sealed trait Draft
   object Draft {
     case object Yes extends Draft
-    case object No  extends Draft
+    case object No extends Draft
 
     def yes: Draft = Yes
     def no: Draft  = No
@@ -136,7 +136,7 @@ object GitHubRelease {
     def toBoolean(draft: Draft): Boolean = draft match {
       case Draft.Yes =>
         true
-      case Draft.No  =>
+      case Draft.No =>
         false
     }
 
@@ -154,7 +154,7 @@ object GitHubRelease {
   sealed trait Prerelease
   object Prerelease {
     case object Yes extends Prerelease
-    case object No  extends Prerelease
+    case object No extends Prerelease
 
     def yes: Prerelease = Yes
     def no: Prerelease  = No
@@ -162,7 +162,7 @@ object GitHubRelease {
     def toBoolean(prerelease: Prerelease): Boolean = prerelease match {
       case Prerelease.Yes =>
         true
-      case Prerelease.No  =>
+      case Prerelease.No =>
         false
     }
 
@@ -194,12 +194,12 @@ object GitHubRelease {
   )
   object Asset {
     @newsubtype case class Id(id: Long)
-    object Id                 {
+    object Id {
       implicit val encoder: Encoder[Id] = deriving
       implicit val decoder: Decoder[Id] = deriving
     }
     @newtype case class Url(url: String)
-    object Url                {
+    object Url {
       implicit val encoder: Encoder[Url] = deriving
       implicit val decoder: Decoder[Url] = deriving
     }
@@ -209,42 +209,42 @@ object GitHubRelease {
       implicit val decoder: Decoder[BrowserDownloadUrl] = deriving
     }
     @newtype case class Name(name: String)
-    object Name               {
+    object Name {
       implicit val encoder: Encoder[Name] = deriving
       implicit val decoder: Decoder[Name] = deriving
     }
     @newtype case class Label(label: String)
-    object Label              {
+    object Label {
       implicit val encoder: Encoder[Label] = deriving
       implicit val decoder: Decoder[Label] = deriving
     }
     @newtype case class State(state: String)
-    object State              {
+    object State {
       implicit val encoder: Encoder[State] = deriving
       implicit val decoder: Decoder[State] = deriving
     }
     @newtype case class ContentType(contentType: String)
-    object ContentType        {
+    object ContentType {
       implicit val encoder: Encoder[ContentType] = deriving
       implicit val decoder: Decoder[ContentType] = deriving
     }
     @newtype case class Size(size: Long)
-    object Size               {
+    object Size {
       implicit val encoder: Encoder[Size] = deriving
       implicit val decoder: Decoder[Size] = deriving
     }
     @newtype case class DownloadCount(downloadCount: Int)
-    object DownloadCount      {
+    object DownloadCount {
       implicit val encoder: Encoder[DownloadCount] = deriving
       implicit val decoder: Decoder[DownloadCount] = deriving
     }
     @newtype case class CreatedAt(createdAt: Instant)
-    object CreatedAt          {
+    object CreatedAt {
       implicit val encoder: Encoder[CreatedAt] = deriving
       implicit val decoder: Decoder[CreatedAt] = deriving
     }
     @newtype case class UpdatedAt(updatedAt: Instant)
-    object UpdatedAt          {
+    object UpdatedAt {
       implicit val encoder: Encoder[UpdatedAt] = deriving
       implicit val decoder: Decoder[UpdatedAt] = deriving
     }
@@ -252,18 +252,18 @@ object GitHubRelease {
     implicit val encoder: Encoder[Asset] =
       asset =>
         Json.obj(
-          "id"                   -> asset.id.asJson,
-          "url"                  -> asset.url.asJson,
+          "id" -> asset.id.asJson,
+          "url" -> asset.url.asJson,
           "browser_download_url" -> asset.browserDownloadUrl.asJson,
-          "name"                 -> asset.name.asJson,
-          "label"                -> asset.label.asJson,
-          "state"                -> asset.state.asJson,
-          "content_type"         -> asset.contentType.asJson,
-          "size"                 -> asset.size.asJson,
-          "download_count"       -> asset.downloadCount.asJson,
-          "created_at"           -> asset.createdAt.asJson,
-          "updated_at"           -> asset.updatedAt.asJson,
-          "uploader"             -> asset.uploader.asJson,
+          "name" -> asset.name.asJson,
+          "label" -> asset.label.asJson,
+          "state" -> asset.state.asJson,
+          "content_type" -> asset.contentType.asJson,
+          "size" -> asset.size.asJson,
+          "download_count" -> asset.downloadCount.asJson,
+          "created_at" -> asset.createdAt.asJson,
+          "updated_at" -> asset.updatedAt.asJson,
+          "uploader" -> asset.uploader.asJson,
         )
     implicit val decoder: Decoder[Asset] =
       c =>
@@ -317,27 +317,27 @@ object GitHubRelease {
   object Response {
 
     @newsubtype case class Id(id: Long)
-    object Id          {
+    object Id {
       implicit val encoder: Encoder[Id] = deriving
       implicit val decoder: Decoder[Id] = deriving
     }
     @newtype case class Url(url: String)
-    object Url         {
+    object Url {
       implicit val encoder: Encoder[Url] = deriving
       implicit val decoder: Decoder[Url] = deriving
     }
     @newtype case class AssetsUrl(assetsUrl: String)
-    object AssetsUrl   {
+    object AssetsUrl {
       implicit val encoder: Encoder[AssetsUrl] = deriving
       implicit val decoder: Decoder[AssetsUrl] = deriving
     }
     @newtype case class UploadUrl(uploadUrl: String)
-    object UploadUrl   {
+    object UploadUrl {
       implicit val encoder: Encoder[UploadUrl] = deriving
       implicit val decoder: Decoder[UploadUrl] = deriving
     }
     @newtype case class CreatedAt(createdAt: Instant)
-    object CreatedAt   {
+    object CreatedAt {
       implicit val encoder: Encoder[CreatedAt] = deriving
       implicit val decoder: Decoder[CreatedAt] = deriving
     }
@@ -350,19 +350,19 @@ object GitHubRelease {
     implicit val encoder: Encoder[Response] =
       response =>
         Json.obj(
-          "id"           -> response.id.id.asJson,
-          "url"          -> response.uri.url.asJson,
-          "assets_url"   -> response.assetsUrl.assetsUrl.asJson,
-          "upload_url"   -> response.uploadUrl.uploadUrl.asJson,
-          "author"       -> response.author.asJson,
-          "tag_name"     -> response.tagName.asJson,
-          "name"         -> response.name.asJson,
-          "body"         -> response.body.asJson,
-          "draft"        -> response.draft.asJson,
-          "prerelease"   -> response.prerelease.asJson,
-          "created_at"   -> response.createdAt.asJson,
+          "id" -> response.id.id.asJson,
+          "url" -> response.uri.url.asJson,
+          "assets_url" -> response.assetsUrl.assetsUrl.asJson,
+          "upload_url" -> response.uploadUrl.uploadUrl.asJson,
+          "author" -> response.author.asJson,
+          "tag_name" -> response.tagName.asJson,
+          "name" -> response.name.asJson,
+          "body" -> response.body.asJson,
+          "draft" -> response.draft.asJson,
+          "prerelease" -> response.prerelease.asJson,
+          "created_at" -> response.createdAt.asJson,
           "published_at" -> response.publishedAt.asJson,
-          "assets"       -> response.assets.asJson,
+          "assets" -> response.assets.asJson,
         )
 
     implicit val decoder: Decoder[Response] =

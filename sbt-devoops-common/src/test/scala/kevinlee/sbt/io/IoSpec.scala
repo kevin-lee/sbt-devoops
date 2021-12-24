@@ -44,8 +44,8 @@ object IoSpec extends Properties {
       val expected =
         for {
           filename <- filenames
-          file      = new File(tmp, filename)
-          _         = IoUtil.writeFile(file, content)
+          file = new File(tmp, filename)
+          _    = IoUtil.writeFile(file, content)
         } yield file
 
       val actual = Io.findAllFiles(
@@ -60,7 +60,7 @@ object IoSpec extends Properties {
 
       Result.all(
         (actual.sorted ==== expected.sorted) :: (for {
-          file         <- actual
+          file <- actual
           actualContent = IoUtil.readFile(file)
         } yield actualContent ==== content)
       )
@@ -103,8 +103,8 @@ object IoSpec extends Properties {
       val expected =
         for {
           filename <- filenames
-          file      = new File(tmp, filename)
-          _         = IoUtil.writeFile(file, content)
+          file = new File(tmp, filename)
+          _    = IoUtil.writeFile(file, content)
         } yield file
 
       val actual = Io.findAllFiles(
@@ -119,7 +119,7 @@ object IoSpec extends Properties {
 
       Result.all(
         (actual.sorted ==== expected.sorted) :: (for {
-          file         <- actual
+          file <- actual
           actualContent = IoUtil.readFile(file)
         } yield actualContent ==== content)
       )
@@ -180,8 +180,8 @@ object IoSpec extends Properties {
       val expected =
         for {
           filename <- filenames
-          file      = new File(tmp, filename)
-          _         = IoUtil.writeFile(file, content)
+          file = new File(tmp, filename)
+          _    = IoUtil.writeFile(file, content)
         } yield file
 
       val actual = Io.findAllFiles(
@@ -196,7 +196,7 @@ object IoSpec extends Properties {
 
       Result.all(
         (actual.sorted ==== expected.sorted) :: (for {
-          file         <- actual
+          file <- actual
           actualContent = IoUtil.readFile(file)
         } yield actualContent ==== content)
       )

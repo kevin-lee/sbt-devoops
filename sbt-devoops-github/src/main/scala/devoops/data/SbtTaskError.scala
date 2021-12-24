@@ -14,14 +14,14 @@ sealed trait SbtTaskError
 object SbtTaskError {
 
   // $COVERAGE-OFF$
-  final case class GitCommandTaskError(cause: GitCommandError)        extends SbtTaskError
-  final case class GitTaskError(cause: String)                        extends SbtTaskError
-  final case class GitHubTaskError(cause: GitHubError)                extends SbtTaskError
+  final case class GitCommandTaskError(cause: GitCommandError) extends SbtTaskError
+  final case class GitTaskError(cause: String) extends SbtTaskError
+  final case class GitHubTaskError(cause: GitHubError) extends SbtTaskError
   final case class NoFileFound(name: String, filePaths: List[String]) extends SbtTaskError
   final case class SemVerFromProjectVersionParseError(projectVersion: String, parseError: ParseError)
       extends SbtTaskError
-  final case class VersionNotEligibleForTagging(semVer: SemVer)       extends SbtTaskError
-  final case class IoError(name: String, throwable: Throwable)        extends SbtTaskError
+  final case class VersionNotEligibleForTagging(semVer: SemVer) extends SbtTaskError
+  final case class IoError(name: String, throwable: Throwable) extends SbtTaskError
 
   def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
     GitCommandTaskError(cause)
@@ -96,7 +96,9 @@ object SbtTaskError {
     * @return Nothing. It throws a MessageOnlyException.
     */
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  def errorWithHistory[A](sbtTaskError: SbtTaskError, history: SbtTaskHistory)(implicit sbtLogLevel: DevOopsLogLevel): A = {
+  def errorWithHistory[A](sbtTaskError: SbtTaskError, history: SbtTaskHistory)(
+    implicit sbtLogLevel: DevOopsLogLevel
+  ): A = {
     val message =
       if (history.isEmpty)
         "no task"

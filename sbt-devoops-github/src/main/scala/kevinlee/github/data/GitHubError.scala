@@ -17,32 +17,32 @@ import java.time.Instant
 sealed trait GitHubError
 
 object GitHubError {
-  final case object NoCredential                           extends GitHubError
-  final case object InvalidCredential                      extends GitHubError
+  final case object NoCredential extends GitHubError
+  final case object InvalidCredential extends GitHubError
   final case class MalformedURL(
     url: String,
     errorMessage: Option[String],
-  )                                                        extends GitHubError
-  final case class ConnectionFailure(error: String)        extends GitHubError
-  final case class GitHubServerError(error: String)        extends GitHubError
-  final case class ReleaseAlreadyExists(tagName: TagName)  extends GitHubError
-  final case class ReleaseCreationError(message: String)   extends GitHubError
+  ) extends GitHubError
+  final case class ConnectionFailure(error: String) extends GitHubError
+  final case class GitHubServerError(error: String) extends GitHubError
+  final case class ReleaseAlreadyExists(tagName: TagName) extends GitHubError
+  final case class ReleaseCreationError(message: String) extends GitHubError
   final case class ReleaseNotFoundByTagName(
     tagName: TagName
-  )                                                        extends GitHubError
-  final case class InvalidGitHubRepoUrl(repoUrl: RepoUrl)  extends GitHubError
+  ) extends GitHubError
+  final case class InvalidGitHubRepoUrl(repoUrl: RepoUrl) extends GitHubError
   final case class ChangelogNotFound(
     changelogLocation: String,
     tagName: TagName,
-  )                                                        extends GitHubError
+  ) extends GitHubError
   final case class CausedByGitCommandError(
     cause: GitCommandError
-  )                                                        extends GitHubError
-  case object NoReleaseCreated                             extends GitHubError
+  ) extends GitHubError
+  case object NoReleaseCreated extends GitHubError
   final case class AbuseRateLimits(
     message: String,
     documentationUrl: String,
-  )                                                        extends GitHubError
+  ) extends GitHubError
   final case class RateLimitExceeded(
     // "X-RateLimit-Limit"
     rateLimit: Option[Int],
@@ -52,21 +52,21 @@ object GitHubError {
     reset: Option[Instant],
     message: String,
     docUrl: String,
-  )                                                        extends GitHubError
+  ) extends GitHubError
   final case class ForbiddenRequest(
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
-  )                                                        extends GitHubError
+  ) extends GitHubError
   final case class UnprocessableEntity(
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
     responseBodyJson: Option[FailedResponseBodyJson],
-  )                                                        extends GitHubError
-  final case class AuthFailure(message: String)            extends GitHubError
+  ) extends GitHubError
+  final case class AuthFailure(message: String) extends GitHubError
   final case class AssetUploadFailure(
     failed: NonEmptyList[GitHubRelease.Asset.FailedAssetUpload],
     succeeded: List[GitHubRelease.Asset],
-  )                                                        extends GitHubError
+  ) extends GitHubError
   final case class UnexpectedFailure(httpError: HttpError) extends GitHubError
 
   def noCredential: GitHubError = NoCredential
@@ -194,7 +194,7 @@ object GitHubError {
              |""".stripMargin
         else
           ""
-        )
+      )
 
     case UnprocessableEntity(httpRequest, httpResponse, responseBodyJson) =>
       s"""Unprocessable Entity:
@@ -219,7 +219,7 @@ object GitHubError {
       val failedOnes = failed.toList.map {
         case GitHubRelease.Asset.FailedAssetUpload(file, Some(err: AssetUploadFailure)) =>
           GitHubError.render(err)
-        case GitHubRelease.Asset.FailedAssetUpload(file, reason)                        =>
+        case GitHubRelease.Asset.FailedAssetUpload(file, reason) =>
           s"${file.toString}${reason.fold("")(s => s" Reason: ${GitHubError.render(s)}")}"
       }
       s"""Uploading assets to GitHub release has failed.
@@ -267,7 +267,7 @@ object GitHubError {
           } else {
             GitHubError.forbiddenRequest(httpRequest, httpResponse)
           }
-        case Right(FailedResponseBodyJson(message, None))         =>
+        case Right(FailedResponseBodyJson(message, None)) =>
           GitHubError.forbiddenRequest(httpRequest, httpResponse)
 
         case Left(_) =>

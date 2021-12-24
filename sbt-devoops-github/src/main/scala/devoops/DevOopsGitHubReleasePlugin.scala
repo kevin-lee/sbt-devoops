@@ -38,12 +38,12 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
   import autoImport._
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    devOopsLogLevel := DevOopsLogLevel.info.render,
-    devOopsGitTagFrom := "main",
-    devOopsGitTagDescription := None,
-    devOopsGitTagName := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}"),
-    devOopsGitTagPushRepo := "origin",
-    devOopsGitTag := {
+    devOopsLogLevel            := DevOopsLogLevel.info.render,
+    devOopsGitTagFrom          := "main",
+    devOopsGitTagDescription   := None,
+    devOopsGitTagName          := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}"),
+    devOopsGitTagPushRepo      := "origin",
+    devOopsGitTag              := {
       lazy val basePath       = baseDirectory.value
       lazy val tagFrom        = BranchName(devOopsGitTagFrom.value)
       lazy val tagName        = TagName(devOopsGitTagName.value)
@@ -63,9 +63,9 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         .unsafeRunSync()
 
     },
-    devOopsCiDir := "ci",
-    devOopsArtifactNamePrefix := name.value,
-    devOopsPackagedArtifacts := {
+    devOopsCiDir               := "ci",
+    devOopsArtifactNamePrefix  := name.value,
+    devOopsPackagedArtifacts   := {
       val filenamePrefix = devOopsArtifactNamePrefix.value
       List(
         s"target/scala-*/${filenamePrefix}*.jar",
@@ -85,19 +85,19 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
           devOopsPackagedArtifacts.value,
           new File(new File(devOopsCiDir.value), "dist"),
         ) match {
-          case Left(error)  =>
+          case Left(error) =>
             messageOnlyException(SbtTaskError.render(error))
           case Right(files) =>
             files
         }
       result
     },
-    devOopsChangelogLocation := "changelogs",
-    devOopsGitHubAuthTokenEnvVar := "GITHUB_TOKEN",
-    devOopsGitHubAuthTokenFile :=
+    devOopsChangelogLocation            := "changelogs",
+    devOopsGitHubAuthTokenEnvVar        := "GITHUB_TOKEN",
+    devOopsGitHubAuthTokenFile          :=
       Some(new File(Io.getUserHome, ".github")),
-    devOopsGitHubRequestTimeout := 2.minutes,
-    devOopsGitHubRelease := {
+    devOopsGitHubRequestTimeout         := 2.minutes,
+    devOopsGitHubRelease                := {
       lazy val tagName                  = TagName(devOopsGitTagName.value)
       lazy val authTokenEnvVar          = devOopsGitHubAuthTokenEnvVar.value
       lazy val authTokenFile            = devOopsGitHubAuthTokenFile.value
@@ -153,7 +153,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         .handleSbtTask(result)
         .unsafeRunSync()
     },
-    devOopsGitTagAndGitHubRelease := {
+    devOopsGitTagAndGitHubRelease       := {
       lazy val tagName         = TagName(devOopsGitTagName.value)
       lazy val tagDesc         = devOopsGitTagDescription.value
       lazy val tagFrom         = BranchName(devOopsGitTagFrom.value)
@@ -391,7 +391,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
                 .split("\n")
                 .mkString("Changelog uploaded:\n    ", "\n    ", "\n"),
             )
-          case None          =>
+          case None =>
             List("Release has failed.")
         }
     } yield ()
@@ -415,13 +415,13 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
           effectOf(getRepoFromUrl(url))
         )(r => List(s"Get GitHub repo org and name: ${r.toRepoNameString}"))
 
-      repoWithAuth   = GitHub.GitHubRepoWithAuth(
-                         GitHub.Repo(
-                           GitHub.Repo.Org(repo.org.org),
-                           GitHub.Repo.Name(repo.name.name),
-                         ),
-                         GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
-                       )
+      repoWithAuth = GitHub.GitHubRepoWithAuth(
+                       GitHub.Repo(
+                         GitHub.Repo.Org(repo.org.org),
+                         GitHub.Repo.Name(repo.name.name),
+                       ),
+                       GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
+                     )
       maybeRelease  <-
         SbtTask[F].eitherTWithWriter(
           gitHubApi.findReleaseByTagName(tagName, repoWithAuth)
