@@ -1,42 +1,45 @@
 import BuildTools._
 import ProjectInfo._
 
-ThisBuild / scalaVersion := props.ProjectScalaVersion
+ThisBuild / scalaVersion     := props.ProjectScalaVersion
 ThisBuild / crossSbtVersions := props.CrossSbtVersions
-ThisBuild / developers := List(
+ThisBuild / developers       := List(
   Developer(
     props.GitHubUsername,
     "Kevin Lee",
     "kevin.code@kevinlee.io",
     url(s"https://github.com/${props.GitHubUsername}"),
-  )
+  ),
 )
-ThisBuild / homepage := url(s"https://github.com/${props.GitHubUsername}/${props.ProjectName}").some
-ThisBuild / scmInfo :=
+ThisBuild / homepage         := url(s"https://github.com/${props.GitHubUsername}/${props.ProjectName}").some
+ThisBuild / scmInfo          :=
   ScmInfo(
     url(s"https://github.com/${props.GitHubUsername}/${props.ProjectName}"),
     s"git@github.com:${props.GitHubUsername}/${props.ProjectName}.git",
   ).some
-ThisBuild / licenses := List("MIT" -> url("http://opensource.org/licenses/MIT"))
-ThisBuild / startYear := 2018.some
+ThisBuild / licenses         := List("MIT" -> url("http://opensource.org/licenses/MIT"))
+ThisBuild / startYear        := 2018.some
 ThisBuild / testFrameworks ~=
   (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct)
-Global / sbtVersion := props.GlobalSbtVersion
+ThisBuild / resolvers += "sonatype-snapshots" at s"https://${props.SonatypeCredentialHost}/content/repositories/snapshots"
+
+Global / sbtVersion          := props.GlobalSbtVersion
 
 lazy val sbtDevOops = Project(props.ProjectName, file("."))
   .enablePlugins(SbtPlugin)
   .enablePlugins(DevOopsGitHubReleasePlugin, DocusaurPlugin)
   .settings(
-    organization := props.Org,
-    name := props.ProjectName,
-    description := "DevOops - DevOps tool for GitHub",
-    writeVersion := versionWriter(Def.spaceDelimited("filename").parsed)(version.value),
-    docusaurDir := (ThisBuild / baseDirectory).value / "website",
-    docusaurBuildDir := docusaurDir.value / "build",
-    gitHubPagesOrgName := props.GitHubUsername,
+    organization        := props.Org,
+    name                := props.ProjectName,
+    description         := "DevOops - DevOps tool for GitHub",
+    writeVersion        := versionWriter(Def.spaceDelimited("filename").parsed)(version.value),
+    docusaurDir         := (ThisBuild / baseDirectory).value / "website",
+    docusaurBuildDir    := docusaurDir.value / "build",
+    gitHubPagesOrgName  := props.GitHubUsername,
     gitHubPagesRepoName := props.ProjectName,
-    publishMavenStyle := true,
+    publishMavenStyle   := true,
   )
+  .settings(mavenCentralPublishSettings)
   .dependsOn(
     sbtDevOopsCommon,
     sbtDevOopsScala,
@@ -60,7 +63,7 @@ lazy val sbtDevOopsCommon = subProject(props.SubProjectNameCommon, file(props.Su
       libs.commonsIo,
       libs.newtype % Test,
       libs.cats    % Test,
-    ) ++ libs.hedgehogLibs
+    ) ++ libs.hedgehogLibs,
   )
 
 lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala, file(props.SubProjectNameScala))
@@ -73,31 +76,39 @@ lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra, file(prop
 lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub, file(props.SubProjectNameGitHub))
   .enablePlugins(SbtPlugin)
   .settings(
-    libraryDependencies ++= libs.all(scalaVersion.value)
+    libraryDependencies ++= libs.all(scalaVersion.value),
   )
   .dependsOn(sbtDevOopsCommon)
 
 lazy val sbtDevOopsJava = subProject(props.SubProjectNameJava, file(props.SubProjectNameJava))
   .enablePlugins(SbtPlugin)
 
+lazy val mavenCentralPublishSettings: SettingsDefinition = List(
+  /* Publish to Maven Central { */
+  sonatypeCredentialHost := props.SonatypeCredentialHost,
+  sonatypeRepository     := props.SonatypeRepository,
+  /* } Publish to Maven Central */
+)
+
 def subProject(projectName: String, path: File) = Project(projectName, path)
   .settings(
-    organization := props.Org,
-    name := projectName,
+    organization                      := props.Org,
+    name                              := projectName,
     Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
     Compile / compile / wartremoverErrors ++= commonWarts,
     Test / compile / wartremoverErrors ++= commonWarts,
     testFrameworks ~=
       (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct),
-    licenses := List("MIT" -> url("http://opensource.org/licenses/MIT")),
-    publishMavenStyle := true,
-    coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
+    licenses                          := List("MIT" -> url("http://opensource.org/licenses/MIT")),
+    publishMavenStyle                 := true,
+    coverageHighlighting              := (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 10)) =>
         false
-      case _             =>
+      case _ =>
         true
     }),
   )
+  .settings(mavenCentralPublishSettings)
 
 lazy val props =
   new {
@@ -105,6 +116,9 @@ lazy val props =
     final val Org            = "io.kevinlee"
     final val GitHubUsername = "Kevin-Lee"
     final val ProjectName    = "sbt-devoops"
+
+    val SonatypeCredentialHost = "s01.oss.sonatype.org"
+    val SonatypeRepository     = s"https://$SonatypeCredentialHost/service/local"
 
     final val SubProjectNameCommon   = s"${ProjectName}-common"
     final val SubProjectNameScala    = s"${ProjectName}-scala"
@@ -196,7 +210,7 @@ lazy val libs =
     lazy val commonsIo = "commons-io" % "commons-io" % props.commonsIoVersion
 
     lazy val javaxActivation212 = List(
-      "javax.activation" % "activation" % props.activationVersion
+      "javax.activation" % "activation" % props.activationVersion,
     )
 
     def all(scalaVersion: String) = crossVersionProps(
