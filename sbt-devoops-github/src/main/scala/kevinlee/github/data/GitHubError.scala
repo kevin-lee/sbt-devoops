@@ -237,7 +237,7 @@ object GitHubError {
   def fromHttpError(httpError: HttpError): GitHubError = httpError match {
     case HttpError.Forbidden(httpRequest, httpResponse @ HttpResponse(_, headers, Some(body))) =>
       decode[FailedResponseBodyJson](body.body) match {
-        case Right(FailedResponseBodyJson(message, Some(docUrl))) =>
+        case Right(FailedResponseBodyJson(message, _, Some(docUrl))) =>
           if (
             message.contains("You have triggered an abuse detection mechanism") ||
             docUrl.contains("abuse-rate-limits")
@@ -267,7 +267,7 @@ object GitHubError {
           } else {
             GitHubError.forbiddenRequest(httpRequest, httpResponse)
           }
-        case Right(FailedResponseBodyJson(message, None)) =>
+        case Right(FailedResponseBodyJson(_, _, None)) =>
           GitHubError.forbiddenRequest(httpRequest, httpResponse)
 
         case Left(_) =>

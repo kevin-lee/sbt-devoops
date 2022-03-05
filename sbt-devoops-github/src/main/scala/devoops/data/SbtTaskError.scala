@@ -112,6 +112,10 @@ object SbtTaskError {
          |---
          |>> Failed:
          |${SbtTaskError.render(sbtTaskError)}
+         |---
+         |Setting devOopsLogLevel to DEBUG may show more information about the failure.
+         |
+         |devOopsLogLevel := "DEBUG"
          |""".stripMargin
     )
   }
