@@ -4,7 +4,8 @@ import cats.Show
 import cats.syntax.all._
 import devoops.data.DevOopsLogLevel
 import io.circe.parser.decode
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.syntax._
+import io.circe.{Decoder, DecodingFailure, Encoder, Json}
 import io.estatico.newtype.macros._
 import kevinlee.ops._
 import org.http4s.Headers
@@ -96,25 +97,44 @@ object HttpResponse {
 
   @newtype case class Body(body: String)
 
-  final case class FailedResponseBodyJson(message: String, documentationUrl: Option[String])
+  final case class FailedResponseBodyJson(
+    message: String,
+    errors: List[FailedResponseBodyJson.Errors],
+    documentationUrl: Option[String]
+  )
   object FailedResponseBodyJson {
     implicit val encoder: Encoder[FailedResponseBodyJson] =
       responseBodyJson =>
         Json.obj(
-          (List("message" -> Json.fromString(responseBodyJson.message)) ++
-            responseBodyJson
-              .documentationUrl
-              .toList
-              .map(documentationUrl => "documentation_url" -> Json.fromString(documentationUrl))): _*
+          (
+            List(
+              "message" -> Json.fromString(responseBodyJson.message),
+              "errors" ->
+                responseBodyJson
+                  .errors
+                  .map(errors => Json.obj(errors.value.mapValues(Json.fromString).toList: _*))
+                  .asJson
+            ) ++
+              responseBodyJson
+                .documentationUrl
+                .toList
+                .map(documentationUrl => "documentation_url" -> Json.fromString(documentationUrl))
+          ): _*
         )
 
     implicit val decoder: Decoder[FailedResponseBodyJson] =
       c =>
         for {
-          message          <- c.downField("message").as[String]
-          documentationUrl <- c.downField("documentation_url").as[Option[String]]
-        } yield FailedResponseBodyJson(message, documentationUrl)
+          message <- c.downField("message").as[String]
+          errors  <- c.downField("errors")
+                       .as[List[Map[String, String]]]
+                       .leftFlatMap(_ => List.empty[Map[String, String]].asRight[DecodingFailure])
 
-    implicit val show: Show[FailedResponseBodyJson] = encoder.apply(_).spaces2
+          documentationUrl <- c.downField("documentation_url").as[Option[String]]
+        } yield FailedResponseBodyJson(message, errors.map(Errors(_)), documentationUrl)
+
+    implicit val showFailedResponseBodyJson: Show[FailedResponseBodyJson] = encoder.apply(_).spaces2
+
+    @newtype case class Errors(value: Map[String, String])
   }
 }
