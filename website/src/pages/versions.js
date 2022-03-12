@@ -10,7 +10,10 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 
-import {useVersions, useLatestVersion} from '@theme/hooks/useDocs';
+import {
+  useVersions,
+  useLatestVersion,
+} from '@docusaurus/plugin-content-docs/client';
 
 function Version() {
   const {siteConfig} = useDocusaurusContext();
@@ -20,6 +23,46 @@ function Version() {
   const pastVersions = versions.filter(
     (version) => version !== latestVersion && version.name !== 'current',
   ).concat([
+    {
+      "name": "2.15.0",
+      "label": "2.15.0",
+    },
+    {
+      "name": "2.14.0",
+      "label": "2.14.0",
+    },
+    {
+      "name": "2.13.0",
+      "label": "2.13.0",
+    },
+    {
+      "name": "2.12.0",
+      "label": "2.12.0",
+    },
+    {
+      "name": "2.11.0",
+      "label": "2.11.0",
+    },
+    {
+      "name": "2.10.0",
+      "label": "2.10.0",
+    },
+    {
+      "name": "2.9.0",
+      "label": "2.9.0",
+    },
+    {
+      "name": "2.8.0",
+      "label": "2.8.0",
+    },
+    {
+      "name": "2.7.0",
+      "label": "2.7.0",
+    },
+    {
+      "name": "2.6.0",
+      "label": "2.6.0",
+    },
     {
       "name": "2.4.1",
       "label": "2.4.1",
@@ -44,7 +87,40 @@ function Version() {
       "name": "2.0.0",
       "label": "2.0.0",
     },
-  ]).sort((a, b) => a.name > b.name ? -1 : (a.name === b.name ? 0 : 1) );
+  ]).sort((a, b) => {
+    const [aMajor, aMinor, aPatchAndMore] = a.name.split(".");
+    const [aPatch] = aPatchAndMore.split("-");
+    const [bMajor, bMinor, bPatchAndMore] = b.name.split(".");
+    const [bPatch] = bPatchAndMore.split("-");
+
+    const a1 = parseInt(aMajor);
+    const a2 = parseInt(aMinor);
+    const a3 = parseInt(aPatch);
+
+    const b1 = parseInt(bMajor);
+    const b2 = parseInt(bMinor);
+    const b3 = parseInt(bPatch);
+
+    if (a1 > b1) {
+      return -1;
+    } else if (a1 === b1) {
+      if (a2 > b2) {
+        return -1;
+      } else if (a2 === b2) {
+        if (a3 > b3) {
+          return -1;
+        } else if (a3 === b3) {
+          return 0;
+        } else {
+          return 1;
+        }
+      } else {
+        return 1;
+      }
+    } else {
+      return 1;
+    }
+  });
   console.log(JSON.stringify(pastVersions));
   // const stableVersion = pastVersions.shift();
   const stableVersion = currentVersion;

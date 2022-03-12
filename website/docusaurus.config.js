@@ -1,4 +1,5 @@
 const algoliaConfig = require('./algolia.config.json');
+const googleAnalyticsConfig = require('./google-analytics.config.json');
 
 const lightCodeTheme = require('prism-react-renderer/themes/nightOwlLight');
 const darkCodeTheme = require('prism-react-renderer/themes/nightOwl');
@@ -9,6 +10,8 @@ const isEmptyObject = obj => {
 };
 
 const isSearchable = !isEmptyObject(algoliaConfig)
+const hasGoogleAnalytics = !isEmptyObject(googleAnalyticsConfig);
+const gtag = hasGoogleAnalytics ? { 'gtag': googleAnalyticsConfig } : null;
 
 const websiteConfig = {
   title: 'sbt-devoops',
@@ -117,7 +120,7 @@ const websiteConfig = {
               "path": "2.5.0",
             },
             "current": {
-              "label": "2.6.0",
+              "label": "2.16.0",
             },
           },
         },
@@ -127,6 +130,7 @@ const websiteConfig = {
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
+        ...gtag,
       },
     ],
   ],
