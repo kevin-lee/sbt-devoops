@@ -55,7 +55,7 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     sbtDevOopsJava,
   )
 
-lazy val sbtDevOopsCommon = subProject(props.SubProjectNameCommon, file(props.SubProjectNameCommon))
+lazy val sbtDevOopsCommon = subProject(props.SubProjectNameCommon)
   .enablePlugins(SbtPlugin)
   .settings(
     libraryDependencies ++= List(
@@ -66,21 +66,21 @@ lazy val sbtDevOopsCommon = subProject(props.SubProjectNameCommon, file(props.Su
     ) ++ libs.hedgehogLibs,
   )
 
-lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala, file(props.SubProjectNameScala))
+lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala)
   .enablePlugins(SbtPlugin)
   .dependsOn(sbtDevOopsCommon)
 
-lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra, file(props.SubProjectNameSbtExtra))
+lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra)
   .enablePlugins(SbtPlugin)
 
-lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub, file(props.SubProjectNameGitHub))
+lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
   .enablePlugins(SbtPlugin)
   .settings(
     libraryDependencies ++= libs.all(scalaVersion.value),
   )
   .dependsOn(sbtDevOopsCommon)
 
-lazy val sbtDevOopsJava = subProject(props.SubProjectNameJava, file(props.SubProjectNameJava))
+lazy val sbtDevOopsJava = subProject(props.SubProjectNameJava)
   .enablePlugins(SbtPlugin)
 
 lazy val mavenCentralPublishSettings: SettingsDefinition = List(
@@ -90,41 +90,52 @@ lazy val mavenCentralPublishSettings: SettingsDefinition = List(
   /* } Publish to Maven Central */
 )
 
-def subProject(projectName: String, path: File) = Project(projectName, path)
-  .settings(
-    organization                      := props.Org,
-    name                              := projectName,
-    Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
-    Compile / compile / wartremoverErrors ++= commonWarts,
-    Test / compile / wartremoverErrors ++= commonWarts,
-    testFrameworks ~=
-      (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct),
-    licenses                          := List("MIT" -> url("http://opensource.org/licenses/MIT")),
-    publishMavenStyle                 := true,
-    coverageHighlighting              := (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 10)) =>
-        false
-      case _ =>
-        true
-    }),
-  )
-  .settings(mavenCentralPublishSettings)
+// scalafmt: off
+def prefixedProjectName(name: String) = s"${props.RepoName}${if (name.isEmpty) "" else s"-$name"}"
+// scalafmt: on
+
+def subProject(projectName: String): Project = {
+  val prefixedName = prefixedProjectName(projectName)
+  Project(projectName, file(s"modules/$prefixedName"))
+    .settings(
+      organization                      := props.Org,
+      name                              := prefixedName,
+      Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
+      Compile / compile / wartremoverErrors ++= commonWarts,
+      Test / compile / wartremoverErrors ++= commonWarts,
+      testFrameworks ~=
+        (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct),
+      licenses                          := List("MIT" -> url("http://opensource.org/licenses/MIT")),
+      publishMavenStyle                 := true,
+      coverageHighlighting              := (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 10)) =>
+          false
+        case _ =>
+          true
+      }),
+    )
+    .settings(mavenCentralPublishSettings)
+}
 
 lazy val props =
   new {
 
-    final val Org            = "io.kevinlee"
-    final val GitHubUsername = "Kevin-Lee"
-    final val ProjectName    = "sbt-devoops"
+    private val GitHubRepo = findRepoOrgAndName
+
+    final val Org      = "io.kevinlee"
+    val GitHubUsername = GitHubRepo.fold("Kevin-Lee")(_.orgToString)
+    val RepoName       = GitHubRepo.fold("sbt-devoops")(_.nameToString)
+
+    final val ProjectName = RepoName
 
     val SonatypeCredentialHost = "s01.oss.sonatype.org"
     val SonatypeRepository     = s"https://$SonatypeCredentialHost/service/local"
 
-    final val SubProjectNameCommon   = s"${ProjectName}-common"
-    final val SubProjectNameScala    = s"${ProjectName}-scala"
-    final val SubProjectNameSbtExtra = s"${ProjectName}-sbt-extra"
-    final val SubProjectNameGitHub   = s"${ProjectName}-github"
-    final val SubProjectNameJava     = s"${ProjectName}-java"
+    final val SubProjectNameCommon   = "common"
+    final val SubProjectNameScala    = "scala"
+    final val SubProjectNameSbtExtra = "sbt-extra"
+    final val SubProjectNameGitHub   = "github"
+    final val SubProjectNameJava     = "java"
 
     final val ProjectScalaVersion = "2.12.12"
     final val CrossScalaVersions  = List(ProjectScalaVersion).distinct
