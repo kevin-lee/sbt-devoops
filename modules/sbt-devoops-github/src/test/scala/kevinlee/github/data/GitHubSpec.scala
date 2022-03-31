@@ -5,6 +5,8 @@ import cats.syntax.all._
 import hedgehog._
 import hedgehog.runner._
 
+import effectie.cats.fx._
+
 /** @author Kevin Lee
   * @since 2021-09-19
   */
