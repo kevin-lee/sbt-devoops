@@ -5,14 +5,15 @@ import cats.data.{EitherT, NonEmptyList}
 import cats.effect.Timer
 import cats.syntax.all._
 import devoops.data.DevOopsLogLevel
-import effectie.cats.EffectConstructor
-import effectie.cats.Effectful._
-import effectie.cats.EitherTSupport._
+import effectie.core._
+import effectie.syntax.all._
+import extras.cats.syntax.either._
 import kevinlee.git.Git
 import kevinlee.github.data.GitHub.Repo
 import kevinlee.github.data.GitHubRelease.ReleaseId
 import kevinlee.github.data._
 import kevinlee.http.{HttpClient, HttpRequest}
+import org.http4s.client.dsl.Http4sClientDsl
 
 import java.io.File
 import scala.concurrent.ExecutionContext
@@ -68,7 +69,7 @@ trait GitHubApi[F[_]] {
 object GitHubApi {
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  def apply[F[_]: Monad: EffectConstructor](httpClient: HttpClient[F])(
+  def apply[F[_]: Monad: Fx](httpClient: HttpClient[F])(
     implicit sbtLogLevel: DevOopsLogLevel
   ): GitHubApi[F] =
     new GitHubApiF[F](httpClient)
@@ -78,10 +79,10 @@ object GitHubApi {
    * https://docs.github.com/en/rest/overview/resources-in-the-rest-api#abuse-rate-limits
    */
   def githubWithAbuseRateLimit[F[_]: Monad: Timer](): F[Unit] =
-    Timer[F].sleep(1.second).as(())
+    Timer[F].sleep(1.second).void
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  final class GitHubApiF[F[_]: Monad: EffectConstructor](
+  final class GitHubApiF[F[_]: Monad: Fx](
     val httpClient: HttpClient[F]
   )(implicit sbtLogLevel: DevOopsLogLevel)
       extends GitHubApi[F] {
@@ -98,13 +99,15 @@ object GitHubApi {
       map
     }
 
+    implicit val dsl: Http4sClientDsl[F] = new Http4sClientDsl[F] {}
+
     override def getTags(
       repo: GitHub.GitHubRepoWithAuth
     ): F[Either[GitHubError, List[Repo.Tag]]] = (for {
-      url <- eitherTRight[GitHubError](s"$baseUrl/repos/${repo.toRepoNameString}/tags")
+      url <- s"$baseUrl/repos/${repo.toRepoNameString}/tags".rightTF[F, GitHubError]
 
-      httpRequest <- eitherTRight[GitHubError](
-                       HttpRequest.withHeaders(
+      httpRequest <- HttpRequest
+                       .withHeaders(
                          HttpRequest.Method.get,
                          HttpRequest.Uri(url),
                          defaultHeaders ++
@@ -112,7 +115,7 @@ object GitHubApi {
                              .accessToken
                              .toHeaderList,
                        )
-                     )
+                       .rightTF
 
       response <- EitherT(
                     httpClient

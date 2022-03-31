@@ -8,9 +8,11 @@ import fs2.Chunk
 import io.circe.Encoder
 import io.estatico.newtype.macros._
 import kevinlee.ops._
+import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers.`Content-Type`
-import org.http4s.util.CaseInsensitiveString
 import org.http4s.{MediaType, Request, Header => Http4sHeader, Headers => Http4sHeaders, Uri => Http4sUri}
+import org.typelevel.ci.CIString
+import extras.cats.syntax.all._
 
 import java.net.URL
 import java.util.Locale
@@ -70,7 +72,7 @@ object HttpRequest {
   }
 
   lazy val sensitiveHeadersFromHttp4sInLowerCase: Set[String] =
-    Http4sHeaders.SensitiveHeaders.map(_.value.toLowerCase(Locale.ENGLISH))
+    Http4sHeaders.SensitiveHeaders.map(_.toString.toLowerCase(Locale.ENGLISH))
 
   implicit def show(implicit sbtLogLevel: DevOopsLogLevel): Show[HttpRequest] = { httpRequest =>
     val headerString =
@@ -121,84 +123,89 @@ object HttpRequest {
   }
 
   import org.http4s.circe.CirceEntityCodec._
-  import org.http4s.client.dsl.Http4sClientDsl._
   import org.http4s.dsl.request._
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
-  def toHttp4s[F[_]: Applicative: Sync: ContextShift](
+  def toHttp4s[F[_]: Applicative: Sync: ContextShift: Http4sClientDsl](
     httpRequest: HttpRequest
-  ): Either[HttpError, F[Request[F]]] =
-    httpRequest.uri.toHttp4s.flatMap { uri =>
-      val http4sHeaders = httpRequest.headers.map(_.toHttp4s)
-      val uriWithParams =
-        httpRequest.params match {
-          case Nil =>
-            uri
-          case params =>
-            params.foldLeft(uri) { (uri, param) =>
-              uri.withQueryParam(param.param._1, param.param._2)
-            }
-        }
-      httpRequest.httpMethod match {
-        case HttpRequest.Method.Get =>
-          httpRequest
-            .body
-            .fold(GET.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
-              case HttpRequest.Body.Json(json) =>
-                GET
-                  .apply(
-                    json,
-                    uriWithParams,
-                    http4sHeaders: _*
-                  )
-                  .asRight[HttpError]
+  ): F[Either[HttpError, Request[F]]] =
+    httpRequest
+      .uri
+      .toHttp4s
+      .t
+      .flatMapF { uri =>
+        val dsl           = Http4sClientDsl[F]
+        import dsl._
+        val http4sHeaders = httpRequest.headers.map(_.toHttp4s)
+        val uriWithParams =
+          httpRequest.params match {
+            case Nil =>
+              uri
+            case params =>
+              params.foldLeft(uri) { (uri, param) =>
+                uri.withQueryParam(param.param._1, param.param._2)
+              }
+          }
+        httpRequest.httpMethod match {
+          case HttpRequest.Method.Get =>
+            httpRequest
+              .body
+              .fold(GET(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+                case HttpRequest.Body.Json(json) =>
+                  GET
+                    .apply(
+                      json,
+                      uriWithParams,
+                      http4sHeaders: _*
+                    )
+                    .asRight[HttpError]
+                    .pure
 
-              case HttpRequest.Body.File(_, _) =>
-                HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[F[Request[F]]]
+                case HttpRequest.Body.File(_, _) =>
+                  HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[Request[F]].pure
 
-              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+                // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
 //              case HttpRequest.Body.Multipart(_) =>
 //                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
-            }
-        case HttpRequest.Method.Post =>
-          httpRequest
-            .body
-            .fold(POST.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
-              case HttpRequest.Body.Json(json) =>
-                POST
-                  .apply(
+              }
+          case HttpRequest.Method.Post =>
+            httpRequest
+              .body
+              .fold(POST(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+                case HttpRequest.Body.Json(json) =>
+                  POST(
                     json,
                     uriWithParams,
                     http4sHeaders: _*
                   )
-                  .asRight[HttpError]
+                    .asRight[HttpError]
+                    .pure
 
-              case HttpRequest.Body.File(file, blocker) =>
-                val byteChunk = fs2.io.file.readAll[F](file.toPath, blocker, 8192).compile.to(Chunk)
-                byteChunk
-                  .flatMap { chunk =>
-                    POST
-                      .apply(
+                case HttpRequest.Body.File(file, blocker) =>
+                  val byteChunk = fs2.io.file.readAll[F](file.toPath, blocker, 8192).compile.to(Chunk)
+                  byteChunk
+                    .map { chunk =>
+                      POST(
                         chunk,
                         uriWithParams,
                         http4sHeaders: _*
                       )
-                  }
-                  .map(req =>
-                    req.withHeaders(
-                      req
-                        .headers
-                        .filterNot(header =>
-                          /* Without this filtering, the headers contain "Transfer-Encoding: chunked"
-                           * which causes [400, Bad Content-Length] when uploading a release asset file using GitHub API
-                           */
-                          header.name === CaseInsensitiveString("Transfer-Encoding")
-                        )
+                    }
+                    .map(req =>
+                      (req.withHeaders(
+                        req
+                          .headers
+                          .headers
+                          .filterNot(header =>
+                            /* Without this filtering, the headers contain "Transfer-Encoding: chunked"
+                             * which causes [400, Bad Content-Length] when uploading a release asset file using GitHub API
+                             */
+                            header.name === CIString("Transfer-Encoding")
+                          )
+                      ): Request[F]).asRight[HttpError]
                     )
-                  )
-                  .asRight[HttpError]
 
-              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+                // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
 //              case HttpRequest.Body.Multipart(multipartData) =>
 //                val body = multipartData.toHttp4s[F]
 //                POST
@@ -223,69 +230,70 @@ object HttpRequest {
 //                    )
 //                  )
 //                  .asRight[HttpError]
-            }
-        case HttpRequest.Method.Put =>
-          httpRequest
-            .body
-            .fold(PUT.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
-              case HttpRequest.Body.Json(json) =>
-                PUT
-                  .apply(
+              }
+          case HttpRequest.Method.Put =>
+            httpRequest
+              .body
+              .fold(PUT.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+                case HttpRequest.Body.Json(json) =>
+                  PUT(
                     json,
                     uriWithParams,
                     http4sHeaders: _*
                   )
-                  .asRight[HttpError]
+                    .asRight[HttpError]
+                    .pure
 
-              case HttpRequest.Body.File(_, _) =>
-                HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[F[Request[F]]]
+                case HttpRequest.Body.File(_, _) =>
+                  HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[Request[F]].pure
 
-              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+                // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
 //              case HttpRequest.Body.Multipart(_) =>
 //                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
-            }
-        case HttpRequest.Method.Patch =>
-          httpRequest
-            .body
-            .fold(PATCH.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
-              case HttpRequest.Body.Json(json) =>
-                PATCH
-                  .apply(
+              }
+          case HttpRequest.Method.Patch =>
+            httpRequest
+              .body
+              .fold(PATCH(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+                case HttpRequest.Body.Json(json) =>
+                  PATCH(
                     json,
                     uriWithParams,
                     http4sHeaders: _*
                   )
-                  .asRight[HttpError]
+                    .asRight[HttpError]
+                    .pure
 
-              case HttpRequest.Body.File(_, _) =>
-                HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[F[Request[F]]]
+                case HttpRequest.Body.File(_, _) =>
+                  HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[Request[F]].pure
 
-              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+                // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
 //              case HttpRequest.Body.Multipart(_) =>
 //                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
-            }
-        case HttpRequest.Method.Delete =>
-          httpRequest
-            .body
-            .fold(DELETE.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError]) {
-              case HttpRequest.Body.Json(json) =>
-                DELETE
-                  .apply(
+              }
+          case HttpRequest.Method.Delete =>
+            httpRequest
+              .body
+              .fold(DELETE(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+                case HttpRequest.Body.Json(json) =>
+                  DELETE(
                     json,
                     uriWithParams,
                     http4sHeaders: _*
                   )
-                  .asRight[HttpError]
+                    .asRight[HttpError]
+                    .pure
 
-              case HttpRequest.Body.File(_, _) =>
-                HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[F[Request[F]]]
+                case HttpRequest.Body.File(_, _) =>
+                  HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[Request[F]].pure
 
-              // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
+                // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
 //              case HttpRequest.Body.Multipart(multipartData) =>
 //                HttpError.methodUnsupportedForMultipart(httpRequest).asLeft[F[Request[F]]]
-            }
+              }
+        }
       }
-    }
+      .value
 
   @newtype case class Uri(uri: String) {
     def toHttp4s: Either[HttpError, Http4sUri] =
@@ -295,7 +303,7 @@ object HttpRequest {
   }
 
   @newtype case class Header(header: (String, String)) {
-    def toHttp4s: Http4sHeader = Http4sHeader(header._1, header._2)
+    def toHttp4s: Http4sHeader.ToRaw = Http4sHeader.Raw(CIString(header._1), header._2)
   }
 
   @newtype case class Param(param: (String, String))
@@ -366,7 +374,7 @@ object HttpRequest {
                 name.name,
                 file,
                 blocker,
-                mediaTypes.map(`Content-Type`(_)): _*
+                Http4sHeaders(mediaTypes.map(`Content-Type`(_))).headers
               )
             )
 
@@ -376,7 +384,7 @@ object HttpRequest {
                 name.name,
                 url,
                 blocker,
-                mediaTypes.map(`Content-Type`(_)): _*
+                Http4sHeaders(mediaTypes.map(`Content-Type`(_))).headers
               )
             )
 
@@ -388,7 +396,7 @@ object HttpRequest {
     def withHeader(header: Header): HttpRequest =
       httpRequest.copy(headers = httpRequest.headers :+ header)
 
-    def toHttp4s[F[_]: Applicative: Sync: ContextShift]: Either[HttpError, F[Request[F]]] =
+    def toHttp4s[F[_]: Applicative: Sync: ContextShift: Http4sClientDsl]: F[Either[HttpError, Request[F]]] =
       HttpRequest.toHttp4s[F](httpRequest)
 
     // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303

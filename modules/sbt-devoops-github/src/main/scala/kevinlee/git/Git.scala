@@ -2,9 +2,9 @@ package kevinlee.git
 
 import cats._
 import cats.data._
-import cats.implicits._
-import effectie.cats.Effectful._
-import effectie.cats._
+import cats.syntax.all._
+import effectie.syntax.all._
+import effectie.core._
 import io.circe.{Decoder, Encoder}
 import io.estatico.newtype.macros.newtype
 
@@ -114,9 +114,9 @@ object Git {
 
   def apply[F[_]: Git]: Git[F] = implicitly[Git[F]]
 
-  implicit def gitF[F[_]: EffectConstructor: Monad]: Git[F] = new GitF[F]
+  implicit def gitF[F[_]: Fx: Monad]: Git[F] = new GitF[F]
 
-  final class GitF[F[_]: EffectConstructor: Monad] extends Git[F] {
+  final class GitF[F[_]: Fx: Monad] extends Git[F] {
 
     override def fromProcessResultToEither[A](
       gitCmd: GitCmd,

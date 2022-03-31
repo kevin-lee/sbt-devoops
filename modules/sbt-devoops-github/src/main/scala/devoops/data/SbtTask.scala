@@ -3,9 +3,9 @@ package devoops.data
 import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
 import cats._
 import cats.data._
-import cats.implicits._
-import effectie.cats.Effectful._
-import effectie.cats._
+import cats.syntax.all._
+import effectie.syntax.all._
+import effectie.core._
 import kevinlee.git.Git
 import kevinlee.github.GitHubTask
 
@@ -73,9 +73,9 @@ object SbtTask {
 
   def apply[F[_]: SbtTask]: SbtTask[F] = implicitly[SbtTask[F]]
 
-  implicit def sbtTaskF[F[_]: EffectConstructor: CanCatch: Monad]: SbtTask[F] = new SbtTaskF[F]
+  implicit def sbtTaskF[F[_]: Fx: Monad]: SbtTask[F] = new SbtTaskF[F]
 
-  final class SbtTaskF[F[_]: EffectConstructor: CanCatch: Monad] extends SbtTask[F] {
+  final class SbtTaskF[F[_]: Fx: Monad] extends SbtTask[F] {
 
     override def fromNonSbtTask[A](fa: F[Either[SbtTaskError, A]])(
       history: A => List[SbtTaskResult]

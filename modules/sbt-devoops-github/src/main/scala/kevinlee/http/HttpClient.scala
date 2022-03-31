@@ -5,16 +5,17 @@ import cats.data.EitherT
 import cats.effect._
 import cats.syntax.all._
 import devoops.data.DevOopsLogLevel
-import effectie.cats.EffectConstructor
-import effectie.cats.EitherTSupport._
+import effectie.core._
+import extras.cats.syntax.either._
 import fs2.text
 import io.circe.Decoder
-import loggerf.cats._
-import loggerf.syntax._
+import loggerf.cats.syntax.all._
+import loggerf.core._
 import org.http4s.Status.Successful
 import org.http4s._
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.client.Client
+import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers._
 
 /** @author Kevin Lee
@@ -27,6 +28,7 @@ trait HttpClient[F[_]] {
     httpRequest: HttpRequest
   )(
     implicit entityDecoderA: Decoder[A],
+    dsl: Http4sClientDsl[F],
     sbtLogLevel: DevOopsLogLevel
   ): F[Either[HttpError, A]]
 
@@ -35,13 +37,13 @@ trait HttpClient[F[_]] {
 object HttpClient {
 
   def apply[
-    F[_]: Monad: EffectConstructor: ConcurrentEffect: ContextShift: Log
+    F[_]: Monad: Fx: ConcurrentEffect: ContextShift: Log
   ](client: Client[F]): HttpClient[F] =
     new HttpClientF[F](client)
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
   final class HttpClientF[
-    F[_]: Monad: EffectConstructor: ConcurrentEffect: ContextShift: Log
+    F[_]: Monad: Fx: ConcurrentEffect: ContextShift: Log
   ](
     client: Client[F]
   ) extends HttpClient[F] {
@@ -51,6 +53,7 @@ object HttpClient {
       httpRequest: HttpRequest
     )(
       implicit entityDecoderA: Decoder[A],
+      dsl: Http4sClientDsl[F],
       sbtLogLevel: DevOopsLogLevel
     ): F[Either[HttpError, A]] =
       sendRequest[A](httpRequest).value
@@ -60,22 +63,19 @@ object HttpClient {
       httpRequest: HttpRequest
     )(
       implicit entityDecoderA: Decoder[A],
+      dsl: Http4sClientDsl[F],
       sbtLogLevel: DevOopsLogLevel
     ): EitherT[F, HttpError, A] =
       for {
-        request <- EitherT.fromEither(
-                     httpRequest.toHttp4s[F]
-                   )
+        request <- httpRequest.toHttp4s[F].eitherT
 
-        postProcessedReq <- eitherTRightF[HttpError](
-                              postProcessRequest(
-                                request,
+        postProcessedReq <- postProcessRequest(
+                              request,
 //                                if (httpRequest.isBodyMultipart)
 //                                  Set.empty[MediaRange]
 //                                else
-                                implicitly[EntityDecoder[F, A]].consumes,
-                              )
-                            )
+                              EntityDecoder[F, A].consumes,
+                            ).rightTF[F, HttpError]
 
         res <-
           log(
@@ -91,15 +91,14 @@ object HttpClient {
           )
       } yield res
 
-    private[this] def postProcessRequest(request: F[Request[F]], mediaRanges: Set[MediaRange]): F[Request[F]] =
-      request.map { req =>
-        val mediaRangeList = mediaRanges.toList
-        mediaRangeList.headOption.fold(req) { head =>
-          req.putHeaders(
-            Accept(MediaRangeAndQValue(head), mediaRangeList.drop(1).map(MediaRangeAndQValue(_)): _*)
-          )
-        }
+    private[this] def postProcessRequest(request: Request[F], mediaRanges: Set[MediaRange]): Request[F] = {
+      val mediaRangeList = mediaRanges.toList
+      mediaRangeList.headOption.fold(request) { head =>
+        request.putHeaders(
+          Accept(MediaRangeAndQValue(head), mediaRangeList.drop(1).map(MediaRangeAndQValue(_)): _*)
+        )
       }
+    }
 
     private[this] def responseHandler[A](
       httpRequest: HttpRequest

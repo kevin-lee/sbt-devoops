@@ -6,8 +6,8 @@ import cats.instances.all._
 import cats.syntax.all._
 import devoops.data.SbtTaskResult.SbtTaskHistory
 import devoops.data._
-import effectie.cats.Effectful._
-import effectie.cats._
+import effectie.syntax.all._
+import effectie.core._
 import just.semver.SemVer
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, Repository, TagName}
@@ -17,7 +17,8 @@ import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.io.{CaseSensitivity, Io}
 import loggerf.logger.{CanLog, SbtLogger}
-import org.http4s.client.blaze.BlazeClientBuilder
+import loggerf.cats.instances._
+import org.http4s.blaze.client.BlazeClientBuilder
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting}
 
@@ -52,6 +53,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val projectVersion = version.value
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
+
+      import effectie.cats.fx._
 
       val run1: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] =
         getTagVersion[IO](basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
@@ -108,6 +111,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       implicit val timer: Timer[IO]     = IO.timer(ec)
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
+
+      import effectie.cats.fx._
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -172,6 +177,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
 
+      import effectie.cats.fx._
+
       BlazeClientBuilder[IO](ec)
         .withIdleTimeout(requestTimeout)
         .withRequestTimeout(requestTimeout)
@@ -217,6 +224,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       implicit val timer: Timer[IO]     = IO.timer(ec)
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
+
+      import effectie.cats.fx._
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -271,7 +280,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     },
   )
 
-  private def getTagVersion[F[_]: EffectConstructor: CanCatch: Monad](
+  private def getTagVersion[F[_]: Fx: Monad](
     basePath: File,
     tagFrom: BranchName,
     tagName: TagName,
@@ -333,7 +342,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       .fold(readOAuthToken(authTokenFile))(token => GitHub.OAuthToken(token).asRight)
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  private def runGitHubRelease[F[_]: EffectConstructor: CanCatch: Monad: Timer](
+  private def runGitHubRelease[F[_]: Fx: CanCatch: Monad: Timer](
     tagName: TagName,
     baseDir: File,
     changelogLocation: GitHub.ChangelogLocation,
@@ -397,7 +406,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     } yield ()
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  private def runUploadAssetsToGitHubRelease[F[_]: EffectConstructor: CanCatch: Monad](
+  private def runUploadAssetsToGitHubRelease[F[_]: Fx: CanCatch: Monad](
     tagName: TagName,
     assets: Vector[File],
     baseDir: File,

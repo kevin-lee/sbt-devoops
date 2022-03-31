@@ -144,23 +144,23 @@ lazy val props =
 
     final val CrossSbtVersions = List(GlobalSbtVersion).distinct
 
-    final val hedgehogVersion = "0.7.0"
+    final val hedgehogVersion = "0.8.0"
 
     final val newtypeVersion = "0.4.4"
 
     final val catsVersion       = "2.6.1"
     final val catsEffectVersion = "2.5.1"
 
-    final val extrasCatsVersion = "0.1.0"
+    final val extrasCatsVersion = "0.13.0"
 
-    final val effectieVersion = "1.15.0"
-    final val loggerFVersion  = "1.15.0"
+    final val effectieVersion = "2.0.0-SNAPSHOT"
+    final val loggerFVersion  = "2.0.0-SNAPSHOT"
 
-    final val refinedVersion = "0.9.25"
+    final val refinedVersion = "0.9.27"
 
-    final val circeVersion = "0.13.0"
+    final val circeVersion = "0.14.1"
 
-    final val http4sVersion = "0.21.28"
+    final val http4sVersion = "0.22.12"
 
     final val justSemVerVersion = "0.3.0"
 

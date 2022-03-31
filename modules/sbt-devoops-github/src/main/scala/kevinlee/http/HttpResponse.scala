@@ -93,7 +93,7 @@ object HttpResponse {
   }
 
   def fromHttp4sHeaders(headers: Headers): List[Header] =
-    headers.toList.map(header => Header(header.name.toString -> header.value))
+    headers.headers.map(header => Header(header.name.toString -> header.value))
 
   @newtype case class Body(body: String)
 
