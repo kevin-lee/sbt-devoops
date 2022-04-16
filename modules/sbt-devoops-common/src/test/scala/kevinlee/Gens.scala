@@ -28,7 +28,7 @@ object Gens {
   def genMinMax[T: Ordering](genOrderedPair: Gen[(T, T)]): Gen[(T, T)] =
     genOrderedPair.map {
       case (x, y) =>
-        if (implicitly[Ordering[T]].compare(x, y) <= 0)
+        if (Ordering[T].compare(x, y) <= 0)
           (x, y)
         else
           (y, x)
@@ -61,22 +61,22 @@ object Gens {
     pair => (constructor(pair._1), constructor(pair._2))
 
   def genMajor: Gen[Major] =
-    genNonNegativeInt.map(Major)
+    genNonNegativeInt.map(Major.apply)
 
   def genMinMaxMajors: Gen[(Major, Major)] =
-    genMinMaxNonNegInts.map(pairFromIntsTo(Major))
+    genMinMaxNonNegInts.map(pairFromIntsTo(Major.apply))
 
   def genMinor: Gen[Minor] =
-    genNonNegativeInt.map(Minor)
+    genNonNegativeInt.map(Minor.apply)
 
   def genMinMaxMinors: Gen[(Minor, Minor)] =
-    genMinMaxNonNegInts.map(pairFromIntsTo(Minor))
+    genMinMaxNonNegInts.map(pairFromIntsTo(Minor.apply))
 
   def genPatch: Gen[Patch] =
-    genNonNegativeInt.map(Patch)
+    genNonNegativeInt.map(Patch.apply)
 
   def genMinMaxPatches: Gen[(Patch, Patch)] =
-    genMinMaxNonNegInts.map(pairFromIntsTo(Patch))
+    genMinMaxNonNegInts.map(pairFromIntsTo(Patch.apply))
 
   def genNum: Gen[Anh] =
     genInt(0, 999).map(Anh.num)
