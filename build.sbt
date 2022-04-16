@@ -148,8 +148,8 @@ lazy val props =
 
     final val newtypeVersion = "0.4.4"
 
-    final val catsVersion       = "2.6.1"
-    final val catsEffectVersion = "2.5.1"
+    final val catsVersion       = "2.7.0"
+    final val catsEffectVersion = "2.5.4"
 
     final val extrasCatsVersion = "0.13.0"
 
@@ -162,7 +162,7 @@ lazy val props =
 
     final val http4sVersion = "0.22.12"
 
-    final val justSemVerVersion = "0.3.0"
+    final val justSemVerVersion = "0.4.0"
 
     final val justSysprocessVersion = "1.0.0"
 
