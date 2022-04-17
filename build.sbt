@@ -113,6 +113,10 @@ def subProject(projectName: String): Project = {
         case _ =>
           true
       }),
+      scriptedLaunchOpts := { scriptedLaunchOpts.value ++
+        Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+      },
+      scriptedBufferLog := false,
     )
     .settings(mavenCentralPublishSettings)
 }
