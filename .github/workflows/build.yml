@@ -2,6 +2,10 @@ name: Build All
 
 on: [push]
 
+env:
+  GH_JAVA_VERSION: "adopt@1.11"
+  GH_SCALA_BINARY_VERSION: "2.12"
+
 jobs:
 
   build:
@@ -16,7 +20,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: olafurpg/setup-scala@v13
         with:
-          java-version: ${{ matrix.scala.java-version }}
+          java-version: ${{ env.GH_JAVA_VERSION }}
 
       - name: Cache SBT
         uses: actions/cache@v3
@@ -25,13 +29,42 @@ jobs:
             ~/.ivy2/cache
             ~/.cache/coursier
             ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ matrix.scala.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
           restore-keys: |
-            ${{ runner.os }}-sbt-${{ matrix.scala.binary-version }}-
+            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
 
-      - name: Build for ${{ matrix.scala.binary-version }}
+      - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: |
           export CI_BRANCH="${GITHUB_REF#refs/heads/}"
           .github/workflows/sbt-build.sh ${{ matrix.scala.coveralls }}
+
+  sbt-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: olafurpg/setup-scala@v13
+        with:
+          java-version: ${{ env.GH_JAVA_VERSION }}
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+
+      - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+        run: |
+          export CI_BRANCH="${GITHUB_REF#refs/heads/}"
+          sbt \
+            -J-XX:MaxMetaspaceSize=1024m \
+            -J-Xmx4096m \
+            clean \
+            scripted

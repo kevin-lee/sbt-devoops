@@ -10,7 +10,72 @@ env:
   GH_SCALA_BINARY_VERSION: "2.12"
 
 jobs:
+
+  build:
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: olafurpg/setup-scala@v13
+        with:
+          java-version: ${{ env.GH_JAVA_VERSION }}
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+
+      - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+        run: |
+          export CI_BRANCH="${GITHUB_REF#refs/heads/}"
+              sbt \
+                -J-XX:MaxMetaspaceSize=1024m \
+                -J-Xmx2048m \
+                clean \
+                test \
+                packagedArtifacts
+
+  sbt-test:
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: olafurpg/setup-scala@v13
+        with:
+          java-version: ${{ env.GH_JAVA_VERSION }}
+
+      - name: Cache SBT
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+
+      - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+        run: |
+          export CI_BRANCH="${GITHUB_REF#refs/heads/}"
+          sbt \
+            -J-XX:MaxMetaspaceSize=1024m \
+            -J-Xmx4096m \
+            clean \
+            scripted
+
   gh-release:
+    needs: [build, sbt-test]
     if: startsWith(github.ref, 'refs/tags/v')
 
     runs-on: ubuntu-latest
@@ -79,13 +144,12 @@ jobs:
           echo "Run] sbt publish"
           export SOURCE_DATE_EPOCH=$(date +%s)
           echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
-          echo 'sbt -J-XX:MaxMetaspaceSize=1024m -J-Xmx2048m -v clean test ci-release"'
+          echo "sbt -J-XX:MaxMetaspaceSize=1024m -J-Xmx2048m -v clean ci-release"
           sbt \
             -J-XX:MaxMetaspaceSize=1024m \
             -J-Xmx2048m \
             -v \
             clean \
-            test \
             ci-release
 
           echo "====================="
