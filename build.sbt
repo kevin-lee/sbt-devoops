@@ -45,13 +45,13 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     sbtDevOopsScala,
     sbtDevOopsSbtExtra,
     sbtDevOopsGitHub,
-    sbtDevOopsJava,
   )
   .aggregate(
     sbtDevOopsCommon,
     sbtDevOopsScala,
     sbtDevOopsSbtExtra,
     sbtDevOopsGitHub,
+    sbtDevOopsReleaseVersionPolicy,
     sbtDevOopsJava,
   )
 
@@ -77,6 +77,14 @@ lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
   .enablePlugins(SbtPlugin)
   .settings(
     libraryDependencies ++= libs.all(scalaVersion.value),
+  )
+  .dependsOn(sbtDevOopsCommon)
+
+lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameReleaseVersionPolicy)
+  .enablePlugins(SbtPlugin)
+  .settings(
+    addSbtPlugin(libs.sbtRelease),
+    addSbtPlugin(libs.sbtVersionPolicy),
   )
   .dependsOn(sbtDevOopsCommon)
 
@@ -113,10 +121,11 @@ def subProject(projectName: String): Project = {
         case _ =>
           true
       }),
-      scriptedLaunchOpts := { scriptedLaunchOpts.value ++
-        Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+      scriptedLaunchOpts                := {
+        scriptedLaunchOpts.value ++
+          Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
       },
-      scriptedBufferLog := false,
+      scriptedBufferLog                 := false,
     )
     .settings(mavenCentralPublishSettings)
 }
@@ -135,11 +144,12 @@ lazy val props =
     val SonatypeCredentialHost = "s01.oss.sonatype.org"
     val SonatypeRepository     = s"https://$SonatypeCredentialHost/service/local"
 
-    final val SubProjectNameCommon   = "common"
-    final val SubProjectNameScala    = "scala"
-    final val SubProjectNameSbtExtra = "sbt-extra"
-    final val SubProjectNameGitHub   = "github"
-    final val SubProjectNameJava     = "java"
+    final val SubProjectNameCommon               = "common"
+    final val SubProjectNameScala                = "scala"
+    final val SubProjectNameSbtExtra             = "sbt-extra"
+    final val SubProjectNameGitHub               = "github"
+    final val SubProjectNameReleaseVersionPolicy = "release-version-policy"
+    final val SubProjectNameJava                 = "java"
 
     final val ProjectScalaVersion = "2.12.12"
     final val CrossScalaVersions  = List(ProjectScalaVersion).distinct
@@ -174,6 +184,9 @@ lazy val props =
 
     final val activationVersion    = "1.1.1"
     final val activationApiVersion = "1.2.0"
+
+    val SbtVersionPolicyVersion = "2.0.1"
+    val SbtReleaseVersion       = "1.1.0"
 
     final val IncludeTest = "compile->compile;test->test"
   }
@@ -227,6 +240,9 @@ lazy val libs =
     lazy val javaxActivation212 = List(
       "javax.activation" % "activation" % props.activationVersion,
     )
+
+    lazy val sbtVersionPolicy = "ch.epfl.scala"  % "sbt-version-policy" % props.SbtVersionPolicyVersion
+    lazy val sbtRelease       = "com.github.sbt" % "sbt-release"        % props.SbtReleaseVersion
 
     def all(scalaVersion: String) = crossVersionProps(
       List(

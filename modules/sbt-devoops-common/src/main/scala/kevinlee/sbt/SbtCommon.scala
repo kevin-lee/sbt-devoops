@@ -16,4 +16,7 @@ object SbtCommon {
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def messageOnlyException(message: String): Nothing =
     throw new MessageOnlyException(message)
+
+  def assertOrMessageOnlyException(assertion: Boolean, message: => String): Unit =
+    if (assertion) () else messageOnlyException(message)
 }
