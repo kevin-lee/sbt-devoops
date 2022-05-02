@@ -74,6 +74,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         s"target/scala-*/${filenamePrefix}*.jar",
         s"*/target/scala-*/${filenamePrefix}*.jar",
         s"*/*/target/scala-*/${filenamePrefix}*.jar",
+        s"*/*/*/target/scala-*/${filenamePrefix}*.jar",
       )
     },
     devOopsCopyReleasePackages := {
