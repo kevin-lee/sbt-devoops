@@ -167,8 +167,8 @@ lazy val props =
 
     final val extrasCatsVersion = "0.13.0"
 
-    final val effectieVersion = "2.0.0-SNAPSHOT"
-    final val loggerFVersion  = "2.0.0-SNAPSHOT"
+    final val effectieVersion = "2.0.0-beta1"
+    final val loggerFVersion  = "2.0.0-beta1"
 
     final val refinedVersion = "0.9.27"
 
@@ -215,7 +215,7 @@ lazy val libs =
     lazy val effectie = "io.kevinlee" %% "effectie-cats-effect" % props.effectieVersion
 
     lazy val loggerF = List(
-      "io.kevinlee" %% "logger-f-cats-effect" % props.loggerFVersion,
+      "io.kevinlee" %% "logger-f-cats" % props.loggerFVersion,
       "io.kevinlee" %% "logger-f-sbt-logging" % props.loggerFVersion,
     )
 
