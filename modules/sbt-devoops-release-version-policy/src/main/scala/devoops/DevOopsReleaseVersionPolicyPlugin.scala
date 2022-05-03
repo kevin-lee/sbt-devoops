@@ -11,7 +11,7 @@ import sbtversionpolicy.SbtVersionPolicyPlugin.autoImport._
 /** @author Kevin Lee
   * @since 2022-05-01
   */
-object DevOopsReleaseVersionPolicy extends AutoPlugin {
+object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
   override def requires: Plugins      = SbtVersionPolicyPlugin && ReleasePlugin
   override def trigger: PluginTrigger = noTrigger
 
