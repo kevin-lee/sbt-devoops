@@ -13,7 +13,7 @@ import sbtversionpolicy.SbtVersionPolicyPlugin.autoImport._
   */
 object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
   override def requires: Plugins      = SbtVersionPolicyPlugin && ReleasePlugin
-  override def trigger: PluginTrigger = noTrigger
+  override def trigger: PluginTrigger = allRequirements
 
   object autoImport {
     val CompatibilityFilename: String                             = "compatibility.sbt"
