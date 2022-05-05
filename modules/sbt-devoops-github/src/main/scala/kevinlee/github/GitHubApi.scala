@@ -2,7 +2,7 @@ package kevinlee.github
 
 import cats.Monad
 import cats.data.{EitherT, NonEmptyList}
-import cats.effect.Timer
+import cats.effect.Temporal
 import cats.syntax.all._
 import devoops.data.DevOopsLogLevel
 import effectie.core._
@@ -62,7 +62,7 @@ trait GitHubApi[F[_]] {
     releaseId: ReleaseId,
     repo: GitHub.GitHubRepoWithAuth,
     assets: List[File],
-  )(implicit ec: ExecutionContext, timer: Timer[F]): F[Either[GitHubError, List[GitHubRelease.Asset]]]
+  )(implicit ec: ExecutionContext, timer: Temporal[F]): F[Either[GitHubError, List[GitHubRelease.Asset]]]
 
 }
 
@@ -78,8 +78,8 @@ object GitHubApi {
    * It is to avoid the abuse rate limits.
    * https://docs.github.com/en/rest/overview/resources-in-the-rest-api#abuse-rate-limits
    */
-  def githubWithAbuseRateLimit[F[_]: Monad: Timer](): F[Unit] =
-    Timer[F].sleep(1.second).void
+  def githubWithAbuseRateLimit[F[_]: Monad: Temporal](): F[Unit] =
+    Temporal[F].sleep(1.second).void
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   final class GitHubApiF[F[_]: Monad: Fx](
@@ -345,7 +345,7 @@ object GitHubApi {
       releaseId: ReleaseId,
       repo: GitHub.GitHubRepoWithAuth,
       assets: List[File],
-    )(implicit ec: ExecutionContext, timer: Timer[F]): F[Either[GitHubError, List[GitHubRelease.Asset]]] =
+    )(implicit ec: ExecutionContext, timer: Temporal[F]): F[Either[GitHubError, List[GitHubRelease.Asset]]] =
       assets
         .traverse { file =>
           val contentType = contentTypeMap.getContentType(file)

@@ -1,6 +1,6 @@
 package kevinlee.http;
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.{Async, Sync}
 import cats.syntax.all._
 import cats.{Applicative, Show}
 import devoops.data.DevOopsLogLevel
@@ -13,6 +13,7 @@ import org.http4s.headers.`Content-Type`
 import org.http4s.{MediaType, Request, Header => Http4sHeader, Headers => Http4sHeaders, Uri => Http4sUri}
 import org.typelevel.ci.CIString
 import extras.cats.syntax.all._
+import fs2.io.file.{Files, Path => Fs2Path}
 
 import java.net.URL
 import java.util.Locale
@@ -107,8 +108,8 @@ object HttpRequest {
         case HttpRequest.Body.Json(json) =>
           json.spaces2
 
-        case HttpRequest.Body.File(file, blocker) =>
-          s"File(file=${file.getCanonicalPath}, blocker=$blocker)"
+        case HttpRequest.Body.File(file) =>
+          s"File(file=${file.getCanonicalPath})"
 
 //        case HttpRequest.Body.Multipart(multipartData) =>
 //          multipartData match {
@@ -126,7 +127,7 @@ object HttpRequest {
   import org.http4s.dsl.request._
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
-  def toHttp4s[F[_]: Applicative: Sync: ContextShift: Http4sClientDsl](
+  def toHttp4s[F[_]: Applicative: Async: Http4sClientDsl](
     httpRequest: HttpRequest
   ): F[Either[HttpError, Request[F]]] =
     httpRequest
@@ -161,7 +162,7 @@ object HttpRequest {
                     .asRight[HttpError]
                     .pure
 
-                case HttpRequest.Body.File(_, _) =>
+                case HttpRequest.Body.File(_) =>
                   HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[Request[F]].pure
 
                 // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
@@ -181,8 +182,14 @@ object HttpRequest {
                     .asRight[HttpError]
                     .pure
 
-                case HttpRequest.Body.File(file, blocker) =>
-                  val byteChunk = fs2.io.file.readAll[F](file.toPath, blocker, 8192).compile.to(Chunk)
+                case HttpRequest.Body.File(file) =>
+                  val byteChunk = fs2
+                    .io
+                    .file
+                    .Files[F]
+                    .readAll(fs2.io.file.Path.fromNioPath(file.toPath), 8192, fs2.io.file.Flags.Read)
+                    .compile
+                    .to(Chunk)
                   byteChunk
                     .map { chunk =>
                       POST(
@@ -244,7 +251,7 @@ object HttpRequest {
                     .asRight[HttpError]
                     .pure
 
-                case HttpRequest.Body.File(_, _) =>
+                case HttpRequest.Body.File(_) =>
                   HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[Request[F]].pure
 
                 // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
@@ -264,7 +271,7 @@ object HttpRequest {
                     .asRight[HttpError]
                     .pure
 
-                case HttpRequest.Body.File(_, _) =>
+                case HttpRequest.Body.File(_) =>
                   HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[Request[F]].pure
 
                 // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
@@ -284,7 +291,7 @@ object HttpRequest {
                     .asRight[HttpError]
                     .pure
 
-                case HttpRequest.Body.File(_, _) =>
+                case HttpRequest.Body.File(_) =>
                   HttpError.methodUnsupportedForFileUpload(httpRequest).asLeft[Request[F]].pure
 
                 // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
@@ -314,14 +321,14 @@ object HttpRequest {
     final case class Json(json: io.circe.Json) extends Body
     // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
 //    final case class Multipart(multipartData: MultipartData) extends Body
-    final case class File(file: java.io.File, blocker: Blocker) extends Body
+    final case class File(file: java.io.File) extends Body
 
     def json(json: io.circe.Json): Body = Json(json)
 
     // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
 //    def multipart(multipartData: MultipartData): Body = Multipart(multipartData)
 
-    def file(file: java.io.File, blocker: Blocker): Body = File(file, blocker)
+    def file(file: java.io.File): Body = File(file)
   }
 
   sealed trait MultipartData
@@ -331,59 +338,53 @@ object HttpRequest {
       name: Name,
       file: java.io.File,
       mediaTypes: List[MediaType],
-      blocker: Blocker,
     ) extends MultipartData
 
     final case class Url(
       name: Name,
       url: URL,
       mediaTypes: List[MediaType],
-      blocker: Blocker,
     ) extends MultipartData
 
     def file(
       name: Name,
       file: java.io.File,
       mediaTypes: List[MediaType],
-      blocker: Blocker,
     ): MultipartData =
-      File(name, file, mediaTypes, blocker)
+      File(name, file, mediaTypes)
 
     def url(
       name: Name,
       url: URL,
       mediaTypes: List[MediaType],
-      blocker: Blocker,
-    ): MultipartData = Url(name, url, mediaTypes, blocker)
+    ): MultipartData = Url(name, url, mediaTypes)
 
     @newtype case class Name(name: String)
 
     import org.http4s.multipart.{Part, Multipart => Http4sMultipart}
 
     implicit final class MultipartDataOps(val multipartData: MultipartData) extends AnyVal {
-      def toHttp4s[F[_]: Sync: ContextShift]: Http4sMultipart[F] =
+      def toHttp4s[F[_]: Sync: Files]: Http4sMultipart[F] =
         MultipartData.toHttp4s(multipartData)
     }
 
-    def toHttp4s[F[_]: Sync: ContextShift](multipartData: MultipartData): Http4sMultipart[F] =
+    def toHttp4s[F[_]: Sync: Files](multipartData: MultipartData): Http4sMultipart[F] =
       Http4sMultipart[F](
         multipartData match {
-          case File(name, file, mediaTypes, blocker) =>
+          case File(name, file, mediaTypes) =>
             Vector(
               Part.fileData(
                 name.name,
-                file,
-                blocker,
+                Fs2Path.fromNioPath(file.toPath),
                 Http4sHeaders(mediaTypes.map(`Content-Type`(_))).headers
               )
             )
 
-          case Url(name, url, mediaTypes, blocker) =>
+          case Url(name, url, mediaTypes) =>
             Vector(
               Part.fileData(
                 name.name,
                 url,
-                blocker,
                 Http4sHeaders(mediaTypes.map(`Content-Type`(_))).headers
               )
             )
@@ -396,7 +397,7 @@ object HttpRequest {
     def withHeader(header: Header): HttpRequest =
       httpRequest.copy(headers = httpRequest.headers :+ header)
 
-    def toHttp4s[F[_]: Applicative: Sync: ContextShift: Http4sClientDsl]: F[Either[HttpError, Request[F]]] =
+    def toHttp4s[F[_]: Applicative: Async: Http4sClientDsl]: F[Either[HttpError, Request[F]]] =
       HttpRequest.toHttp4s[F](httpRequest)
 
     // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
@@ -444,7 +445,7 @@ object HttpRequest {
       uri,
       headers,
       params,
-      HttpRequest.Body.file(file, Blocker.liftExecutionContext(ec)).some,
+      HttpRequest.Body.file(file).some,
     )
 
 //  def withHeadersParamsAndMultipartBody(

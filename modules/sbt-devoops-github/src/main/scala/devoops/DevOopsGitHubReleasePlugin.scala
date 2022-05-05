@@ -1,7 +1,7 @@
 package devoops
 
 import cats._
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.{IO, Temporal}
 import cats.instances.all._
 import cats.syntax.all._
 import devoops.data.SbtTaskResult.SbtTaskHistory
@@ -37,6 +37,8 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
   object autoImport extends GitHubReleaseKeys with GitHubReleaseOps
 
   import autoImport._
+
+  import cats.effect.unsafe.implicits.global
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     devOopsLogLevel            := DevOopsLogLevel.info.render,
@@ -108,8 +110,6 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val baseDir                  = baseDirectory.value
       lazy val requestTimeout           = devOopsGitHubRequestTimeout.value
       implicit val ec: ExecutionContext = ExecutionContext.global
-      implicit val cs: ContextShift[IO] = IO.contextShift(ec)
-      implicit val timer: Timer[IO]     = IO.timer(ec)
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
@@ -119,7 +119,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       val git                  = Git[IO]
       val sbtTask              = SbtTask[IO]
 
-      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = BlazeClientBuilder[IO](ec)
+      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = BlazeClientBuilder[IO]
         .withIdleTimeout(requestTimeout)
         .withRequestTimeout(requestTimeout)
         .withConnectTimeout(requestTimeout)
@@ -171,8 +171,6 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
 
       implicit val ec: ExecutionContext = ExecutionContext.global
-      implicit val cs: ContextShift[IO] = IO.contextShift(ec)
-      implicit val timer: Timer[IO]     = IO.timer(ec)
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
@@ -180,7 +178,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       import effectie.cats.fx._
 
-      BlazeClientBuilder[IO](ec)
+      BlazeClientBuilder[IO]
         .withIdleTimeout(requestTimeout)
         .withRequestTimeout(requestTimeout)
         .withConnectTimeout(requestTimeout)
@@ -221,8 +219,6 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
 
       implicit val ec: ExecutionContext = ExecutionContext.global
-      implicit val cs: ContextShift[IO] = IO.contextShift(ec)
-      implicit val timer: Timer[IO]     = IO.timer(ec)
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
@@ -232,7 +228,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       val git                  = Git[IO]
       val sbtTask              = SbtTask[IO]
 
-      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = BlazeClientBuilder[IO](ec)
+      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = BlazeClientBuilder[IO]
         .withIdleTimeout(requestTimeout)
         .withRequestTimeout(requestTimeout)
         .withConnectTimeout(requestTimeout)
@@ -343,7 +339,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       .fold(readOAuthToken(authTokenFile))(token => GitHub.OAuthToken(token).asRight)
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  private def runGitHubRelease[F[_]: Fx: CanCatch: Monad: Timer](
+  private def runGitHubRelease[F[_]: Fx: CanCatch: Monad: Temporal](
     tagName: TagName,
     baseDir: File,
     changelogLocation: GitHub.ChangelogLocation,
@@ -414,7 +410,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     gitTagPushRepo: Repository,
     oAuthToken: GitHub.OAuthToken,
     gitHubApi: GitHubApi[F],
-  )(implicit ec: ExecutionContext, timer: Timer[F]): GitHubTask.GitHubTaskResult[F, Unit] =
+  )(implicit ec: ExecutionContext, timer: Temporal[F]): GitHubTask.GitHubTaskResult[F, Unit] =
     for {
       url <- GitHubTask[F].fromGitTask(
                Git[F].getRemoteUrl(gitTagPushRepo, baseDir)

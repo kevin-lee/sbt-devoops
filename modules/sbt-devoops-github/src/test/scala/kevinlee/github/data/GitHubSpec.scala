@@ -2,10 +2,10 @@ package kevinlee.github.data
 
 import cats.effect.IO
 import cats.syntax.all._
+import effectie.cats.fx._
+import extras.hedgehog.cats.effect.CatsEffectRunner
 import hedgehog._
 import hedgehog.runner._
-
-import effectie.cats.fx._
 
 /** @author Kevin Lee
   * @since 2021-09-19
@@ -29,8 +29,8 @@ object GitHubSpec extends Properties {
   private def genName: Gen[String] = Gen.string(
     Gen.frequency1(
       96 -> Gen.alphaNum,
-      2 -> Gen.constant('-'),
-      2 -> Gen.constant('_'),
+      2  -> Gen.constant('-'),
+      2  -> Gen.constant('_'),
     ),
     Range.linear(4, 20),
   )
@@ -41,10 +41,12 @@ object GitHubSpec extends Properties {
   } yield {
     val remoteRepo = s"https://github.com/$org/$name.git"
     val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
-    val actual     = GitHub
-      .findGitHubRepoOrgAndName[IO](remoteRepo)
-      .unsafeRunSync()
-    actual ==== expected
+    val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
+
+    import CatsEffectRunner._
+    implicit val ticker: Ticker = Ticker.withNewTestContext()
+
+    ioApp.completeThen(_ ==== expected)
   }
 
   def testFindGitHubRepoOrgAndNameWithGitHubGit: Property = for {
@@ -53,10 +55,12 @@ object GitHubSpec extends Properties {
   } yield {
     val remoteRepo = s"git://github.com:$org/$name.git"
     val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
-    val actual     = GitHub
-      .findGitHubRepoOrgAndName[IO](remoteRepo)
-      .unsafeRunSync()
-    actual ==== expected
+    val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
+
+    import CatsEffectRunner._
+    implicit val ticker: Ticker = Ticker.withNewTestContext()
+
+    ioApp.completeThen(_ ==== expected)
   }
 
   def testFindGitHubRepoOrgAndNameWithGitHubSsh: Property = for {
@@ -65,10 +69,12 @@ object GitHubSpec extends Properties {
   } yield {
     val remoteRepo = s"git@github.com:$org/$name.git"
     val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
-    val actual     = GitHub
-      .findGitHubRepoOrgAndName[IO](remoteRepo)
-      .unsafeRunSync()
-    actual ==== expected
+    val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
+
+    import CatsEffectRunner._
+    implicit val ticker: Ticker = Ticker.withNewTestContext()
+
+    ioApp.completeThen(_ ==== expected)
   }
 
 }
