@@ -85,6 +85,10 @@ lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameRelease
   .settings(
     addSbtPlugin(libs.sbtRelease),
     addSbtPlugin(libs.sbtVersionPolicy),
+    libraryDependencies ++= List(
+      libs.extrasCats,
+      libs.extrasScalaIo,
+    )
   )
   .dependsOn(sbtDevOopsCommon)
 
@@ -210,6 +214,8 @@ lazy val libs =
     lazy val cats       = "org.typelevel" %% "cats-core"   % props.catsVersion
     lazy val catsEffect = "org.typelevel" %% "cats-effect" % props.catsEffectVersion
 
+    lazy val extrasCats                = "io.kevinlee" %% "extras-cats"     % props.extrasCatsVersion
+    lazy val extrasScalaIo             = "io.kevinlee" %% "extras-scala-io" % props.extrasCatsVersion
     lazy val extrasHedgehogCatsEffect3 =
       "io.kevinlee" %% "extras-hedgehog-cats-effect3" % props.extrasCatsVersion % Test
 

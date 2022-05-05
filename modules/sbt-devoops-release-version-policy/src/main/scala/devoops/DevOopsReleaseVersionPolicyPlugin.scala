@@ -1,5 +1,6 @@
 package devoops
 
+import extras.scala.io.syntax.color._
 import kevinlee.sbt.SbtCommon._
 import sbt.Keys._
 import sbt._
@@ -16,12 +17,14 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
 
   object autoImport {
-    val CompatibilityFilename: String                             = "compatibility.sbt"
-    val CompatibilityFileContent: String                          =
+    val CompatibilityFilename: String = "compatibility.sbt"
+
+    val CompatibilityFileContent: String =
       "ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible\n"
+
     val CompatibilityFileAdditionalContentForFirstRelease: String =
-      """// If this project has never been released, use the following one instead and remove the one above.
-        |// ThisBuild / versionPolicyIntention := Compatibility.None
+      """>> If this project has never been released, use the following one instead.
+        |ThisBuild / versionPolicyIntention := Compatibility.None
         |""".stripMargin
 
     val DefaultCompatibilityResetGitCommitMessage: String = "Reset compatibility intention"
@@ -33,74 +36,76 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
     lazy val setAndCommitNextCompatibilityIntention: TaskKey[Unit] =
       taskKey[Unit]("Set versionPolicyIntention to Compatibility.BinaryAndSourceCompatible, and commit the change")
 
-    lazy val initVersionPolicy: TaskKey[Unit] = taskKey(s"Create the initial $CompatibilityFilename file")
   }
 
   import autoImport._
 
-  ThisBuild / initVersionPolicy                  := {
-    val log               = streams.value.log
-    val compatibilityFile = new File(CompatibilityFilename)
-    if (compatibilityFile.exists) {
-      log.warn(
-        s"Failed to create $CompatibilityFilename. $CompatibilityFilename file already exists so you should use the existing file."
-      )
-    } else {
-      log.info(s"Create $CompatibilityFilename and set compatibility intention to BinaryAndSourceCompatible")
-      IO.write(
-        compatibilityFile,
-        CompatibilityFileContent + CompatibilityFileAdditionalContentForFirstRelease,
-      )
-    }
-  }
+  private def errorWithCompatibilityFileSetupInstruction(): Nothing =
+    messageOnlyException(s""">> versionPolicyIntention is not set. To set it,
+                            |>> please add the '${CompatibilityFilename.blue}' file to the root of the project.
+                            |>> The content of the file should be the following line
+                            |${CompatibilityFileContent.blue}
+                            |$CompatibilityFileAdditionalContentForFirstRelease
+                            |""".stripMargin)
 
-  ThisBuild / compatibilityResetGitCommitMessage := DefaultCompatibilityResetGitCommitMessage
+  override lazy val buildSettings: Seq[Setting[_]] = Seq(
+    versionPolicyIntention                 := (ThisBuild / versionPolicyIntention)
+      .?
+      .value
+      .getOrElse(errorWithCompatibilityFileSetupInstruction()),
+    compatibilityResetGitCommitMessage     := DefaultCompatibilityResetGitCommitMessage,
+    setAndCommitNextCompatibilityIntention := {
+      val log           = streams.value.log
+      val intention     = (ThisBuild / versionPolicyIntention)
+        .?
+        .value
+        .getOrElse(errorWithCompatibilityFileSetupInstruction())
+      val commitMessage = (ThisBuild / compatibilityResetGitCommitMessage).value
+      intention match {
+        case Compatibility.BinaryAndSourceCompatible =>
+          log.info("Not changing compatibility intention because it is already set to BinaryAndSourceCompatible")
 
-  ThisBuild / setAndCommitNextCompatibilityIntention := {
-    val log           = streams.value.log
-    val intention     = (ThisBuild / versionPolicyIntention).value
-    val commitMessage = (ThisBuild / compatibilityResetGitCommitMessage).value
-    intention match {
-      case Compatibility.BinaryAndSourceCompatible =>
-        log.info("Not changing compatibility intention because it is already set to BinaryAndSourceCompatible")
-
-      case Compatibility.BinaryCompatible | Compatibility.None =>
-        log.info("Reset compatibility intention to BinaryAndSourceCompatible")
-        IO.write(
-          new File(CompatibilityFilename),
-          CompatibilityFileContent,
-        )
-        val gitAddExitValue = sys
-          .process
-          .Process(s"git add $CompatibilityFilename")
-          .run(log)
-          .exitValue()
-        @SuppressWarnings(Array("org.wartremover.warts.Equals"))
-        val gitAddSuccess   = gitAddExitValue == 0
-        assertOrMessageOnlyException(gitAddSuccess, s"Command failed with exit status $gitAddExitValue")
-
-        val gitCommitExitValue =
-          sys
+        case Compatibility.BinaryCompatible | Compatibility.None =>
+          log.info("Reset compatibility intention to BinaryAndSourceCompatible")
+          IO.write(
+            new File(CompatibilityFilename),
+            CompatibilityFileContent,
+          )
+          val gitAddExitValue = sys
             .process
-            .Process(
-              List(
-                "git",
-                "commit",
-                "-m",
-                commitMessage,
-              )
-            )
+            .Process(s"git add $CompatibilityFilename")
             .run(log)
             .exitValue()
-        @SuppressWarnings(Array("org.wartremover.warts.Equals"))
-        val gitCommitSuccess   = gitCommitExitValue == 0
-        assertOrMessageOnlyException(gitCommitSuccess, s"Command failed with exit status $gitCommitExitValue")
-    }
-  }
+          @SuppressWarnings(Array("org.wartremover.warts.Equals"))
+          val gitAddSuccess   = gitAddExitValue == 0
+          assertOrMessageOnlyException(gitAddSuccess, s"Command failed with exit status $gitAddExitValue")
+
+          val gitCommitExitValue =
+            sys
+              .process
+              .Process(
+                List(
+                  "git",
+                  "commit",
+                  "-m",
+                  commitMessage,
+                )
+              )
+              .run(log)
+              .exitValue()
+          @SuppressWarnings(Array("org.wartremover.warts.Equals"))
+          val gitCommitSuccess   = gitCommitExitValue == 0
+          assertOrMessageOnlyException(gitCommitSuccess, s"Command failed with exit status $gitCommitExitValue")
+      }
+    },
+  )
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     releaseVersion := {
-      val maybeBump: Option[sbtrelease.Version.Bump] = versionPolicyIntention.value match {
+      val maybeBump: Option[sbtrelease.Version.Bump] = versionPolicyIntention
+        .?
+        .value
+        .getOrElse(errorWithCompatibilityFileSetupInstruction()) match {
         case Compatibility.None => Some(sbtrelease.Version.Bump.Major)
         case Compatibility.BinaryCompatible => Some(sbtrelease.Version.Bump.Minor)
         /* No need to bump the patch version, because it has already been bumped when sbt-release set the next release version */
