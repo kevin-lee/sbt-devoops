@@ -36,6 +36,7 @@ object DevOopsGitHubPlugin extends AutoPlugin {
     findRepoOrgAndNameWithCanLog(Logging.printlnCanLog(logLevel))
 
   private def findRepoOrgAndNameWithCanLog(canLog: CanLog): Option[GitHub.Repo] = {
+    import cats.effect.unsafe.implicits.global
     implicit val log: CanLog = canLog
     (for {
       remoteRepo <- GitHub.findRemoteRepo[IO]().optionT

@@ -163,24 +163,24 @@ lazy val props =
     final val newtypeVersion = "0.4.4"
 
     final val catsVersion       = "2.7.0"
-    final val catsEffectVersion = "2.5.4"
+    final val catsEffectVersion = "3.3.5"
 
     final val extrasCatsVersion = "0.13.0"
 
     final val effectieVersion = "2.0.0-beta1"
     final val loggerFVersion  = "2.0.0-beta1"
 
-    final val refinedVersion = "0.9.27"
+    final val refinedVersion = "0.9.28"
 
     final val circeVersion = "0.14.1"
 
-    final val http4sVersion = "0.22.12"
+    final val http4sVersion = "0.23.11"
 
     final val justSemVerVersion = "0.4.0"
 
     final val justSysprocessVersion = "1.0.0"
 
-    final val commonsIoVersion = "2.8.0"
+    final val commonsIoVersion = "2.11.0"
 
     final val activationVersion    = "1.1.1"
     final val activationApiVersion = "1.2.0"
@@ -210,12 +210,13 @@ lazy val libs =
     lazy val cats       = "org.typelevel" %% "cats-core"   % props.catsVersion
     lazy val catsEffect = "org.typelevel" %% "cats-effect" % props.catsEffectVersion
 
-    lazy val extrasCats = "io.kevinlee" %% "extras-cats" % props.extrasCatsVersion
+    lazy val extrasHedgehogCatsEffect3 =
+      "io.kevinlee" %% "extras-hedgehog-cats-effect3" % props.extrasCatsVersion % Test
 
-    lazy val effectie = "io.kevinlee" %% "effectie-cats-effect" % props.effectieVersion
+    lazy val effectie = "io.kevinlee" %% "effectie-cats-effect3" % props.effectieVersion
 
     lazy val loggerF = List(
-      "io.kevinlee" %% "logger-f-cats" % props.loggerFVersion,
+      "io.kevinlee" %% "logger-f-cats"        % props.loggerFVersion,
       "io.kevinlee" %% "logger-f-sbt-logging" % props.loggerFVersion,
     )
 
@@ -251,9 +252,9 @@ lazy val libs =
         newtype,
         cats,
         catsEffect,
-        extrasCats,
         effectie,
         justSysprocess,
+        extrasHedgehogCatsEffect3,
       ) ++
         hedgehogLibs ++
         loggerF ++

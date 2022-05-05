@@ -37,13 +37,13 @@ trait HttpClient[F[_]] {
 object HttpClient {
 
   def apply[
-    F[_]: Monad: Fx: ConcurrentEffect: ContextShift: Log
+    F[_]: Monad: Fx: Log: Async
   ](client: Client[F]): HttpClient[F] =
     new HttpClientF[F](client)
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
   final class HttpClientF[
-    F[_]: Monad: Fx: ConcurrentEffect: ContextShift: Log
+    F[_]: Monad: Fx: Log: Async
   ](
     client: Client[F]
   ) extends HttpClient[F] {
@@ -82,7 +82,7 @@ object HttpClient {
             EitherT(
               client
                 .run(postProcessedReq)
-                .use[F, Either[HttpError, A]](responseHandler(httpRequest))
+                .use[Either[HttpError, A]](responseHandler(httpRequest))
             )
 //              .leftFlatMap(err => EitherT(effectOf(HttpError.recoverFromOptional404[A](err))))
           )(
@@ -122,7 +122,7 @@ object HttpClient {
             if (failedResponse.status.isEntityAllowed) {
               failedResponse
                 .body
-                .through(text.utf8Decode)
+                .through(text.utf8.decode)
                 .through(text.lines)
                 .compile[F, F, String]
                 .string
