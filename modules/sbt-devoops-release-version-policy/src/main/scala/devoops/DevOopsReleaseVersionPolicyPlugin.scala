@@ -20,14 +20,29 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
     val CompatibilityFilename: String = "compatibility.sbt"
 
     val CompatibilityFileContent: String =
-      "ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible\n"
+      "ThisBuild / versionPolicyIntention := Compatibility.BinaryAndSourceCompatible"
 
     val CompatibilityFileAdditionalContentForFirstRelease: String =
       """>> If this project has never been released, use the following one instead.
-        |ThisBuild / versionPolicyIntention := Compatibility.None
-        |""".stripMargin
+        |ThisBuild / versionPolicyIntention := Compatibility.None""".stripMargin
 
     val DefaultCompatibilityResetGitCommitMessage: String = "Reset compatibility intention"
+
+    val MissingCompatibilityFileInstruction: String = {
+      val oneLiner = raw"""echo "$CompatibilityFileContent" > $CompatibilityFilename"""
+      s"""
+         |>> versionPolicyIntention is not set. To set it,
+         |>> please add the '${CompatibilityFilename.blue}' file to the root of the project.
+         |>> The content of the file should be the following line
+         |${CompatibilityFileContent.blue}
+         |>>
+         |$CompatibilityFileAdditionalContentForFirstRelease
+         |>>
+         |>> On Linux or macOS, you can simply run the following command at the root of your project.
+         |${oneLiner.blue}
+         |
+         |""".stripMargin
+    }
 
     lazy val compatibilityResetGitCommitMessage: SettingKey[String] = settingKey[String](
       s"A message used to commit the compatibility intention reset. (default: $DefaultCompatibilityResetGitCommitMessage)"
@@ -41,12 +56,7 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
   import autoImport._
 
   private def errorWithCompatibilityFileSetupInstruction(): Nothing =
-    messageOnlyException(s""">> versionPolicyIntention is not set. To set it,
-                            |>> please add the '${CompatibilityFilename.blue}' file to the root of the project.
-                            |>> The content of the file should be the following line
-                            |${CompatibilityFileContent.blue}
-                            |$CompatibilityFileAdditionalContentForFirstRelease
-                            |""".stripMargin)
+    messageOnlyException(MissingCompatibilityFileInstruction)
 
   override lazy val buildSettings: Seq[Setting[_]] = Seq(
     versionPolicyIntention                 := (ThisBuild / versionPolicyIntention)
@@ -69,7 +79,7 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
           log.info("Reset compatibility intention to BinaryAndSourceCompatible")
           IO.write(
             new File(CompatibilityFilename),
-            CompatibilityFileContent,
+            s"$CompatibilityFileContent\n",
           )
           val gitAddExitValue = sys
             .process
