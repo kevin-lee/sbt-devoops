@@ -276,3 +276,31 @@ lazy val libs =
   }
 
 lazy val writeVersion = inputKey[Unit]("Write Version in File'")
+
+logo :=
+  raw"""
+       |       __   __      ___           ____
+       |  ___ / /  / /_____/ _ \___ _  __/ __ \___  ___  ___
+       | (_-</ _ \/ __/___/ // / -_) |/ / /_/ / _ \/ _ \(_-<
+       |/___/_.__/\__/   /____/\__/|___/\____/\___/ .__/___/
+       |                                         /_/
+       |
+       |${scala.Console.BLUE}${name.value}${scala.Console.RESET} v${scala.Console.BLUE}${version.value}${scala.Console.RESET}
+       |${scala.Console.YELLOW}Scala ${scalaVersion.value}${scala.Console.RESET}
+       |-----------------------------------------------------
+       |""".stripMargin
+
+import sbtwelcome._
+
+usefulTasks := Seq(
+  UsefulTask("r", "reload", "Run reload"),
+  UsefulTask("cln", "clean", "Run clean"),
+  UsefulTask("c", "compile", "Run compile"),
+  UsefulTask("tc", "Test/compile", "Run Test/compile"),
+  UsefulTask("t", "test", "Run test"),
+  UsefulTask("fmtchk", "scalafmtCheckAll", "Run scalafmtCheckAll"),
+  UsefulTask("fmt", "scalafmtAll", "Run scalafmtAll"),
+  UsefulTask("pl", "publishLocal", "Run publishLocal"),
+)
+
+logoColor := scala.Console.MAGENTA
