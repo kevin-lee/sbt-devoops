@@ -50,6 +50,7 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     sbtDevOopsCommon,
     sbtDevOopsScala,
     sbtDevOopsSbtExtra,
+    sbtDevOopsStarter,
     sbtDevOopsGitHub,
     sbtDevOopsReleaseVersionPolicy,
     sbtDevOopsJava,
@@ -72,6 +73,15 @@ lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala)
 
 lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra)
   .enablePlugins(SbtPlugin)
+
+lazy val sbtDevOopsStarter = subProject(props.SubProjectNameStarter)
+  .enablePlugins(SbtPlugin)
+  .settings(
+    addSbtPlugin(libs.sbtScalafmt),
+    addSbtPlugin(libs.sbtScalafix),
+    addSbtPlugin(libs.sbtWelcome),
+  )
+  .dependsOn(sbtDevOopsScala, sbtDevOopsSbtExtra)
 
 lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
   .enablePlugins(SbtPlugin)
@@ -151,6 +161,7 @@ lazy val props =
     final val SubProjectNameCommon               = "common"
     final val SubProjectNameScala                = "scala"
     final val SubProjectNameSbtExtra             = "sbt-extra"
+    final val SubProjectNameStarter              = "starter"
     final val SubProjectNameGitHub               = "github"
     final val SubProjectNameReleaseVersionPolicy = "release-version-policy"
     final val SubProjectNameJava                 = "java"
@@ -191,6 +202,11 @@ lazy val props =
 
     val SbtVersionPolicyVersion = "2.0.1"
     val SbtReleaseVersion       = "1.1.0"
+
+    val SbtScalafmtVersion = "2.4.6"
+    val SbtScalafixVersion = "0.10.0"
+
+    val SbtWelcomeVersion = "0.2.2"
 
     final val IncludeTest = "compile->compile;test->test"
   }
@@ -251,6 +267,11 @@ lazy val libs =
     lazy val sbtVersionPolicy = "ch.epfl.scala"  % "sbt-version-policy" % props.SbtVersionPolicyVersion
     lazy val sbtRelease       = "com.github.sbt" % "sbt-release"        % props.SbtReleaseVersion
 
+    lazy val sbtScalafmt = "org.scalameta" % "sbt-scalafmt" % props.SbtScalafmtVersion
+    lazy val sbtScalafix = "ch.epfl.scala" % "sbt-scalafix" % props.SbtScalafixVersion
+
+    lazy val sbtWelcome = "com.github.reibitto" % "sbt-welcome" % props.SbtWelcomeVersion
+
     def all(scalaVersion: String) = crossVersionProps(
       List(
         commonsIo,
@@ -277,6 +298,7 @@ lazy val libs =
 
 lazy val writeVersion = inputKey[Unit]("Write Version in File'")
 
+import scala.{Console => sConsole}
 logo :=
   raw"""
        |       __   __      ___           ____
@@ -285,8 +307,8 @@ logo :=
        |/___/_.__/\__/   /____/\__/|___/\____/\___/ .__/___/
        |                                         /_/
        |
-       |${scala.Console.BLUE}${name.value}${scala.Console.RESET} v${scala.Console.BLUE}${version.value}${scala.Console.RESET}
-       |${scala.Console.YELLOW}Scala ${scalaVersion.value}${scala.Console.RESET}
+       |${sConsole.BLUE}${name.value}${sConsole.RESET} v${sConsole.BLUE}${version.value}${sConsole.RESET}
+       |${sConsole.YELLOW}Scala ${scalaVersion.value}${sConsole.RESET}
        |-----------------------------------------------------
        |""".stripMargin
 
@@ -303,4 +325,4 @@ usefulTasks := Seq(
   UsefulTask("pl", "publishLocal", "Run publishLocal"),
 )
 
-logoColor := scala.Console.MAGENTA
+logoColor := sConsole.MAGENTA
