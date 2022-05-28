@@ -50,6 +50,8 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     sbtDevOopsCommon,
     sbtDevOopsScala,
     sbtDevOopsSbtExtra,
+    sbtDevOopsHttpCore,
+    sbtDevOopsGitHubCore,
     sbtDevOopsStarter,
     sbtDevOopsGitHub,
     sbtDevOopsReleaseVersionPolicy,
@@ -62,8 +64,8 @@ lazy val sbtDevOopsCommon = subProject(props.SubProjectNameCommon)
     libraryDependencies ++= List(
       libs.semVer,
       libs.commonsIo,
+      libs.cats,
       libs.newtype % Test,
-      libs.cats    % Test,
     ) ++ libs.hedgehogLibs,
   )
 
@@ -74,6 +76,20 @@ lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala)
 lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra)
   .enablePlugins(SbtPlugin)
 
+lazy val sbtDevOopsHttpCore = subProject(props.SubProjectNameHttpCore)
+  .enablePlugins(SbtPlugin)
+  .settings(
+    libraryDependencies ++= libs.all(scalaVersion.value),
+  )
+  .dependsOn(sbtDevOopsCommon)
+
+lazy val sbtDevOopsGitHubCore = subProject(props.SubProjectNameGitHubCore)
+  .enablePlugins(SbtPlugin)
+  .settings(
+    libraryDependencies ++= libs.all(scalaVersion.value),
+  )
+  .dependsOn(sbtDevOopsCommon, sbtDevOopsHttpCore)
+
 lazy val sbtDevOopsStarter = subProject(props.SubProjectNameStarter)
   .enablePlugins(SbtPlugin)
   .settings(
@@ -81,14 +97,14 @@ lazy val sbtDevOopsStarter = subProject(props.SubProjectNameStarter)
     addSbtPlugin(libs.sbtScalafix),
     addSbtPlugin(libs.sbtWelcome),
   )
-  .dependsOn(sbtDevOopsScala, sbtDevOopsSbtExtra)
+  .dependsOn(sbtDevOopsScala, sbtDevOopsSbtExtra, sbtDevOopsHttpCore, sbtDevOopsGitHubCore)
 
 lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
   .enablePlugins(SbtPlugin)
   .settings(
     libraryDependencies ++= libs.all(scalaVersion.value),
   )
-  .dependsOn(sbtDevOopsCommon)
+  .dependsOn(sbtDevOopsCommon, sbtDevOopsGitHubCore)
 
 lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameReleaseVersionPolicy)
   .enablePlugins(SbtPlugin)
@@ -162,6 +178,8 @@ lazy val props =
     final val SubProjectNameScala                = "scala"
     final val SubProjectNameSbtExtra             = "sbt-extra"
     final val SubProjectNameStarter              = "starter"
+    final val SubProjectNameHttpCore             = "http-core"
+    final val SubProjectNameGitHubCore           = "github-core"
     final val SubProjectNameGitHub               = "github"
     final val SubProjectNameReleaseVersionPolicy = "release-version-policy"
     final val SubProjectNameJava                 = "java"
@@ -180,7 +198,7 @@ lazy val props =
     final val catsVersion       = "2.7.0"
     final val catsEffectVersion = "3.3.5"
 
-    final val extrasCatsVersion = "0.13.0"
+    final val extrasVersion = "0.13.0"
 
     final val effectieVersion = "2.0.0-beta1"
     final val loggerFVersion  = "2.0.0-beta1"
@@ -230,10 +248,10 @@ lazy val libs =
     lazy val cats       = "org.typelevel" %% "cats-core"   % props.catsVersion
     lazy val catsEffect = "org.typelevel" %% "cats-effect" % props.catsEffectVersion
 
-    lazy val extrasCats                = "io.kevinlee" %% "extras-cats"     % props.extrasCatsVersion
-    lazy val extrasScalaIo             = "io.kevinlee" %% "extras-scala-io" % props.extrasCatsVersion
+    lazy val extrasCats                = "io.kevinlee" %% "extras-cats"     % props.extrasVersion
+    lazy val extrasScalaIo             = "io.kevinlee" %% "extras-scala-io" % props.extrasVersion
     lazy val extrasHedgehogCatsEffect3 =
-      "io.kevinlee" %% "extras-hedgehog-cats-effect3" % props.extrasCatsVersion % Test
+      "io.kevinlee" %% "extras-hedgehog-cats-effect3" % props.extrasVersion % Test
 
     lazy val effectie = "io.kevinlee" %% "effectie-cats-effect3" % props.effectieVersion
 
@@ -281,6 +299,7 @@ lazy val libs =
         catsEffect,
         effectie,
         justSysprocess,
+        extrasScalaIo,
         extrasHedgehogCatsEffect3,
       ) ++
         hedgehogLibs ++

@@ -2,10 +2,12 @@ package kevinlee.sbt.io
 
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import org.apache.commons.io.filefilter.WildcardFileFilter
+import sbt.io.Using
 import sbt.{DirectoryFilter, File, IO, file}
 
-import java.io.FileFilter
+import java.io.{FileFilter, InputStream, PrintWriter}
 import scala.annotation.tailrec
+import scala.io.Source
 
 /** @author Kevin Lee
   * @since 2019-01-20
@@ -144,4 +146,14 @@ object Io {
       )
     ).toVector
       .sorted
+
+  def writeResourceToFile(input: String, out: File): File =
+    Using.resource[InputStream, Source]((in: InputStream) => Source.fromInputStream(in))(
+      getClass.getResourceAsStream(input)
+    ) { in =>
+      Using.file(new PrintWriter(_))(out) { o =>
+        in.getLines.foreach(o.println)
+        out
+      }
+    }
 }
