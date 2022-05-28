@@ -289,4 +289,7 @@ object GitHubError {
       GitHubError.unexpectedFailure(error)
   }
 
+  implicit class GitHubErrorOps(private val gitHubError: GitHubError) extends AnyVal {
+    def render(implicit L: DevOopsLogLevel): String = GitHubError.render(gitHubError)
+  }
 }
