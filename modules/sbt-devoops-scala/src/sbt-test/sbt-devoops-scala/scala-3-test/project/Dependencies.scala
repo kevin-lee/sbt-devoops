@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val hedgehogVersion = "0.8.0"
+  val hedgehogVersion = "0.9.0"
 
   val hedgehog = List(
     "qa.hedgehog" %% "hedgehog-core" % hedgehogVersion,
