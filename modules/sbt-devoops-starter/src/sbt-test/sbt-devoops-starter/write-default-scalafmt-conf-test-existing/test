@@ -1,0 +1,4 @@
+$ exists .scalafmt.conf
+> starterWriteDefaultScalafmtConf
+-$ newer .scalafmt.conf
+-$ diff .scalafmt.conf original-scalafmt.conf
