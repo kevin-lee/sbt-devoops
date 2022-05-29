@@ -11,7 +11,7 @@ ThisBuild / crossScalaVersions := List(
 
 lazy val root = (project in file("."))
   .settings(
-    name                            := "scala-2-test",
+    name := "scala-2-test",
     libraryDependencies ++= Dependencies.hedgehog,
     testFrameworks += TestFramework("hedgehog.sbt.Framework"),
     fork := true,
