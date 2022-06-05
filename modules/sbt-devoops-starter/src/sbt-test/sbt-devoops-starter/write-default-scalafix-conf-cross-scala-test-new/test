@@ -1,0 +1,7 @@
+$ absent .scalafix.conf
+$ absent .scalafix-scala2.conf
+$ absent .scalafix-scala3.conf
+> starterWriteDefaultScalafixConf
+$ absent .scalafix.conf
+$ exists .scalafix-scala2.conf
+$ exists .scalafix-scala3.conf

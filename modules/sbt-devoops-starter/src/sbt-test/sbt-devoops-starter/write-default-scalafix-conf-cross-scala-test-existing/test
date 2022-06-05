@@ -1,0 +1,9 @@
+$ absent .scalafix.conf
+$ exists .scalafix-scala2.conf
+$ exists .scalafix-scala3.conf
+> starterWriteDefaultScalafixConf
+$ absent .scalafix.conf
+-$ newer .scalafix-scala2.conf
+-$ diff .scalafix-scala2.conf original-scala2.conf
+-$ newer .scalafix-scala3.conf
+-$ diff .scalafix-scala3.conf original-scala3.conf
