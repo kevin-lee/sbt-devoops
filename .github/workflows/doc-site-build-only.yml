@@ -60,5 +60,4 @@ jobs:
             docusaurGenerateGoogleAnalyticsConfigFile \
             docusaurInstall \
             docusaurCleanBuild \
-            docusaurBuild \
-            publishToGitHubPages
+            docusaurBuild
