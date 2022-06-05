@@ -1,0 +1,3 @@
+$ absent .scalafix.conf
+> starterWriteDefaultScalafixConf
+$ exists .scalafix.conf

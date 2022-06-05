@@ -339,6 +339,7 @@ usefulTasks := Seq(
   UsefulTask("c", "compile", "Run compile"),
   UsefulTask("tc", "Test/compile", "Run Test/compile"),
   UsefulTask("t", "test", "Run test"),
+  UsefulTask("st", "scripted", "Run scripted for sbt-test"),
   UsefulTask("fmtchk", "scalafmtCheckAll", "Run scalafmtCheckAll"),
   UsefulTask("fmt", "scalafmtAll", "Run scalafmtAll"),
   UsefulTask("pl", "publishLocal", "Run publishLocal"),

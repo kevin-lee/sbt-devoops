@@ -1,0 +1,4 @@
+$ exists .scalafix.conf
+> starterWriteDefaultScalafixConf
+-$ newer .scalafix.conf
+-$ diff .scalafix.conf original-scalafix.conf
