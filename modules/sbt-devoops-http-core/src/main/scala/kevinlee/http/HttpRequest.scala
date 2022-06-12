@@ -14,6 +14,7 @@ import org.http4s.{MediaType, Request, Header => Http4sHeader, Headers => Http4s
 import org.typelevel.ci.CIString
 import extras.cats.syntax.all._
 import fs2.io.file.{Files, Path => Fs2Path}
+import org.http4s.multipart.Multiparts
 
 import java.net.URL
 import java.util.Locale
@@ -364,33 +365,37 @@ object HttpRequest {
     import org.http4s.multipart.{Part, Multipart => Http4sMultipart}
 
     implicit final class MultipartDataOps(val multipartData: MultipartData) extends AnyVal {
-      def toHttp4s[F[_]: Sync: Files]: Http4sMultipart[F] =
+      def toHttp4s[F[_]: Sync: Files]: F[Http4sMultipart[F]] =
         MultipartData.toHttp4s(multipartData)
     }
 
-    def toHttp4s[F[_]: Sync: Files](multipartData: MultipartData): Http4sMultipart[F] =
-      Http4sMultipart[F](
-        multipartData match {
-          case File(name, file, mediaTypes) =>
-            Vector(
-              Part.fileData(
-                name.name,
-                Fs2Path.fromNioPath(file.toPath),
-                Http4sHeaders(mediaTypes.map(`Content-Type`(_))).headers
-              )
-            )
+    def toHttp4s[F[_]: Sync: Files](multipartData: MultipartData): F[Http4sMultipart[F]] =
+      Multiparts
+        .forSync[F]
+        .flatMap(
+          _.multipart(
+            multipartData match {
+              case MultipartData.File(name, file, mediaTypes) =>
+                Vector(
+                  Part.fileData(
+                    name.name,
+                    Fs2Path.fromNioPath(file.toPath),
+                    Http4sHeaders(mediaTypes.map(`Content-Type`(_))).headers
+                  )
+                )
 
-          case Url(name, url, mediaTypes) =>
-            Vector(
-              Part.fileData(
-                name.name,
-                url,
-                Http4sHeaders(mediaTypes.map(`Content-Type`(_))).headers
-              )
-            )
+              case MultipartData.Url(name, url, mediaTypes) =>
+                Vector(
+                  Part.fileData(
+                    name.name,
+                    url,
+                    Http4sHeaders(mediaTypes.map(`Content-Type`(_))).headers
+                  )
+                )
 
-        }
-      )
+            }
+          )
+        )
   }
 
   implicit final class HttpRequestOps(val httpRequest: HttpRequest) extends AnyVal {

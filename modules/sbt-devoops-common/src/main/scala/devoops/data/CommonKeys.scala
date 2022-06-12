@@ -2,10 +2,9 @@ package devoops.data
 
 import sbt._
 
-/**
- * @author Kevin Lee
- * @since 2022-05-28
- */
+/** @author Kevin Lee
+  * @since 2022-05-28
+  */
 trait CommonKeys {
 
   lazy val devOopsLogLevel: SettingKey[String] = settingKey(

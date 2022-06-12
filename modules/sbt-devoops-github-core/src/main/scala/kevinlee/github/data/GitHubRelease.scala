@@ -35,7 +35,7 @@ object GitHubRelease {
             requestParams.name.toList.map(name => "name" -> name.asJson) ++
             requestParams.body.toList.map(body => "body" -> body.asJson) ++
             List(
-              "draft" -> requestParams.draft.asJson,
+              "draft"      -> requestParams.draft.asJson,
               "prerelease" -> requestParams.prerelease.asJson,
             )): _*
         )
@@ -66,7 +66,7 @@ object GitHubRelease {
         Json.obj(
           (
             List(
-              "tag_name" -> requestParams.tagName.asJson,
+              "tag_name"   -> requestParams.tagName.asJson,
               "release_id" -> requestParams.releaseId.asJson,
             ) ++
               requestParams.name.toList.map(name => "name" -> name.asJson) ++
@@ -252,18 +252,18 @@ object GitHubRelease {
     implicit val encoder: Encoder[Asset] =
       asset =>
         Json.obj(
-          "id" -> asset.id.asJson,
-          "url" -> asset.url.asJson,
+          "id"                   -> asset.id.asJson,
+          "url"                  -> asset.url.asJson,
           "browser_download_url" -> asset.browserDownloadUrl.asJson,
-          "name" -> asset.name.asJson,
-          "label" -> asset.label.asJson,
-          "state" -> asset.state.asJson,
-          "content_type" -> asset.contentType.asJson,
-          "size" -> asset.size.asJson,
-          "download_count" -> asset.downloadCount.asJson,
-          "created_at" -> asset.createdAt.asJson,
-          "updated_at" -> asset.updatedAt.asJson,
-          "uploader" -> asset.uploader.asJson,
+          "name"                 -> asset.name.asJson,
+          "label"                -> asset.label.asJson,
+          "state"                -> asset.state.asJson,
+          "content_type"         -> asset.contentType.asJson,
+          "size"                 -> asset.size.asJson,
+          "download_count"       -> asset.downloadCount.asJson,
+          "created_at"           -> asset.createdAt.asJson,
+          "updated_at"           -> asset.updatedAt.asJson,
+          "uploader"             -> asset.uploader.asJson,
         )
     implicit val decoder: Decoder[Asset] =
       c =>
@@ -350,19 +350,19 @@ object GitHubRelease {
     implicit val encoder: Encoder[Response] =
       response =>
         Json.obj(
-          "id" -> response.id.id.asJson,
-          "url" -> response.uri.url.asJson,
-          "assets_url" -> response.assetsUrl.assetsUrl.asJson,
-          "upload_url" -> response.uploadUrl.uploadUrl.asJson,
-          "author" -> response.author.asJson,
-          "tag_name" -> response.tagName.asJson,
-          "name" -> response.name.asJson,
-          "body" -> response.body.asJson,
-          "draft" -> response.draft.asJson,
-          "prerelease" -> response.prerelease.asJson,
-          "created_at" -> response.createdAt.asJson,
+          "id"           -> response.id.id.asJson,
+          "url"          -> response.uri.url.asJson,
+          "assets_url"   -> response.assetsUrl.assetsUrl.asJson,
+          "upload_url"   -> response.uploadUrl.uploadUrl.asJson,
+          "author"       -> response.author.asJson,
+          "tag_name"     -> response.tagName.asJson,
+          "name"         -> response.name.asJson,
+          "body"         -> response.body.asJson,
+          "draft"        -> response.draft.asJson,
+          "prerelease"   -> response.prerelease.asJson,
+          "created_at"   -> response.createdAt.asJson,
           "published_at" -> response.publishedAt.asJson,
-          "assets" -> response.assets.asJson,
+          "assets"       -> response.assets.asJson,
         )
 
     implicit val decoder: Decoder[Response] =

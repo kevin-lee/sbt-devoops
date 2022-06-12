@@ -191,12 +191,12 @@ lazy val props =
 
     final val CrossSbtVersions = List(GlobalSbtVersion).distinct
 
-    final val hedgehogVersion = "0.8.0"
+    final val hedgehogVersion = "0.9.0"
 
     final val newtypeVersion = "0.4.4"
 
     final val catsVersion       = "2.7.0"
-    final val catsEffectVersion = "3.3.5"
+    final val catsEffectVersion = "3.3.12"
 
     final val extrasVersion = "0.15.0"
 
@@ -205,11 +205,11 @@ lazy val props =
 
     final val refinedVersion = "0.9.28"
 
-    final val circeVersion = "0.14.1"
+    final val circeVersion = "0.14.2"
 
-    final val http4sVersion = "0.23.11"
+    final val http4sVersion = "0.23.12"
 
-    final val justSemVerVersion = "0.4.0"
+    final val justSemVerVersion = "0.5.0"
 
     final val justSysprocessVersion = "1.0.0"
 
@@ -222,7 +222,7 @@ lazy val props =
     val SbtReleaseVersion       = "1.1.0"
 
     val SbtScalafmtVersion = "2.4.6"
-    val SbtScalafixVersion = "0.10.0"
+    val SbtScalafixVersion = "0.10.1"
 
     val SbtWelcomeVersion = "0.2.2"
 
@@ -262,7 +262,7 @@ lazy val libs =
 
     lazy val http4sClient = List(
       "org.http4s" %% "http4s-dsl"          % props.http4sVersion,
-      "org.http4s" %% "http4s-blaze-client" % props.http4sVersion,
+      "org.http4s" %% "http4s-ember-client" % props.http4sVersion,
       "org.http4s" %% "http4s-circe"        % props.http4sVersion,
     )
 
@@ -343,6 +343,7 @@ usefulTasks := Seq(
   UsefulTask("fmtchk", "scalafmtCheckAll", "Run scalafmtCheckAll"),
   UsefulTask("fmt", "scalafmtAll", "Run scalafmtAll"),
   UsefulTask("pl", "publishLocal", "Run publishLocal"),
+  UsefulTask("du", "dependencyUpdates", "Run dependencyUpdates"),
 )
 
 logoColor := sConsole.MAGENTA
