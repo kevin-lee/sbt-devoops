@@ -24,7 +24,7 @@ import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.blaze.client.BlazeClientBuilder
 import sbt.{IO => SbtIO}
 import sbtwelcome.WelcomePlugin
-import sbtwelcome.WelcomePlugin.autoImport.{logo, logoColor, usefulTasks}
+import sbtwelcome.WelcomePlugin.autoImport.{aliasColor, logo, logoColor, usefulTasks}
 import scalafix.sbt.ScalafixPlugin
 
 import java.nio.charset.StandardCharsets
@@ -58,11 +58,11 @@ object DevOopsStarterPlugin extends AutoPlugin {
       """The additional information displayed after logo (default: "")"""
     )
 
-    lazy val starterWriteDefaultScalafmtConf: TaskKey[Unit] = taskKey("Write the (default: .scalafmt.conf)")
+    lazy val starterWriteDefaultScalafmtConf: TaskKey[Unit] = taskKey(s"Write the (default: ${".scalafmt.conf".blue})")
 
     lazy val starterWriteDefaultScalafixConf: TaskKey[Unit] = taskKey(
-      "Write the (default .scalafix.conf if the project has only scala 2 or only scala 3. " +
-        "Otherwise .scalafix-scala2.conf and .scalafix-scala3.conf)"
+      s"Write the (default ${".scalafix.conf".blue} if the project has only scala 2 or only scala 3. " +
+        s"Otherwise ${".scalafix-scala2.conf".blue} and ${".scalafix-scala3.conf".blue})"
     )
 
     def genLogo(
@@ -74,7 +74,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
     ): String = {
       raw"""$theLogo
            |${projectName.blue} ${projectVersion.green}
-           |${s"Scala $scalaVersion".colored(Color.yellow)}
+           |${s"Scala $scalaVersion".yellow}
            |-----------------------------------------------------
            |$logoAdditionalInfo""".stripMargin
     }
@@ -113,9 +113,10 @@ object DevOopsStarterPlugin extends AutoPlugin {
     },
     starterWriteDefaultScalafixConf := {
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
-      val crossScalaVers                                 = crossScalaVersions.value
-      val scalaVer                                       = scalaVersion.value
-      val baseDirFile                                    = (ThisBuild / baseDirectory).value
+
+      val crossScalaVers = crossScalaVersions.value
+      val scalaVer       = scalaVersion.value
+      val baseDirFile    = (ThisBuild / baseDirectory).value
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       import cats.effect.unsafe.implicits.global
@@ -265,12 +266,18 @@ object DevOopsStarterPlugin extends AutoPlugin {
       UsefulTask("ct", "+test", "Run cross-scalaVersion test"),
       UsefulTask("fmtchk", "scalafmtCheckAll", "Run scalafmtCheckAll"),
       UsefulTask("fmt", "scalafmtAll", "Run scalafmtAll"),
+      UsefulTask("cfmtchk", "+scalafmtCheckAll", "Run +scalafmtCheckAll"),
+      UsefulTask("cfmt", "+scalafmtAll", "Run +scalafmtAll"),
       UsefulTask("fixchk", "scalafixAll --check", "Run scalafixAll --check"),
       UsefulTask("fix", "scalafixAll", "Run scalafixAll"),
+      UsefulTask("cfixchk", "+scalafixAll --check", "Run +scalafixAll --check"),
+      UsefulTask("cfix", "+scalafixAll", "Run +scalafixAll"),
       UsefulTask("chk", "fmtchk; fixchk", "Run scalafmtCheckAll; scalafixAll --check"),
+      UsefulTask("cchk", "cfmtchk; cfixchk", "Run +scalafmtCheckAll; +scalafixAll --check"),
       UsefulTask("pl", "publishLocal", "Run publishLocal"),
     ),
-    logoColor          := Color.magenta.toAnsi
+    logoColor          := Color.magenta.toAnsi,
+    aliasColor         := Color.blue.toAnsi,
   )
 
 }
