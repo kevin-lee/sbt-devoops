@@ -21,7 +21,7 @@ import kevinlee.sbt.SbtCommon._
 import loggerf.cats.instances._
 import loggerf.core.{Log => LogF}
 import loggerf.logger.{CanLog, SbtLogger}
-import org.http4s.blaze.client.BlazeClientBuilder
+import org.http4s.ember.client.EmberClientBuilder
 import sbt.{IO => SbtIO}
 import sbtwelcome.WelcomePlugin
 import sbtwelcome.WelcomePlugin.autoImport.{aliasColor, logo, logoColor, usefulTasks}
@@ -176,8 +176,9 @@ object DevOopsStarterPlugin extends AutoPlugin {
   def writeDefaultScalafmtConf[F[_]: Fx: LogF: Async](dialectVersion: String, outFile: File)(
     implicit LV: DevOopsLogLevel
   ): F[Either[StarterError, Unit]] =
-    BlazeClientBuilder[F]
-      .resource
+    EmberClientBuilder
+      .default[F]
+      .build
       .use { client =>
         (for {
           gitHubApi <- GitHubApi[F](HttpClient[F](client)).rightTF

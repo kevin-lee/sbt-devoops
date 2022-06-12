@@ -81,8 +81,8 @@ object HttpResponseSpec extends Properties {
           FailedResponseBodyJson.Errors(
             Map(
               "resource" -> "Release",
-              "code" -> "already_exists",
-              "field" -> "tag_name"
+              "code"     -> "already_exists",
+              "field"    -> "tag_name"
             )
           )
         ),

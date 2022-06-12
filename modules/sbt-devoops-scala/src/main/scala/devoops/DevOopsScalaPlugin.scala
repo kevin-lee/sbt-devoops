@@ -3,7 +3,7 @@ package devoops
 import just.semver.{ParseError, SemVer}
 import kevinlee.sbt.SbtCommon._
 import sbt.Keys._
-import sbt.{AutoPlugin, CircularDependencyLevel, Compile, PluginTrigger, Setting, SettingKey, plugins, settingKey, _}
+import sbt._
 
 /** @author Kevin Lee
   * @since 2018-12-29

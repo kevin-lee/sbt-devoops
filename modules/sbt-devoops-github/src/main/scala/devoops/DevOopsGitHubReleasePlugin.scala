@@ -6,8 +6,8 @@ import cats.instances.all._
 import cats.syntax.all._
 import devoops.data.SbtTaskResult.SbtTaskHistory
 import devoops.data._
-import effectie.syntax.all._
 import effectie.core._
+import effectie.syntax.all._
 import just.semver.SemVer
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, Repository, TagName}
@@ -16,9 +16,9 @@ import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-import loggerf.logger.{CanLog, SbtLogger}
 import loggerf.cats.instances._
-import org.http4s.blaze.client.BlazeClientBuilder
+import loggerf.logger.{CanLog, SbtLogger}
+import org.http4s.ember.client.EmberClientBuilder
 import sbt.Keys._
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting}
 
@@ -37,7 +37,6 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
   object autoImport extends GitHubReleaseKeys with GitHubReleaseOps
 
   import autoImport._
-
   import cats.effect.unsafe.implicits.global
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
@@ -119,11 +118,11 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       val git                  = Git[IO]
       val sbtTask              = SbtTask[IO]
 
-      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = BlazeClientBuilder[IO]
-        .withIdleTimeout(requestTimeout)
-        .withRequestTimeout(requestTimeout)
-        .withConnectTimeout(requestTimeout)
-        .resource
+      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = EmberClientBuilder
+        .default[IO]
+        .withIdleConnectionTime(requestTimeout)
+        .withTimeout(requestTimeout)
+        .build
         .use { client =>
           val r: SbtTask.Result[IO, Unit] =
             for {
@@ -135,13 +134,12 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
                            s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}"
                          ),
                        )
-              oauth <-
-                sbtTask.eitherTWithWriter(
-                  effectOf[IO](
-                    getGitHubAuthToken(authTokenEnvVar, authTokenFile)
-                      .leftMap(SbtTaskError.gitHubTaskError)
-                  )
-                )(_ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token")))
+              oauth <- sbtTask.eitherTWithWriter(
+                         effectOf[IO](
+                           getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+                             .leftMap(SbtTaskError.gitHubTaskError)
+                         )
+                       )(_ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token")))
               _     <- sbtTask.handleGitHubTask(
                          runGitHubRelease(
                            tagName,
@@ -178,11 +176,11 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       import effectie.cats.fx._
 
-      BlazeClientBuilder[IO]
-        .withIdleTimeout(requestTimeout)
-        .withRequestTimeout(requestTimeout)
-        .withConnectTimeout(requestTimeout)
-        .resource
+      EmberClientBuilder
+        .default[IO]
+        .withIdleConnectionTime(requestTimeout)
+        .withTimeout(requestTimeout)
+        .build
         .use { client =>
           SbtTask[IO].handleSbtTask(
             (for {
@@ -228,11 +226,11 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       val git                  = Git[IO]
       val sbtTask              = SbtTask[IO]
 
-      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = BlazeClientBuilder[IO]
-        .withIdleTimeout(requestTimeout)
-        .withRequestTimeout(requestTimeout)
-        .withConnectTimeout(requestTimeout)
-        .resource
+      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = EmberClientBuilder
+        .default[IO]
+        .withIdleConnectionTime(requestTimeout)
+        .withTimeout(requestTimeout)
+        .build
         .use { client =>
           val r: SbtTask.Result[IO, Unit] =
             for {

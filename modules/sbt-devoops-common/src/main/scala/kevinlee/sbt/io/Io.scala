@@ -7,7 +7,7 @@ import sbt.{DirectoryFilter, File, IO, file}
 
 import java.io.{FileFilter, InputStream, PrintWriter}
 import scala.annotation.tailrec
-import scala.io.Source
+import scala.io.{Codec, Source}
 
 /** @author Kevin Lee
   * @since 2019-01-20
@@ -17,8 +17,10 @@ object Io {
   def getUserHome: String =
     sys
       .props
-      .get("user.home")
-      .getOrElse(messageOnlyException("User home is not found."))
+      .getOrElse(
+        "user.home",
+        messageOnlyException("""User home is not found. sys.props.get("user.home") returns None.""")
+      )
 
   def wildcardFilters(names: Seq[String], caseSensitivity: CaseSensitivity): FileFilter =
     new WildcardFileFilter(names.toArray, CaseSensitivity.toIOCase(caseSensitivity))
@@ -148,7 +150,7 @@ object Io {
       .sorted
 
   def writeResourceToFile(input: String, out: File): File =
-    Using.resource[InputStream, Source]((in: InputStream) => Source.fromInputStream(in))(
+    Using.resource[InputStream, Source]((in: InputStream) => Source.fromInputStream(in)(Codec.UTF8))(
       getClass.getResourceAsStream(input)
     ) { in =>
       Using.file(new PrintWriter(_))(out) { o =>

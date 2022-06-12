@@ -145,11 +145,11 @@ object GitHub {
       implicit final val encoder: Encoder[Tag] =
         tag =>
           Json.obj(
-            "name" -> tag.name.asJson,
-            "commit" -> tag.commit.asJson,
+            "name"        -> tag.name.asJson,
+            "commit"      -> tag.commit.asJson,
             "zipball_url" -> tag.zipballUrl.asJson,
             "tarball_url" -> tag.tarballUrl.asJson,
-            "node_id" -> tag.nodeId.asJson,
+            "node_id"     -> tag.nodeId.asJson,
           )
 
       implicit final val decoder: Decoder[Tag] =
@@ -233,9 +233,9 @@ object GitHub {
         Json.obj(
           (
             List(
-              "id" -> author.id.asJson,
+              "id"    -> author.id.asJson,
               "login" -> author.login.asJson,
-              "url" -> author.url.asJson,
+              "url"   -> author.url.asJson,
             ) ++
               author
                 .name

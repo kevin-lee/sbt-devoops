@@ -109,7 +109,7 @@ object HttpResponse {
           (
             List(
               "message" -> Json.fromString(responseBodyJson.message),
-              "errors" ->
+              "errors"  ->
                 responseBodyJson
                   .errors
                   .map(errors => Json.obj(errors.value.mapValues(Json.fromString).toList: _*))
