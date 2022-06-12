@@ -79,14 +79,19 @@ lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra)
 lazy val sbtDevOopsHttpCore = subProject(props.SubProjectNameHttpCore)
   .enablePlugins(SbtPlugin)
   .settings(
-    libraryDependencies ++= libs.all(scalaVersion.value),
+    libraryDependencies ++= List(
+      libs.catsEffect,
+      libs.newtype,
+      libs.effectie,
+      libs.justSysprocess,
+    ) ++ libs.loggerF ++ libs.circe ++ libs.http4sClient ++ libs.javaxActivation212,
   )
-  .dependsOn(sbtDevOopsCommon)
+  .dependsOn(sbtDevOopsCommon % props.IncludeTest)
 
 lazy val sbtDevOopsGitHubCore = subProject(props.SubProjectNameGitHubCore)
   .enablePlugins(SbtPlugin)
   .settings(
-    libraryDependencies ++= libs.all(scalaVersion.value),
+    libraryDependencies ++= libs.hedgehogLibs ++ List(libs.extrasHedgehogCatsEffect3),
   )
   .dependsOn(sbtDevOopsCommon, sbtDevOopsHttpCore)
 
@@ -96,14 +101,12 @@ lazy val sbtDevOopsStarter = subProject(props.SubProjectNameStarter)
     addSbtPlugin(libs.sbtScalafmt),
     addSbtPlugin(libs.sbtScalafix),
     addSbtPlugin(libs.sbtWelcome),
+    libraryDependencies ++= List(libs.extrasScalaIo)
   )
   .dependsOn(sbtDevOopsScala, sbtDevOopsSbtExtra, sbtDevOopsHttpCore, sbtDevOopsGitHubCore)
 
 lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
   .enablePlugins(SbtPlugin)
-  .settings(
-    libraryDependencies ++= libs.all(scalaVersion.value),
-  )
   .dependsOn(sbtDevOopsCommon, sbtDevOopsGitHubCore)
 
 lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameReleaseVersionPolicy)
@@ -112,7 +115,6 @@ lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameRelease
     addSbtPlugin(libs.sbtRelease),
     addSbtPlugin(libs.sbtVersionPolicy),
     libraryDependencies ++= List(
-      libs.extrasCats,
       libs.extrasScalaIo,
     )
   )
@@ -344,6 +346,8 @@ usefulTasks := Seq(
   UsefulTask("fmt", "scalafmtAll", "Run scalafmtAll"),
   UsefulTask("pl", "publishLocal", "Run publishLocal"),
   UsefulTask("du", "dependencyUpdates", "Run dependencyUpdates"),
+  UsefulTask("uud", "unusedCompileDependencies", "Run unusedCompileDependencies"),
+  UsefulTask("udd", "undeclaredCompileDependencies", "Run undeclaredCompileDependencies"),
 )
 
 logoColor := sConsole.MAGENTA
