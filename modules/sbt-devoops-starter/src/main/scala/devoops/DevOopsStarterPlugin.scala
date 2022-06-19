@@ -65,6 +65,34 @@ object DevOopsStarterPlugin extends AutoPlugin {
         s"Otherwise ${".scalafix-scala2.conf".blue} and ${".scalafix-scala3.conf".blue})"
     )
 
+    @SuppressWarnings(Array("org.wartremover.warts.Equals"))
+    def preprocessLogo(logo: String): String =
+      if (java.time.LocalDate.now().getMonth == java.time.Month.JUNE) {
+        val logoLines = logo.split("\n")
+        val maxLength = logoLines.map(_.length).max
+        val lines     = logoLines.map { line =>
+          val lineLength = line.length
+          if (lineLength === 0) {
+            line
+          } else {
+            val additionalSpace =
+              if (lineLength < maxLength)
+                " " * (maxLength - lineLength)
+              else
+                ""
+            line + additionalSpace
+          }
+        }
+        import extras.scala.io.syntax.truecolor.rainbow._
+        lines
+          .map { line =>
+            if (line.nonEmpty) line.rainbowed else line
+          }
+          .mkString("\n")
+      } else {
+        logo
+      }
+
     def genLogo(
       projectName: String,
       projectVersion: String,
@@ -72,7 +100,8 @@ object DevOopsStarterPlugin extends AutoPlugin {
       theLogo: String,
       logoAdditionalInfo: String
     ): String = {
-      raw"""$theLogo
+      val logoToUse = preprocessLogo(theLogo)
+      raw"""$logoToUse
            |${projectName.blue} ${projectVersion.green}
            |${s"Scala $scalaVersion".yellow}
            |-----------------------------------------------------
