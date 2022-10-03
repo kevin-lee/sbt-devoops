@@ -2,15 +2,15 @@ package kevinlee.github.data
 
 import cats.effect.IO
 import cats.syntax.all._
-import effectie.cats.fx._
-import extras.hedgehog.cats.effect.CatsEffectRunner
+import effectie.ce3.fx._
+import extras.hedgehog.ce3.CatsEffectRunner
 import hedgehog._
 import hedgehog.runner._
 
 /** @author Kevin Lee
   * @since 2021-09-19
   */
-object GitHubSpec extends Properties {
+object GitHubSpec extends Properties with CatsEffectRunner {
   override def tests: List[Test] = List(
     property(
       "test findGitHubRepoOrgAndName with GitHubHttps",
@@ -35,46 +35,40 @@ object GitHubSpec extends Properties {
     Range.linear(4, 20),
   )
 
-  def testFindGitHubRepoOrgAndNameWithGitHubHttps: Property = for {
-    org  <- genName.log("org")
-    name <- genName.log("name")
-  } yield {
-    val remoteRepo = s"https://github.com/$org/$name.git"
-    val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
-    val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
+  def testFindGitHubRepoOrgAndNameWithGitHubHttps: Property =
+    for {
+      org  <- genName.log("org")
+      name <- genName.log("name")
+    } yield withIO { implicit ticker =>
+      val remoteRepo = s"https://github.com/$org/$name.git"
+      val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
+      val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
 
-    import CatsEffectRunner._
-    implicit val ticker: Ticker = Ticker.withNewTestContext()
+      ioApp.completeThen(_ ==== expected)
+    }
 
-    ioApp.completeThen(_ ==== expected)
-  }
+  def testFindGitHubRepoOrgAndNameWithGitHubGit: Property =
+    for {
+      org  <- genName.log("org")
+      name <- genName.log("name")
+    } yield withIO { implicit ticker =>
+      val remoteRepo = s"git://github.com:$org/$name.git"
+      val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
+      val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
 
-  def testFindGitHubRepoOrgAndNameWithGitHubGit: Property = for {
-    org  <- genName.log("org")
-    name <- genName.log("name")
-  } yield {
-    val remoteRepo = s"git://github.com:$org/$name.git"
-    val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
-    val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
+      ioApp.completeThen(_ ==== expected)
+    }
 
-    import CatsEffectRunner._
-    implicit val ticker: Ticker = Ticker.withNewTestContext()
+  def testFindGitHubRepoOrgAndNameWithGitHubSsh: Property =
+    for {
+      org  <- genName.log("org")
+      name <- genName.log("name")
+    } yield withIO { implicit ticker =>
+      val remoteRepo = s"git@github.com:$org/$name.git"
+      val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
+      val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
 
-    ioApp.completeThen(_ ==== expected)
-  }
-
-  def testFindGitHubRepoOrgAndNameWithGitHubSsh: Property = for {
-    org  <- genName.log("org")
-    name <- genName.log("name")
-  } yield {
-    val remoteRepo = s"git@github.com:$org/$name.git"
-    val expected   = GitHub.Repo(GitHub.Repo.Org(org), GitHub.Repo.Name(name)).some
-    val ioApp      = GitHub.findGitHubRepoOrgAndName[IO](remoteRepo)
-
-    import CatsEffectRunner._
-    implicit val ticker: Ticker = Ticker.withNewTestContext()
-
-    ioApp.completeThen(_ ==== expected)
-  }
+      ioApp.completeThen(_ ==== expected)
+    }
 
 }

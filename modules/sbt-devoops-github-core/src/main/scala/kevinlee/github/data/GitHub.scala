@@ -79,9 +79,9 @@ object GitHub {
     override def toString: String = "***Protected***"
   }
 
-  @newtype case class Changelog(changelog: String)
+  @newtype final case class Changelog(changelog: String)
 
-  @newtype case class ChangelogLocation(changeLogLocation: String)
+  @newtype final case class ChangelogLocation(changeLogLocation: String)
 
   final case class Repo(
     org: Repo.Org,
@@ -90,9 +90,9 @@ object GitHub {
 
   object Repo {
 
-    @newtype case class Org(org: String)
+    @newtype final case class Org(org: String)
 
-    @newtype case class Name(name: String)
+    @newtype final case class Name(name: String)
 
     implicit final class RepoOps(private val repo: Repo) extends AnyVal {
       def toRepoNameString: String = s"${repo.org.org}/${repo.name.name}"
@@ -111,7 +111,7 @@ object GitHub {
       nodeId: Tag.NodeId,
     )
     object Tag {
-      @newtype case class Name(name: String)
+      @newtype final case class Name(name: String)
       object Name {
         implicit val encoder: Encoder[Name] = deriving
         implicit val decoder: Decoder[Name] = deriving
@@ -119,24 +119,24 @@ object GitHub {
 
       final case class Commit(sha: String, url: String)
       object Commit {
-        @newtype case class Sha(sha: String)
-        @newtype case class Url(url: String)
+        @newtype final case class Sha(sha: String)
+        @newtype final case class Url(url: String)
 
         implicit val encoder: Encoder[Commit] = deriveEncoder
         implicit val decoder: Decoder[Commit] = deriveDecoder
       }
 
-      @newtype case class ZipballUrl(zipballUrl: String)
+      @newtype final case class ZipballUrl(zipballUrl: String)
       object ZipballUrl {
         implicit val encoder: Encoder[ZipballUrl] = deriving
         implicit val decoder: Decoder[ZipballUrl] = deriving
       }
-      @newtype case class TarballUrl(tarballUrl: String)
+      @newtype final case class TarballUrl(tarballUrl: String)
       object TarballUrl {
         implicit val encoder: Encoder[TarballUrl] = deriving
         implicit val decoder: Decoder[TarballUrl] = deriving
       }
-      @newtype case class NodeId(nodeId: String)
+      @newtype final case class NodeId(nodeId: String)
       object NodeId {
         implicit val encoder: Encoder[NodeId] = deriving
         implicit val decoder: Decoder[NodeId] = deriving
@@ -207,22 +207,22 @@ object GitHub {
       implicit val encoder: Encoder[Id] = deriving
       implicit val decoder: Decoder[Id] = deriving
     }
-    @newtype case class Login(login: String Refined NonEmpty)
+    @newtype final case class Login(login: String Refined NonEmpty)
     object Login {
       implicit val encoder: Encoder[Login] = deriving
       implicit val decoder: Decoder[Login] = deriving
     }
-    @newtype case class Url(url: String Refined string.Url)
+    @newtype final case class Url(url: String Refined string.Url)
     object Url {
       implicit val encoder: Encoder[Url] = deriving
       implicit val decoder: Decoder[Url] = deriving
     }
-    @newtype case class Name(name: String)
+    @newtype final case class Name(name: String)
     object Name {
       implicit val encoder: Encoder[Name] = deriving
       implicit val decoder: Decoder[Name] = deriving
     }
-    @newtype case class AvatarUrl(avatarUrl: String)
+    @newtype final case class AvatarUrl(avatarUrl: String)
     object AvatarUrl {
       implicit val encoder: Encoder[AvatarUrl] = deriving
       implicit val decoder: Decoder[AvatarUrl] = deriving

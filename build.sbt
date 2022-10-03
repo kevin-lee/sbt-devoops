@@ -84,7 +84,7 @@ lazy val sbtDevOopsHttpCore = subProject(props.SubProjectNameHttpCore)
       libs.newtype,
       libs.effectie,
       libs.justSysprocess,
-    ) ++ libs.loggerF ++ libs.circe ++ libs.http4sClient ++ libs.javaxActivation212,
+    ) ++ libs.loggerF ++ libs.circe ++ libs.refined ++ libs.http4sClient ++ libs.javaxActivation212,
   )
   .dependsOn(sbtDevOopsCommon % props.IncludeTest)
 
@@ -186,7 +186,7 @@ lazy val props =
     final val SubProjectNameReleaseVersionPolicy = "release-version-policy"
     final val SubProjectNameJava                 = "java"
 
-    final val ProjectScalaVersion = "2.12.12"
+    final val ProjectScalaVersion = "2.12.15"
     final val CrossScalaVersions  = List(ProjectScalaVersion).distinct
 
     final val GlobalSbtVersion = "1.3.4"
@@ -197,19 +197,19 @@ lazy val props =
 
     final val newtypeVersion = "0.4.4"
 
-    final val catsVersion       = "2.7.0"
-    final val catsEffectVersion = "3.3.12"
+    final val catsVersion       = "2.8.0"
+    final val catsEffectVersion = "3.3.14"
 
-    final val extrasVersion = "0.16.0"
+    final val extrasVersion = "0.20.0"
 
-    final val effectieVersion = "2.0.0-beta1"
-    final val loggerFVersion  = "2.0.0-beta1"
+    final val effectieVersion = "2.0.0-beta2"
+    final val loggerFVersion  = "2.0.0-beta2"
 
-    final val refinedVersion = "0.9.28"
+    final val refinedVersion = "0.10.1"
 
-    final val circeVersion = "0.14.2"
+    final val circeVersion = "0.14.3"
 
-    final val http4sVersion = "0.23.12"
+    final val http4sVersion = "0.23.16"
 
     final val justSemVerVersion = "0.5.0"
 
@@ -224,7 +224,7 @@ lazy val props =
     val SbtReleaseVersion       = "1.1.0"
 
     val SbtScalafmtVersion = "2.4.6"
-    val SbtScalafixVersion = "0.10.1"
+    val SbtScalafixVersion = "0.10.3"
 
     val SbtWelcomeVersion = "0.2.2"
 
@@ -253,7 +253,7 @@ lazy val libs =
     lazy val extrasCats                = "io.kevinlee" %% "extras-cats"     % props.extrasVersion
     lazy val extrasScalaIo             = "io.kevinlee" %% "extras-scala-io" % props.extrasVersion
     lazy val extrasHedgehogCatsEffect3 =
-      "io.kevinlee" %% "extras-hedgehog-cats-effect3" % props.extrasVersion % Test
+      "io.kevinlee" %% "extras-hedgehog-ce3" % props.extrasVersion % Test
 
     lazy val effectie = "io.kevinlee" %% "effectie-cats-effect3" % props.effectieVersion
 

@@ -366,24 +366,12 @@ object DevOopsScalaPlugin extends AutoPlugin {
       } else {
         val semVer = SemVer.parseUnsafe(scalaV)
         ((semVer.major, semVer.minor, semVer.patch) match {
-          case (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(8)) |
-              (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(7)) |
-              (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(6)) |
-              (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(5)) |
-              (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(4)) |
-              (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(3)) |
-              (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(2)) |
-              (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(1)) |
-              (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(0)) |
-              (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(15)) |
-              (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(14)) |
-              (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(13)) |
-              (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(12)) |
-              (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(11)) |
-              (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(10)) |
-              (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(9)) |
-              (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(8)) |
+          case (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(_)) |
               (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(12)) =>
+            List(
+              compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
+            )
+          case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(patch)) if patch >= 8 =>
             List(
               compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
             )
@@ -402,21 +390,11 @@ object DevOopsScalaPlugin extends AutoPlugin {
           compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
         ) ++ (
           (semVer.major, semVer.minor, semVer.patch) match {
-            case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(15)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(14)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(13)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(12)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(11)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(10)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(9)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(8)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(7)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(6)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(5)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(4)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(3)) |
-                (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(2)) |
-                (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(12)) |
+            case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(patch)) if patch >= 2 =>
+              List(
+                compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+              )
+            case (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(12)) |
                 (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(11)) |
                 (SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7)) =>
               List(

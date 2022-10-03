@@ -16,7 +16,7 @@ import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-import loggerf.cats.instances._
+import loggerf.instances.cats._
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder
 import sbt.Keys._
@@ -55,7 +55,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.cats.fx._
+      import effectie.ce3.fx._
 
       val run1: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] =
         getTagVersion[IO](basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
@@ -103,16 +103,18 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       Some(new File(Io.getUserHome, ".github")),
     devOopsGitHubRequestTimeout         := 2.minutes,
     devOopsGitHubRelease                := {
-      lazy val tagName                  = TagName(devOopsGitTagName.value)
-      lazy val authTokenEnvVar          = devOopsGitHubAuthTokenEnvVar.value
-      lazy val authTokenFile            = devOopsGitHubAuthTokenFile.value
-      lazy val baseDir                  = baseDirectory.value
-      lazy val requestTimeout           = devOopsGitHubRequestTimeout.value
+      lazy val tagName         = TagName(devOopsGitTagName.value)
+      lazy val authTokenEnvVar = devOopsGitHubAuthTokenEnvVar.value
+      lazy val authTokenFile   = devOopsGitHubAuthTokenFile.value
+      lazy val baseDir         = baseDirectory.value
+      lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
+
+      @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
       implicit val ec: ExecutionContext = ExecutionContext.global
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.cats.fx._
+      import effectie.ce3.fx._
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -168,13 +170,14 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val projectVersion  = version.value
       lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
 
+      @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
       implicit val ec: ExecutionContext = ExecutionContext.global
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
 
-      import effectie.cats.fx._
+      import effectie.ce3.fx._
 
       EmberClientBuilder
         .default[IO]
@@ -216,11 +219,12 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val artifacts       = devOopsPackagedArtifacts.value
       lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
 
+      @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
       implicit val ec: ExecutionContext = ExecutionContext.global
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.cats.fx._
+      import effectie.ce3.fx._
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]

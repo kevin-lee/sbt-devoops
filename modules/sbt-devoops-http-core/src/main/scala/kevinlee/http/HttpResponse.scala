@@ -15,7 +15,7 @@ import org.http4s.Headers
   */
 final case class HttpResponse(
   status: HttpResponse.Status,
-  headers: List[HttpResponse.Header],
+  headers: Vector[HttpResponse.Header],
   body: Option[HttpResponse.Body],
 )
 
@@ -30,11 +30,11 @@ final case class HttpResponse(
 object HttpResponse {
   final case class Status(code: Status.Code, reason: Status.Reason)
   object Status {
-    @newsubtype case class Code(code: Int)
+    @newsubtype final case class Code(code: Int)
     object Code {
       def unapply(code: Code): Option[Int] = code.code.some
     }
-    @newtype case class Reason(reason: String)
+    @newtype final case class Reason(reason: String)
 
     implicit final val show: Show[Status] = {
       case Status(code, reason) =>
@@ -42,7 +42,7 @@ object HttpResponse {
     }
   }
 
-  @newtype case class Header(header: (String, String))
+  @newtype final case class Header(header: (String, String))
 
   implicit final class HttpResponseOps(val httpResponse: HttpResponse) extends AnyVal {
     def withHeader(header: Header): HttpResponse =
@@ -92,10 +92,10 @@ object HttpResponse {
     s"HttpRequest(method=${httpResponse.status.show}, headers=$headerString, body=$bodyString)"
   }
 
-  def fromHttp4sHeaders(headers: Headers): List[Header] =
-    headers.headers.map(header => Header(header.name.toString -> header.value))
+  def fromHttp4sHeaders(headers: Headers): Vector[Header] =
+    headers.headers.map(header => Header(header.name.toString -> header.value)).toVector
 
-  @newtype case class Body(body: String)
+  @newtype final case class Body(body: String)
 
   final case class FailedResponseBodyJson(
     message: String,
@@ -135,6 +135,6 @@ object HttpResponse {
 
     implicit val showFailedResponseBodyJson: Show[FailedResponseBodyJson] = encoder.apply(_).spaces2
 
-    @newtype case class Errors(value: Map[String, String])
+    @newtype final case class Errors(value: Map[String, String])
   }
 }

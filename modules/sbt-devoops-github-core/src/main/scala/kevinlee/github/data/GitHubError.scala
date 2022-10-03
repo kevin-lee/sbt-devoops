@@ -140,7 +140,7 @@ object GitHubError {
       "Invalid GitHub access credential"
 
     case MalformedURL(url, errorMessage) =>
-      s"The given GitHub URL is malformed. URL: ${url.toString} - error: $errorMessage"
+      s"The given GitHub URL is malformed. URL: $url - error: $errorMessage"
 
     case ConnectionFailure(error) =>
       s"GitHub API connection failed - error: $error"
