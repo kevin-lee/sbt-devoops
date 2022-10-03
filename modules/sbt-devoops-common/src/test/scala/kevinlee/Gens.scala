@@ -167,6 +167,7 @@ object Gens {
       .list(Range.linear(1, 5))
       .map(BuildMetaInfo.apply)
 
+  @SuppressWarnings(Array("org.wartremover.warts.ListAppend"))
   def genMinMaxAlphaNumHyphenGroup: Gen[(Dsv, Dsv)] = for {
     minMaxAlps <- Gen
                     .frequency1(
@@ -184,6 +185,7 @@ object Gens {
       }
   } yield (Dsv(minAlps), Dsv(maxAlps))
 
+  @SuppressWarnings(Array("org.wartremover.warts.ListAppend"))
   def genMinMaxAlphaNumHyphenGroupList(
     minMaxAlphaNumHyphenGroupGen: Gen[(Dsv, Dsv)]
   ): Gen[(List[Dsv], List[Dsv])] = for {

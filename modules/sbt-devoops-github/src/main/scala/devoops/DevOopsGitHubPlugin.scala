@@ -4,9 +4,9 @@ import cats.effect.IO
 import devoops.data.{DevOopsLogLevel, Logging}
 import extras.cats.syntax.option._
 import kevinlee.github.data.GitHub
-import effectie.cats.fx._
+import effectie.ce3.fx._
 import loggerf.logger.{CanLog, SbtLogger}
-import loggerf.cats.instances._
+import loggerf.instances.cats._
 import sbt.Keys._
 import sbt._
 

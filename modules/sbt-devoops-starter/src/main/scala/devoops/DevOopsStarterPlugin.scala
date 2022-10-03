@@ -8,7 +8,7 @@ import cats.effect.{Async, IO}
 import cats.syntax.all._
 import devoops.data.{CommonKeys, DevOopsLogLevel}
 import devoops.types.StarterError
-import effectie.cats.fx.ioFx
+import effectie.ce3.fx.ioFx
 import effectie.core.Fx
 import effectie.syntax.all._
 import extras.cats.syntax.all._
@@ -18,7 +18,7 @@ import kevinlee.github.GitHubApi
 import kevinlee.github.data.GitHub
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon._
-import loggerf.cats.instances._
+import loggerf.instances.cats._
 import loggerf.core.{Log => LogF}
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder

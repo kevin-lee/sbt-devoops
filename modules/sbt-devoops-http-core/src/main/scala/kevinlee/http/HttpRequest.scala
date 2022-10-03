@@ -303,18 +303,18 @@ object HttpRequest {
       }
       .value
 
-  @newtype case class Uri(uri: String) {
+  @newtype final case class Uri(uri: String) {
     def toHttp4s: Either[HttpError, Http4sUri] =
       Http4sUri
         .fromString(uri)
         .leftMap(parseFailure => HttpError.invalidUri(uri, parseFailure.message))
   }
 
-  @newtype case class Header(header: (String, String)) {
+  @newtype final case class Header(header: (String, String)) {
     def toHttp4s: Http4sHeader.ToRaw = Http4sHeader.Raw(CIString(header._1), header._2)
   }
 
-  @newtype case class Param(param: (String, String))
+  @newtype final case class Param(param: (String, String))
 
   sealed trait Body
 
@@ -360,7 +360,7 @@ object HttpRequest {
       mediaTypes: List[MediaType],
     ): MultipartData = Url(name, url, mediaTypes)
 
-    @newtype case class Name(name: String)
+    @newtype final case class Name(name: String)
 
     import org.http4s.multipart.{Part, Multipart => Http4sMultipart}
 
@@ -399,6 +399,7 @@ object HttpRequest {
   }
 
   implicit final class HttpRequestOps(val httpRequest: HttpRequest) extends AnyVal {
+    @SuppressWarnings(Array("org.wartremover.warts.ListAppend"))
     def withHeader(header: Header): HttpRequest =
       httpRequest.copy(headers = httpRequest.headers :+ header)
 

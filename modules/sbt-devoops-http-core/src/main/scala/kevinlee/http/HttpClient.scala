@@ -9,7 +9,7 @@ import effectie.core._
 import extras.cats.syntax.either._
 import fs2.text
 import io.circe.Decoder
-import loggerf.cats.syntax.all._
+import loggerf.syntax.all._
 import loggerf.core._
 import org.http4s.Status.Successful
 import org.http4s._
@@ -78,17 +78,16 @@ object HttpClient {
                             ).rightTF[F, HttpError]
 
         res <-
-          log(
-            EitherT(
-              client
-                .run(postProcessedReq)
-                .use[Either[HttpError, A]](responseHandler(httpRequest))
-            )
-//              .leftFlatMap(err => EitherT(effectOf(HttpError.recoverFromOptional404[A](err))))
-          )(
-            err => debug(err.show),
-            res => debug(String.valueOf(res)),
+          EitherT(
+            client
+              .run(postProcessedReq)
+              .use[Either[HttpError, A]](responseHandler(httpRequest))
           )
+//              .leftFlatMap(err => EitherT(effectOf(HttpError.recoverFromOptional404[A](err))))
+            .log(
+              err => debug(err.show),
+              res => debug(String.valueOf(res)),
+            )
       } yield res
 
     private[this] def postProcessRequest(request: Request[F], mediaRanges: Set[MediaRange]): Request[F] = {

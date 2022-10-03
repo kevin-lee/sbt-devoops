@@ -15,8 +15,8 @@ import io.estatico.newtype.macros.newtype
 )
 object data {
 
-  @newtype case class Names(names: List[String])
-  @newtype case class Content(content: String)
+  @newtype final case class Names(names: List[String])
+  @newtype final case class Content(content: String)
   final case class NamesAndContent(names: Names, content: Content)
 
 }

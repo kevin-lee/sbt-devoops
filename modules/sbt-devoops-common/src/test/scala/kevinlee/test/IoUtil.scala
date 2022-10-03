@@ -50,6 +50,7 @@ object IoUtil {
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault"))
   def readFile(file: File): String =
     scala.io.Source.fromFile(file).mkString
 

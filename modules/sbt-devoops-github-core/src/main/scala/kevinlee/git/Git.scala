@@ -98,19 +98,19 @@ object Git {
 
   type CmdResult[F[_], A] = EitherT[CmdHistoryWriter[F, *], GitCommandError, A]
 
-  @newtype case class BranchName(value: String)
-  @newtype case class TagName(value: String)
+  @newtype final case class BranchName(value: String)
+  @newtype final case class TagName(value: String)
   object TagName {
     implicit val encoder: Encoder[TagName] = deriving
     implicit val decoder: Decoder[TagName] = deriving
   }
-  @newtype case class Repository(value: String)
-  @newtype case class RemoteName(remoteName: String)
-  @newtype case class RepoUrl(repoUrl: String)
-  @newtype case class Description(value: String)
+  @newtype final case class Repository(value: String)
+  @newtype final case class RemoteName(remoteName: String)
+  @newtype final case class RepoUrl(repoUrl: String)
+  @newtype final case class Description(value: String)
 
-  @newtype case class TagMessage(tagMessage: String)
-  @newtype case class HashObject(hashObject: String)
+  @newtype final case class TagMessage(tagMessage: String)
+  @newtype final case class HashObject(hashObject: String)
 
   def apply[F[_]: Git]: Git[F] = implicitly[Git[F]]
 
