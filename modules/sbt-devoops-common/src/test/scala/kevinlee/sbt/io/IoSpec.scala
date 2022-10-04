@@ -1,7 +1,7 @@
 package kevinlee.sbt.io
 
-import hedgehog._
-import hedgehog.runner._
+import hedgehog.*
+import hedgehog.runner.*
 import kevinlee.test.IoUtil
 
 import java.io.File

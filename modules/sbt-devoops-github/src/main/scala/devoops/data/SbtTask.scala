@@ -1,11 +1,11 @@
 package devoops.data
 
 import SbtTaskResult.{SbtTaskHistory, SbtTaskHistoryWriter}
-import cats._
-import cats.data._
-import cats.syntax.all._
-import effectie.syntax.all._
-import effectie.core._
+import cats.*
+import cats.data.*
+import cats.syntax.all.*
+import effectie.syntax.all.*
+import effectie.core.*
 import kevinlee.git.Git
 import kevinlee.github.GitHubTask
 
@@ -15,7 +15,7 @@ import kevinlee.github.GitHubTask
 trait SbtTask[F[_]] {
   // $COVERAGE-OFF$
 
-  import SbtTask._
+  import SbtTask.*
 
   def fromNonSbtTask[A](fa: F[Either[SbtTaskError, A]])(
     history: A => List[SbtTaskResult]

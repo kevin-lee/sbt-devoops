@@ -1,6 +1,6 @@
 package kevinlee.sbt.io
 
-import hedgehog._
+import hedgehog.*
 import kevinlee.test.data.{Content, Names, NamesAndContent}
 
 /** @author Kevin Lee

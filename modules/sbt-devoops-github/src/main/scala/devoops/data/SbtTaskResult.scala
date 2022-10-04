@@ -1,6 +1,6 @@
 package devoops.data
 
-import cats.data._
+import cats.data.*
 import kevinlee.git.{GitCmd, GitCmdAndResult, GitCommandResult}
 
 /** @author Kevin Lee

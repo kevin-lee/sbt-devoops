@@ -1,9 +1,9 @@
 package kevinlee.github.data
 
 import cats.data.NonEmptyList
-import cats.syntax.all._
+import cats.syntax.all.*
 import devoops.data.DevOopsLogLevel
-import io.circe.parser._
+import io.circe.parser.*
 import kevinlee.git.Git.{RepoUrl, TagName}
 import kevinlee.git.GitCommandError
 import kevinlee.http.HttpResponse.FailedResponseBodyJson

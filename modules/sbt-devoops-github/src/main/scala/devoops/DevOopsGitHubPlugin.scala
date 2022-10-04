@@ -2,13 +2,13 @@ package devoops
 
 import cats.effect.IO
 import devoops.data.{DevOopsLogLevel, Logging}
-import extras.cats.syntax.option._
+import extras.cats.syntax.option.*
 import kevinlee.github.data.GitHub
-import effectie.ce3.fx._
+import effectie.ce3.fx.*
 import loggerf.logger.{CanLog, SbtLogger}
-import loggerf.instances.cats._
-import sbt.Keys._
-import sbt._
+import loggerf.instances.cats.*
+import sbt.Keys.*
+import sbt.*
 
 /** @author Kevin Lee
   * @since 2021-09-18
@@ -46,7 +46,7 @@ object DevOopsGitHubPlugin extends AutoPlugin {
       .unsafeRunSync()
   }
 
-  import autoImport._
+  import autoImport.*
 
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
     gitHubFindRepoOrgAndName :=

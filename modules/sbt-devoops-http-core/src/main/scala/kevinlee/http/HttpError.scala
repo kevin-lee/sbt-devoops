@@ -1,9 +1,9 @@
 package kevinlee.http
 
 import cats.Show
-import cats.syntax.all._
+import cats.syntax.all.*
 import devoops.data.DevOopsLogLevel
-import kevinlee.ops.instances._
+import kevinlee.ops.instances.*
 
 /** @author Kevin Lee
   * @since 2021-01-03

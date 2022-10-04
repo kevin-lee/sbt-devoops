@@ -2,21 +2,21 @@ package kevinlee.http;
 
 import cats.Monad
 import cats.data.EitherT
-import cats.effect._
-import cats.syntax.all._
+import cats.effect.*
+import cats.syntax.all.*
 import devoops.data.DevOopsLogLevel
-import effectie.core._
-import extras.cats.syntax.either._
+import effectie.core.*
+import extras.cats.syntax.either.*
 import fs2.text
 import io.circe.Decoder
-import loggerf.syntax.all._
-import loggerf.core._
+import loggerf.syntax.all.*
+import loggerf.core.*
 import org.http4s.Status.Successful
-import org.http4s._
-import org.http4s.circe.CirceEntityCodec._
+import org.http4s.*
+import org.http4s.circe.CirceEntityCodec.*
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
-import org.http4s.headers._
+import org.http4s.headers.*
 
 /** @author Kevin Lee
   * @since 2021-01-03

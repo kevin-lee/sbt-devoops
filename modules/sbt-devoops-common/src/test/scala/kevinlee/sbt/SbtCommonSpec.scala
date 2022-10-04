@@ -1,7 +1,7 @@
 package kevinlee.sbt
 
-import hedgehog._
-import hedgehog.runner._
+import hedgehog.*
+import hedgehog.runner.*
 import kevinlee.Gens
 
 /** @author Kevin Lee

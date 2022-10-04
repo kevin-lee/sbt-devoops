@@ -1,7 +1,7 @@
 package devoops
 
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
+import sbt.*
 import sbt.plugins.JvmPlugin
 
 /** @author Kevin Lee
@@ -25,7 +25,7 @@ object DevOopsJavaPlugin extends AutoPlugin {
 
   }
 
-  import autoImport._
+  import autoImport.*
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     javaVersion      := "1.8"

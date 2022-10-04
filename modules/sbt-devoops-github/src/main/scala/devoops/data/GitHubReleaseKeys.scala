@@ -1,6 +1,6 @@
 package devoops.data
 
-import sbt._
+import sbt.*
 
 import scala.concurrent.duration.FiniteDuration
 

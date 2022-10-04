@@ -1,6 +1,6 @@
 package kevinlee.git
 
-import cats.implicits._
+import cats.syntax.all.*
 
 import java.io.File
 import scala.sys.process.ProcessLogger

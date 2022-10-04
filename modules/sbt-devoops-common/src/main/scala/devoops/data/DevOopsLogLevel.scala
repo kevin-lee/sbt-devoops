@@ -1,7 +1,7 @@
 package devoops.data
 
-import cats._
-import cats.syntax.eq._
+import cats.*
+import cats.syntax.eq.*
 import kevinlee.sbt.SbtCommon
 
 /** @author Kevin Lee

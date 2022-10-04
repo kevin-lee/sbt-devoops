@@ -3,21 +3,21 @@ package kevinlee.github
 import cats.Monad
 import cats.data.{EitherT, NonEmptyList}
 import cats.effect.Temporal
-import cats.syntax.all._
+import cats.syntax.all.*
 import devoops.data.DevOopsLogLevel
-import effectie.core._
-import effectie.syntax.all._
-import extras.cats.syntax.either._
+import effectie.core.*
+import effectie.syntax.all.*
+import extras.cats.syntax.either.*
 import kevinlee.git.Git
 import kevinlee.github.data.GitHub.Repo
 import kevinlee.github.data.GitHubRelease.ReleaseId
-import kevinlee.github.data._
+import kevinlee.github.data.*
 import kevinlee.http.{HttpClient, HttpRequest}
 import org.http4s.client.dsl.Http4sClientDsl
 
 import java.io.File
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /** @author Kevin Lee
   * @since 2021-01-14

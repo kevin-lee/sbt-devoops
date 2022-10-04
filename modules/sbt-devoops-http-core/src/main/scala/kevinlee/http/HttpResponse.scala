@@ -1,13 +1,13 @@
 package kevinlee.http
 
 import cats.Show
-import cats.syntax.all._
+import cats.syntax.all.*
 import devoops.data.DevOopsLogLevel
 import io.circe.parser.decode
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Decoder, DecodingFailure, Encoder, Json}
-import io.estatico.newtype.macros._
-import kevinlee.ops._
+import io.estatico.newtype.macros.*
+import kevinlee.ops.*
 import org.http4s.Headers
 
 /** @author Kevin Lee

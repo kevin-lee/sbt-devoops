@@ -1,18 +1,18 @@
 package kevinlee.http;
 
 import cats.effect.{Async, Sync}
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.{Applicative, Show}
 import devoops.data.DevOopsLogLevel
 import fs2.Chunk
 import io.circe.Encoder
-import io.estatico.newtype.macros._
-import kevinlee.ops._
+import io.estatico.newtype.macros.*
+import kevinlee.ops.*
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers.`Content-Type`
 import org.http4s.{MediaType, Request, Header => Http4sHeader, Headers => Http4sHeaders, Uri => Http4sUri}
 import org.typelevel.ci.CIString
-import extras.cats.syntax.all._
+import extras.cats.syntax.all.*
 import fs2.io.file.{Files, Path => Fs2Path}
 import org.http4s.multipart.Multiparts
 
@@ -124,8 +124,8 @@ object HttpRequest {
     s"HttpRequest(method=${httpRequest.httpMethod.show}, url=${httpRequest.uri.uri}, headers=$headerString, params=$paramsString, body=$bodyString)"
   }
 
-  import org.http4s.circe.CirceEntityCodec._
-  import org.http4s.dsl.request._
+  import org.http4s.circe.CirceEntityCodec.*
+  import org.http4s.dsl.request.*
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
   def toHttp4s[F[_]: Applicative: Async: Http4sClientDsl](
@@ -137,7 +137,7 @@ object HttpRequest {
       .t
       .flatMapF { uri =>
         val dsl           = Http4sClientDsl[F]
-        import dsl._
+        import dsl.*
         val http4sHeaders = httpRequest.headers.map(_.toHttp4s)
         val uriWithParams =
           httpRequest.params match {
