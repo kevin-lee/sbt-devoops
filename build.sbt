@@ -140,6 +140,7 @@ def subProject(projectName: String): Project = {
     .settings(
       organization                      := props.Org,
       name                              := prefixedName,
+//      scalacOptions ++= List("-Xsource:3"),
       Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
       Compile / compile / wartremoverErrors ++= commonWarts,
       Test / compile / wartremoverErrors ++= commonWarts,
@@ -186,7 +187,7 @@ lazy val props =
     final val SubProjectNameReleaseVersionPolicy = "release-version-policy"
     final val SubProjectNameJava                 = "java"
 
-    final val ProjectScalaVersion = "2.12.15"
+    final val ProjectScalaVersion = "2.12.17"
     final val CrossScalaVersions  = List(ProjectScalaVersion).distinct
 
     final val GlobalSbtVersion = "1.3.4"

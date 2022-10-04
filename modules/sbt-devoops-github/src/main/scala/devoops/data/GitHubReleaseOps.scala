@@ -1,6 +1,6 @@
 package devoops.data
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import kevinlee.git.Git.{RepoUrl, TagName}
 import kevinlee.github.data.{GitHub, GitHubError}
 import kevinlee.sbt.io.{CaseSensitivity, Io}

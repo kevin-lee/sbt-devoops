@@ -1,11 +1,11 @@
 package kevinlee.github.data
 
 import cats.effect.IO
-import cats.syntax.all._
-import effectie.ce3.fx._
+import cats.syntax.all.*
+import effectie.ce3.fx.*
 import extras.hedgehog.ce3.CatsEffectRunner
-import hedgehog._
-import hedgehog.runner._
+import hedgehog.*
+import hedgehog.runner.*
 
 /** @author Kevin Lee
   * @since 2021-09-19

@@ -1,9 +1,9 @@
 package devoops
 
 import just.semver.{ParseError, SemVer}
-import kevinlee.sbt.SbtCommon._
-import sbt.Keys._
-import sbt._
+import kevinlee.sbt.SbtCommon.*
+import sbt.Keys.*
+import sbt.*
 
 /** @author Kevin Lee
   * @since 2018-12-29
@@ -276,7 +276,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
     )
   }
 
-  import autoImport._
+  import autoImport.*
 
   def versionSpecificScalacOptions(
     useAggressiveScalacOptions: Boolean,

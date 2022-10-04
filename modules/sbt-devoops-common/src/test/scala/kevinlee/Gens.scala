@@ -1,7 +1,7 @@
 package kevinlee
 
-import cats.syntax.all._
-import hedgehog._
+import cats.syntax.all.*
+import hedgehog.*
 import just.semver.AdditionalInfo.{BuildMetaInfo, PreRelease}
 import just.semver.SemVer.{Major, Minor, Patch}
 import just.semver.{AdditionalInfo, Anh, Dsv, SemVer}

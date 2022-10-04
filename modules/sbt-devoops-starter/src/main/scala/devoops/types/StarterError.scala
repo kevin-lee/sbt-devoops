@@ -2,9 +2,9 @@ package devoops.types
 
 import devoops.data.DevOopsLogLevel
 import kevinlee.github.data.GitHubError
-import cats.syntax.all._
+import cats.syntax.all.*
 
-import kevinlee.ops.instances._
+import kevinlee.ops.instances.*
 
 import scala.util.control.NoStackTrace
 

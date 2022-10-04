@@ -1,10 +1,10 @@
 package kevinlee.git
 
-import cats._
-import cats.data._
-import cats.syntax.all._
-import effectie.syntax.all._
-import effectie.core._
+import cats.*
+import cats.data.*
+import cats.syntax.all.*
+import effectie.syntax.all.*
+import effectie.core.*
 import io.circe.{Decoder, Encoder}
 import io.estatico.newtype.macros.newtype
 
@@ -14,7 +14,7 @@ import java.io.File
   * @since 2019-01-01
   */
 trait Git[F[_]] {
-  import Git._
+  import Git.*
 
   def fromProcessResultToEither[A](
     gitCmd: GitCmd,

@@ -1,28 +1,28 @@
 package devoops
 
 import org.scalafmt.sbt.ScalafmtPlugin
-import sbt.Keys._
-import sbt.{none => _, some => _, _}
+import sbt.Keys.*
+import sbt.{none as *, some as *, *}
 import Def.Setting
 import cats.effect.{Async, IO}
-import cats.syntax.all._
+import cats.syntax.all.*
 import devoops.data.{CommonKeys, DevOopsLogLevel}
 import devoops.types.StarterError
 import effectie.ce3.fx.ioFx
 import effectie.core.Fx
-import effectie.syntax.all._
-import extras.cats.syntax.all._
+import effectie.syntax.all.*
+import extras.cats.syntax.all.*
 import extras.scala.io.Color
-import extras.scala.io.syntax.color._
+import extras.scala.io.syntax.color.*
 import kevinlee.github.GitHubApi
 import kevinlee.github.data.GitHub
 import kevinlee.http.HttpClient
-import kevinlee.sbt.SbtCommon._
-import loggerf.instances.cats._
-import loggerf.core.{Log => LogF}
+import kevinlee.sbt.SbtCommon.*
+import loggerf.instances.cats.*
+import loggerf.core.Log as LogF
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder
-import sbt.{IO => SbtIO}
+import sbt.IO as SbtIO
 import sbtwelcome.WelcomePlugin
 import sbtwelcome.WelcomePlugin.autoImport.{aliasColor, logo, logoColor, usefulTasks}
 import scalafix.sbt.ScalafixPlugin
@@ -83,7 +83,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
             line + additionalSpace
           }
         }
-        import extras.scala.io.syntax.truecolor.rainbow._
+        import extras.scala.io.syntax.truecolor.rainbow.*
         lines
           .map { line =>
             if (line.nonEmpty) line.rainbowed else line
@@ -110,8 +110,8 @@ object DevOopsStarterPlugin extends AutoPlugin {
 
   }
 
-  import autoImport._
-  import sbtwelcome._
+  import autoImport.*
+  import sbtwelcome.*
 
   override def buildSettings: Seq[Def.Setting[_]] = Seq(
     devOopsLogLevel                 := DevOopsLogLevel.info.render,

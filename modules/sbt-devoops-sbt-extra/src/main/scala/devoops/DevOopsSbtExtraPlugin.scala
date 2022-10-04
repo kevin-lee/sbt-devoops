@@ -1,7 +1,7 @@
 package devoops
 
-import sbt._
-import sbt.Keys._
+import sbt.*
+import sbt.Keys.*
 
 /** @author Kevin Lee
   * @since 2021-04-10
@@ -54,7 +54,7 @@ object DevOopsSbtExtraPlugin extends AutoPlugin {
     )
   }
 
-  import autoImport._
+  import autoImport.*
 
   override def projectSettings: Seq[Def.Setting[_]] = commonSettings
 

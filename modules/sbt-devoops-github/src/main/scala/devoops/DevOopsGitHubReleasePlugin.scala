@@ -1,29 +1,29 @@
 package devoops
 
-import cats._
+import cats.*
 import cats.effect.{IO, Temporal}
-import cats.instances.all._
-import cats.syntax.all._
+import cats.instances.all.*
+import cats.syntax.all.*
 import devoops.data.SbtTaskResult.SbtTaskHistory
-import devoops.data._
-import effectie.core._
-import effectie.syntax.all._
+import devoops.data.*
+import effectie.core.*
+import effectie.syntax.all.*
 import just.semver.SemVer
 import kevinlee.git.Git
 import kevinlee.git.Git.{BranchName, Repository, TagName}
-import kevinlee.github.data._
+import kevinlee.github.data.*
 import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-import loggerf.instances.cats._
+import loggerf.instances.cats.*
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder
-import sbt.Keys._
+import sbt.Keys.*
 import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting}
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /** @author Kevin Lee
   * @since 2019-01-01
@@ -36,7 +36,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
   object autoImport extends GitHubReleaseKeys with GitHubReleaseOps
 
-  import autoImport._
+  import autoImport.*
   import cats.effect.unsafe.implicits.global
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
@@ -55,7 +55,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.ce3.fx._
+      import effectie.ce3.fx.*
 
       val run1: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] =
         getTagVersion[IO](basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
@@ -114,7 +114,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.ce3.fx._
+      import effectie.ce3.fx.*
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -177,7 +177,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
 
-      import effectie.ce3.fx._
+      import effectie.ce3.fx.*
 
       EmberClientBuilder
         .default[IO]
@@ -224,7 +224,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.ce3.fx._
+      import effectie.ce3.fx.*
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]

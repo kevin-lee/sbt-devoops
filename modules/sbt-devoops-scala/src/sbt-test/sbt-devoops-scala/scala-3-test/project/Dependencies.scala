@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 
 object Dependencies {
   val hedgehogVersion = "0.9.0"

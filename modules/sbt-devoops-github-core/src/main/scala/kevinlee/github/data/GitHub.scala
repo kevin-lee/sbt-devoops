@@ -1,22 +1,22 @@
 package kevinlee.github.data
 
 import cats.Monad
-import cats.syntax.all._
-import effectie.core._
-import effectie.syntax.all._
+import cats.syntax.all.*
+import effectie.core.*
+import effectie.syntax.all.*
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.string
-import extras.cats.syntax.either._
-import io.circe.generic.semiauto._
-import io.circe.refined._
-import io.circe.syntax._
+import extras.cats.syntax.either.*
+import io.circe.generic.semiauto.*
+import io.circe.refined.*
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.estatico.newtype.macros.{newsubtype, newtype}
 import just.sysprocess.{ProcessError, ProcessResult, SysProcess}
 import kevinlee.http.HttpRequest
-import loggerf.core._
-import loggerf.core.syntax.all._
+import loggerf.core.*
+import loggerf.core.syntax.all.*
 
 /** @author Kevin Lee
   * @since 2019-03-09

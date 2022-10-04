@@ -1,6 +1,6 @@
 package kevinlee.github.data
 
-import io.circe.syntax._
+import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Json}
 import io.estatico.newtype.macros.{newsubtype, newtype}
 import kevinlee.git.Git

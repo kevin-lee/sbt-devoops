@@ -1,7 +1,7 @@
 package kevinlee.github
 
-import cats._
-import cats.data._
+import cats.*
+import cats.data.*
 import kevinlee.git.{Git, GitCmdAndResult}
 import kevinlee.github.GitHubTask.GitHubTaskResult
 import kevinlee.github.data.GitHubError

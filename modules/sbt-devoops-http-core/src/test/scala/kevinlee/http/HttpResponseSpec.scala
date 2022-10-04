@@ -1,8 +1,8 @@
 package kevinlee.http
 
-import cats.syntax.all._
-import hedgehog._
-import hedgehog.runner._
+import cats.syntax.all.*
+import hedgehog.*
+import hedgehog.runner.*
 import kevinlee.http.HttpResponse.FailedResponseBodyJson
 
 /** @author Kevin Lee
@@ -38,7 +38,7 @@ object HttpResponseSpec extends Properties {
     } yield {
       val input = FailedResponseBodyJson(message, errors.map(FailedResponseBodyJson.Errors(_)), documentationUrl)
 
-      import io.circe.syntax._
+      import io.circe.syntax.*
 
       val errorsString =
         errors.map(_.map { case (k, v) => raw""""$k":"$v"""" }.mkString("{", ",", "}")).mkString("[", ",", "]")
@@ -65,7 +65,7 @@ object HttpResponseSpec extends Properties {
       val expected = FailedResponseBodyJson(message, errors.map(FailedResponseBodyJson.Errors(_)), documentationUrl)
 
       import io.circe.Error
-      import io.circe.parser._
+      import io.circe.parser.*
 
       val actual = decode[FailedResponseBodyJson](input)
       actual ==== expected.asRight[Error]
@@ -90,7 +90,7 @@ object HttpResponseSpec extends Properties {
       )
 
       import io.circe.Error
-      import io.circe.parser._
+      import io.circe.parser.*
 
       val actual = decode[FailedResponseBodyJson](input)
       actual ==== expected.asRight[Error]
@@ -104,8 +104,8 @@ object HttpResponseSpec extends Properties {
     } yield {
       val expected = FailedResponseBodyJson(message, errors.map(FailedResponseBodyJson.Errors(_)), documentationUrl)
       import io.circe.Error
-      import io.circe.parser._
-      import io.circe.syntax._
+      import io.circe.parser.*
+      import io.circe.syntax.*
 
       val json   = expected.asJson.noSpaces
       val actual = decode[FailedResponseBodyJson](json)

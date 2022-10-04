@@ -1,6 +1,6 @@
 package kevinlee
 
-import hedgehog._
+import hedgehog.*
 
 /** @author Kevin Lee
   * @since 2018-11-04

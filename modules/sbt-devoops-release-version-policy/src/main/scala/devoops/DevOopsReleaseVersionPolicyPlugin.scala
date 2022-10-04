@@ -1,13 +1,13 @@
 package devoops
 
-import extras.scala.io.syntax.color._
-import kevinlee.sbt.SbtCommon._
-import sbt.Keys._
-import sbt._
+import extras.scala.io.syntax.color.*
+import kevinlee.sbt.SbtCommon.*
+import sbt.Keys.*
+import sbt.*
 import sbtrelease.ReleasePlugin
-import sbtrelease.ReleasePlugin.autoImport._
+import sbtrelease.ReleasePlugin.autoImport.*
 import sbtversionpolicy.SbtVersionPolicyPlugin
-import sbtversionpolicy.SbtVersionPolicyPlugin.autoImport._
+import sbtversionpolicy.SbtVersionPolicyPlugin.autoImport.*
 
 /** @author Kevin Lee
   * @since 2022-05-01
@@ -53,7 +53,7 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
 
   }
 
-  import autoImport._
+  import autoImport.*
 
   private def errorWithCompatibilityFileSetupInstruction(): Nothing =
     messageOnlyException(MissingCompatibilityFileInstruction)
