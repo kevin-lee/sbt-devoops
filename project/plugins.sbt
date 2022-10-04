@@ -9,7 +9,7 @@ addSbtPlugin("com.timushev.sbt" % "sbt-updates"               % "0.6.3")
 addSbtPlugin("com.github.cb372" % "sbt-explicit-dependencies" % "0.2.16")
 
 addSbtPlugin("com.github.reibitto" % "sbt-welcome"  % "0.2.2")
-addSbtPlugin("io.kevinlee"         % "sbt-docusaur" % "0.11.0")
+addSbtPlugin("io.kevinlee"         % "sbt-docusaur" % "0.12.0")
 
 val sbtDevOopsVersion = "2.20.0"
 addSbtPlugin("io.kevinlee" % "sbt-devoops-scala"     % sbtDevOopsVersion)
