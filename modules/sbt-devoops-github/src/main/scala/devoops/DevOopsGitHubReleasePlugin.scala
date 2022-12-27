@@ -55,7 +55,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.ce3.fx.*
+      import effectie.instances.ce3.fx.*
 
       val run1: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] =
         getTagVersion[IO](basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
@@ -114,7 +114,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.ce3.fx.*
+      import effectie.instances.ce3.fx.*
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -177,7 +177,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
 
-      import effectie.ce3.fx.*
+      import effectie.instances.ce3.fx.*
 
       EmberClientBuilder
         .default[IO]
@@ -224,7 +224,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.ce3.fx.*
+      import effectie.instances.ce3.fx.*
 
       implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
       val git                  = Git[IO]
@@ -279,7 +279,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     },
   )
 
-  private def getTagVersion[F[_]: Fx: Monad](
+  private def getTagVersion[F[?]: Fx: Monad](
     basePath: File,
     tagFrom: BranchName,
     tagName: TagName,
@@ -341,7 +341,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       .fold(readOAuthToken(authTokenFile))(token => GitHub.OAuthToken(token).asRight)
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  private def runGitHubRelease[F[_]: Fx: CanCatch: Monad: Temporal](
+  private def runGitHubRelease[F[?]: Fx: CanCatch: Monad: Temporal](
     tagName: TagName,
     baseDir: File,
     changelogLocation: GitHub.ChangelogLocation,
@@ -405,7 +405,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     } yield ()
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  private def runUploadAssetsToGitHubRelease[F[_]: Fx: CanCatch: Monad](
+  private def runUploadAssetsToGitHubRelease[F[?]: Fx: CanCatch: Monad](
     tagName: TagName,
     assets: Vector[File],
     baseDir: File,

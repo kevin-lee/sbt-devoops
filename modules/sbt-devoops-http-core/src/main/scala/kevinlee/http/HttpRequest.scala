@@ -10,10 +10,10 @@ import io.estatico.newtype.macros.*
 import kevinlee.ops.*
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers.`Content-Type`
-import org.http4s.{MediaType, Request, Header => Http4sHeader, Headers => Http4sHeaders, Uri => Http4sUri}
+import org.http4s.{MediaType, Request, Header as Http4sHeader, Headers as Http4sHeaders, Uri as Http4sUri}
 import org.typelevel.ci.CIString
 import extras.cats.syntax.all.*
-import fs2.io.file.{Files, Path => Fs2Path}
+import fs2.io.file.{Files, Path as Fs2Path}
 import org.http4s.multipart.Multiparts
 
 import java.net.URL
@@ -128,7 +128,7 @@ object HttpRequest {
   import org.http4s.dsl.request.*
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
-  def toHttp4s[F[_]: Applicative: Async: Http4sClientDsl](
+  def toHttp4s[F[?]: Applicative: Async: Http4sClientDsl](
     httpRequest: HttpRequest
   ): F[Either[HttpError, Request[F]]] =
     httpRequest
@@ -152,13 +152,13 @@ object HttpRequest {
           case HttpRequest.Method.Get =>
             httpRequest
               .body
-              .fold(GET(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+              .fold(GET(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   GET
                     .apply(
                       json,
                       uriWithParams,
-                      http4sHeaders: _*
+                      http4sHeaders *
                     )
                     .asRight[HttpError]
                     .pure
@@ -173,12 +173,12 @@ object HttpRequest {
           case HttpRequest.Method.Post =>
             httpRequest
               .body
-              .fold(POST(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+              .fold(POST(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   POST(
                     json,
                     uriWithParams,
-                    http4sHeaders: _*
+                    http4sHeaders *
                   )
                     .asRight[HttpError]
                     .pure
@@ -196,7 +196,7 @@ object HttpRequest {
                       POST(
                         chunk,
                         uriWithParams,
-                        http4sHeaders: _*
+                        http4sHeaders *
                       )
                     }
                     .map(req =>
@@ -220,7 +220,7 @@ object HttpRequest {
 //                  .apply(
 //                    body,
 //                    uriWithParams,
-//                    http4sHeaders: _*
+//                    http4sHeaders *
 //                  )
 //                  .map(req =>
 //                    req.withHeaders(
@@ -242,12 +242,12 @@ object HttpRequest {
           case HttpRequest.Method.Put =>
             httpRequest
               .body
-              .fold(PUT.apply(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+              .fold(PUT.apply(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   PUT(
                     json,
                     uriWithParams,
-                    http4sHeaders: _*
+                    http4sHeaders *
                   )
                     .asRight[HttpError]
                     .pure
@@ -262,12 +262,12 @@ object HttpRequest {
           case HttpRequest.Method.Patch =>
             httpRequest
               .body
-              .fold(PATCH(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+              .fold(PATCH(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   PATCH(
                     json,
                     uriWithParams,
-                    http4sHeaders: _*
+                    http4sHeaders *
                   )
                     .asRight[HttpError]
                     .pure
@@ -282,12 +282,12 @@ object HttpRequest {
           case HttpRequest.Method.Delete =>
             httpRequest
               .body
-              .fold(DELETE(uriWithParams, http4sHeaders: _*).asRight[HttpError].pure) {
+              .fold(DELETE(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   DELETE(
                     json,
                     uriWithParams,
-                    http4sHeaders: _*
+                    http4sHeaders *
                   )
                     .asRight[HttpError]
                     .pure
@@ -362,14 +362,14 @@ object HttpRequest {
 
     @newtype final case class Name(name: String)
 
-    import org.http4s.multipart.{Part, Multipart => Http4sMultipart}
+    import org.http4s.multipart.{Part, Multipart as Http4sMultipart}
 
     implicit final class MultipartDataOps(val multipartData: MultipartData) extends AnyVal {
-      def toHttp4s[F[_]: Sync: Files]: F[Http4sMultipart[F]] =
+      def toHttp4s[F[?]: Sync: Files]: F[Http4sMultipart[F]] =
         MultipartData.toHttp4s(multipartData)
     }
 
-    def toHttp4s[F[_]: Sync: Files](multipartData: MultipartData): F[Http4sMultipart[F]] =
+    def toHttp4s[F[?]: Sync: Files](multipartData: MultipartData): F[Http4sMultipart[F]] =
       Multiparts
         .forSync[F]
         .flatMap(
@@ -403,7 +403,7 @@ object HttpRequest {
     def withHeader(header: Header): HttpRequest =
       httpRequest.copy(headers = httpRequest.headers :+ header)
 
-    def toHttp4s[F[_]: Applicative: Async: Http4sClientDsl]: F[Either[HttpError, Request[F]]] =
+    def toHttp4s[F[?]: Applicative: Async: Http4sClientDsl]: F[Either[HttpError, Request[F]]] =
       HttpRequest.toHttp4s[F](httpRequest)
 
     // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303

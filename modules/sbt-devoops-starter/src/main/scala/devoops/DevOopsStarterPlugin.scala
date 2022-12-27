@@ -8,7 +8,7 @@ import cats.effect.{Async, IO}
 import cats.syntax.all.*
 import devoops.data.{CommonKeys, DevOopsLogLevel}
 import devoops.types.StarterError
-import effectie.ce3.fx.ioFx
+import effectie.instances.ce3.fx.ioFx
 import effectie.core.Fx
 import effectie.syntax.all.*
 import extras.cats.syntax.all.*
@@ -113,7 +113,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
   import autoImport.*
   import sbtwelcome.*
 
-  override def buildSettings: Seq[Def.Setting[_]] = Seq(
+  override def buildSettings: Seq[Def.Setting[?]] = Seq(
     devOopsLogLevel                 := DevOopsLogLevel.info.render,
     starterWriteDefaultScalafmtConf := {
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
@@ -202,7 +202,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
     },
   )
 
-  def writeDefaultScalafmtConf[F[_]: Fx: LogF: Async](dialectVersion: String, outFile: File)(
+  def writeDefaultScalafmtConf[F[?]: Fx: LogF: Async](dialectVersion: String, outFile: File)(
     implicit LV: DevOopsLogLevel
   ): F[Either[StarterError, Unit]] =
     EmberClientBuilder
@@ -226,21 +226,21 @@ object DevOopsStarterPlugin extends AutoPlugin {
                                       this.getClass.getResourceAsStream("/scalafmt/default-scalafmt.conf.template"),
                                       StandardCharsets.UTF_8
                                     )
-                                  ).catchNonFatal { err =>
+                                  ).catchNonFatal { case err =>
                                     StarterError.resourceReadWrite(
                                       s"reading the default .scalafmt.conf template file at resources/scalafmt/default-scalafmt.conf.template",
                                       err.toString
                                     )
 
                                   }.t
-          scalafmtConf         <- effectOf[F](
+          scalafmtConf         <- pureOrError[F](
                                     scalafmtConfTemplate
                                       .replace("%SCALAFMT_VERSION%", theLatestScalafmtVersion)
                                       .replace("%DIALECT_VERSION%", dialectVersion)
                                   ).rightT[StarterError]
           _                    <- effectOf[F](
                                     SbtIO.write(outFile, scalafmtConf, StandardCharsets.UTF_8)
-                                  ).catchNonFatal { err =>
+                                  ).catchNonFatal { case err =>
                                     StarterError.resourceReadWrite(
                                       s"writing the default .scalafmt.conf to ${outFile.toString}",
                                       err.toString
@@ -249,7 +249,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
         } yield ()).value
       }
 
-  def writeDefaultScalafixConf[F[_]: Fx: LogF: Async](templateFilename: String, outFile: File)(
+  def writeDefaultScalafixConf[F[?]: Fx: LogF: Async](templateFilename: String, outFile: File)(
     implicit LV: DevOopsLogLevel
   ): F[Either[StarterError, File]] =
     (for {
@@ -258,7 +258,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
                                   this.getClass.getResourceAsStream(s"/scalafix/$templateFilename"),
                                   StandardCharsets.UTF_8
                                 )
-                              ).catchNonFatal { err =>
+                              ).catchNonFatal { case err =>
                                 StarterError.resourceReadWrite(
                                   s"reading the $templateFilename file at resources/scalafix/$templateFilename",
                                   err.toString
@@ -267,7 +267,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
                               }.t
       _                    <- effectOf[F](
                                 SbtIO.write(outFile, scalafixConfTemplate, StandardCharsets.UTF_8)
-                              ).catchNonFatal { err =>
+                              ).catchNonFatal { case err =>
                                 StarterError.resourceReadWrite(
                                   s"writing the default scalafix config file to ${outFile.toString}",
                                   err.toString
@@ -275,7 +275,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
                               }.t
     } yield outFile).value
 
-  override def projectSettings: Seq[Setting[_]] = Seq(
+  override def projectSettings: Seq[Setting[?]] = Seq(
     theLogo            := DefaultLogo,
     logoAdditionalInfo := "",
     logo               := genLogo(

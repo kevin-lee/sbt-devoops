@@ -2,7 +2,7 @@ package kevinlee.github.data
 
 import cats.effect.IO
 import cats.syntax.all.*
-import effectie.ce3.fx.*
+import effectie.instances.ce3.fx.*
 import extras.hedgehog.ce3.CatsEffectRunner
 import hedgehog.*
 import hedgehog.runner.*
