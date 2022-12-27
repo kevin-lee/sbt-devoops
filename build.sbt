@@ -194,17 +194,17 @@ lazy val props =
 
     final val CrossSbtVersions = List(GlobalSbtVersion).distinct
 
-    final val hedgehogVersion = "0.9.0"
+    final val hedgehogVersion = "0.10.1"
 
     final val newtypeVersion = "0.4.4"
 
-    final val catsVersion       = "2.8.0"
-    final val catsEffectVersion = "3.3.14"
+    final val catsVersion       = "2.9.0"
+    final val catsEffectVersion = "3.4.3"
 
-    final val extrasVersion = "0.20.0"
+    final val extrasVersion = "0.26.0"
 
-    final val effectieVersion = "2.0.0-beta2"
-    final val loggerFVersion  = "2.0.0-beta2"
+    final val effectieVersion = "2.0.0-beta4"
+    final val loggerFVersion  = "2.0.0-beta4"
 
     final val refinedVersion = "0.10.1"
 
@@ -212,7 +212,7 @@ lazy val props =
 
     final val http4sVersion = "0.23.16"
 
-    final val justSemVerVersion = "0.5.0"
+    final val justSemVerVersion = "0.6.0"
 
     final val justSysprocessVersion = "1.0.0"
 
@@ -224,8 +224,8 @@ lazy val props =
     val SbtVersionPolicyVersion = "2.0.1"
     val SbtReleaseVersion       = "1.1.0"
 
-    val SbtScalafmtVersion = "2.4.6"
-    val SbtScalafixVersion = "0.10.3"
+    val SbtScalafmtVersion = "2.5.0"
+    val SbtScalafixVersion = "0.10.4"
 
     val SbtWelcomeVersion = "0.2.2"
 

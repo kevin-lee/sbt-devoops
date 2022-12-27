@@ -11,6 +11,7 @@ import fs2.text
 import io.circe.Decoder
 import loggerf.syntax.all.*
 import loggerf.core.*
+import loggerf.instances.show.*
 import org.http4s.Status.Successful
 import org.http4s.*
 import org.http4s.circe.CirceEntityCodec.*
@@ -21,7 +22,7 @@ import org.http4s.headers.*
 /** @author Kevin Lee
   * @since 2021-01-03
   */
-trait HttpClient[F[_]] {
+trait HttpClient[F[?]] {
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def request[A](
@@ -37,13 +38,13 @@ trait HttpClient[F[_]] {
 object HttpClient {
 
   def apply[
-    F[_]: Monad: Fx: Log: Async
+    F[?]: Monad: Fx: Log: Async
   ](client: Client[F]): HttpClient[F] =
     new HttpClientF[F](client)
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
   final class HttpClientF[
-    F[_]: Monad: Fx: Log: Async
+    F[?]: Monad: Fx: Log: Async
   ](
     client: Client[F]
   ) extends HttpClient[F] {
@@ -85,7 +86,7 @@ object HttpClient {
           )
 //              .leftFlatMap(err => EitherT(effectOf(HttpError.recoverFromOptional404[A](err))))
             .log(
-              err => debug(err.show),
+              debugA,
               res => debug(String.valueOf(res)),
             )
       } yield res
@@ -94,7 +95,7 @@ object HttpClient {
       val mediaRangeList = mediaRanges.toList
       mediaRangeList.headOption.fold(request) { head =>
         request.putHeaders(
-          Accept(MediaRangeAndQValue(head), mediaRangeList.drop(1).map(MediaRangeAndQValue(_)): _*)
+          Accept(MediaRangeAndQValue(head), mediaRangeList.drop(1).map(MediaRangeAndQValue(_)) *)
         )
       }
     }
