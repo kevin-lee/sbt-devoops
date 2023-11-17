@@ -44,6 +44,17 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
          |""".stripMargin
     }
 
+    /* The prefix is to avoid any possible naming conflict */
+    lazy val devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions: SettingKey[Boolean] = settingKey[Boolean](
+      "An indicator to publish cross Scala versions with sbt-release plugin (default: true)"
+    )
+
+    lazy val devOopsReleaseVersionPolicyCrossScalaVersionsPublishCommand: SettingKey[String] = settingKey[String](
+      "The sbt command to publish artifacts for cross Scala versions. Do NOT add + for cross Scala versions as it will be added automatically. " +
+        "NOTE: This works only when devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions := true " +
+        "(default: `publish` so it will be +publish)"
+    )
+
     lazy val compatibilityResetGitCommitMessage: SettingKey[String] = settingKey[String](
       s"A message used to commit the compatibility intention reset. (default: $DefaultCompatibilityResetGitCommitMessage)"
     )
@@ -59,12 +70,14 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
     messageOnlyException(MissingCompatibilityFileInstruction)
 
   override lazy val buildSettings: Seq[Setting[_]] = Seq(
-    versionPolicyIntention                 := (ThisBuild / versionPolicyIntention)
+    devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions  := true,
+    devOopsReleaseVersionPolicyCrossScalaVersionsPublishCommand := "publish",
+    versionPolicyIntention                                      := (ThisBuild / versionPolicyIntention)
       .?
       .value
       .getOrElse(errorWithCompatibilityFileSetupInstruction()),
-    compatibilityResetGitCommitMessage     := DefaultCompatibilityResetGitCommitMessage,
-    setAndCommitNextCompatibilityIntention := {
+    compatibilityResetGitCommitMessage                          := DefaultCompatibilityResetGitCommitMessage,
+    setAndCommitNextCompatibilityIntention                      := {
       val log           = streams.value.log
       val intention     = (ThisBuild / versionPolicyIntention)
         .?
@@ -111,7 +124,9 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
   )
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    releaseVersion := {
+    devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions  := true,
+    devOopsReleaseVersionPolicyCrossScalaVersionsPublishCommand := "publish",
+    releaseVersion                                              := {
       val maybeBump: Option[sbtrelease.Version.Bump] = versionPolicyIntention
         .?
         .value
@@ -134,6 +149,7 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
         }).string
       }
     },
+
     /* Custom release process: run `versionCheck` after we have set the release version, and
      * reset compatibility intention to `Compatibility.BinaryAndSourceCompatible` after the release.
      */
@@ -142,12 +158,26 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
         ReleaseTransformations.checkSnapshotDependencies,
         ReleaseTransformations.inquireVersions,
         ReleaseTransformations.runClean,
-        ReleaseTransformations.runTest,
+        if (devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions.value) {
+          ReleaseStep { state: State =>
+            if (state.get(ReleaseKeys.skipTests).getOrElse(false))
+              state
+            else
+              releaseStepCommandAndRemaining("+test")(state)
+          }
+        } else {
+          ReleaseTransformations.runTest
+        },
         ReleaseTransformations.setReleaseVersion,
         releaseStepCommand("versionCheck"), // Run task `versionCheck` after the release version is set
         ReleaseTransformations.commitReleaseVersion,
         ReleaseTransformations.tagRelease,
-        ReleaseTransformations.publishArtifacts, // Publish locally for our tests only, in practice you will publish to Sonatype
+        if (devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions.value) {
+          val publishCommand = devOopsReleaseVersionPolicyCrossScalaVersionsPublishCommand.value
+          releaseStepCommandAndRemaining(s"+$publishCommand")
+        } else {
+          ReleaseTransformations.publishArtifacts
+        },
         ReleaseTransformations.setNextVersion,
         ReleaseTransformations.commitNextVersion,
         releaseStepTask(
