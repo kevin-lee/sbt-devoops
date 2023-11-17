@@ -5,7 +5,7 @@ ThisBuild / organizationName := "example"
 
 ThisBuild / crossScalaVersions := List(
   "2.13.9",
-  "2.12.17",
+  "2.12.18",
 )
 
 lazy val root = (project in file("."))
