@@ -334,16 +334,16 @@ object DevOopsScalaPlugin extends AutoPlugin {
   }
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    useAggressiveScalacOptions        := false,
-    enableSourceFutureForScala3       := false,
-    scalacOptions                     := (
+    useAggressiveScalacOptions := false,
+    enableSourceFutureForScala3 := false,
+    scalacOptions := (
       crossVersionProps(
         scalacOptions.value,
         SemVer.parseUnsafe(scalaVersion.value)
       )(versionSpecificScalacOptions(useAggressiveScalacOptions.value, enableSourceFutureForScala3.value))
     ).distinct,
     Compile / console / scalacOptions := essentialOptions.distinct,
-    updateOptions                     := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error),
+    updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error),
     libraryDependencies ++=
       (SemVer.parse(scalaVersion.value) match {
         case Right(SemVer(SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7), _, _)) =>

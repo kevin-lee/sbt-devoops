@@ -40,12 +40,12 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
   import cats.effect.unsafe.implicits.global
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    devOopsLogLevel            := DevOopsLogLevel.info.render,
-    devOopsGitTagFrom          := "main",
-    devOopsGitTagDescription   := None,
-    devOopsGitTagName          := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}"),
-    devOopsGitTagPushRepo      := "origin",
-    devOopsGitTag              := {
+    devOopsLogLevel := DevOopsLogLevel.info.render,
+    devOopsGitTagFrom := "main",
+    devOopsGitTagDescription := None,
+    devOopsGitTagName := decideVersion(version.value, v => s"v${SemVer.render(SemVer.parseUnsafe(v))}"),
+    devOopsGitTagPushRepo := "origin",
+    devOopsGitTag := {
       lazy val basePath       = baseDirectory.value
       lazy val tagFrom        = BranchName(devOopsGitTagFrom.value)
       lazy val tagName        = TagName(devOopsGitTagName.value)
@@ -67,9 +67,9 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         .unsafeRunSync()
 
     },
-    devOopsCiDir               := "ci",
-    devOopsArtifactNamePrefix  := name.value,
-    devOopsPackagedArtifacts   := {
+    devOopsCiDir := "ci",
+    devOopsArtifactNamePrefix := name.value,
+    devOopsPackagedArtifacts := {
       val filenamePrefix = devOopsArtifactNamePrefix.value
       List(
         s"target/scala-*/${filenamePrefix}*.jar",
@@ -97,12 +97,12 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         }
       result
     },
-    devOopsChangelogLocation            := "changelogs",
-    devOopsGitHubAuthTokenEnvVar        := "GITHUB_TOKEN",
-    devOopsGitHubAuthTokenFile          :=
+    devOopsChangelogLocation := "changelogs",
+    devOopsGitHubAuthTokenEnvVar := "GITHUB_TOKEN",
+    devOopsGitHubAuthTokenFile :=
       Some(new File(Io.getUserHome, ".github")),
-    devOopsGitHubRequestTimeout         := 2.minutes,
-    devOopsGitHubRelease                := {
+    devOopsGitHubRequestTimeout := 2.minutes,
+    devOopsGitHubRelease := {
       lazy val tagName         = TagName(devOopsGitTagName.value)
       lazy val authTokenEnvVar = devOopsGitHubAuthTokenEnvVar.value
       lazy val authTokenFile   = devOopsGitHubAuthTokenFile.value
@@ -159,7 +159,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         .handleSbtTask(result)
         .unsafeRunSync()
     },
-    devOopsGitTagAndGitHubRelease       := {
+    devOopsGitTagAndGitHubRelease := {
       lazy val tagName         = TagName(devOopsGitTagName.value)
       lazy val tagDesc         = devOopsGitTagDescription.value
       lazy val tagFrom         = BranchName(devOopsGitTagFrom.value)

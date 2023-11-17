@@ -70,14 +70,14 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
     messageOnlyException(MissingCompatibilityFileInstruction)
 
   override lazy val buildSettings: Seq[Setting[_]] = Seq(
-    devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions  := true,
+    devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions := true,
     devOopsReleaseVersionPolicyCrossScalaVersionsPublishCommand := "publish",
-    versionPolicyIntention                                      := (ThisBuild / versionPolicyIntention)
+    versionPolicyIntention := (ThisBuild / versionPolicyIntention)
       .?
       .value
       .getOrElse(errorWithCompatibilityFileSetupInstruction()),
-    compatibilityResetGitCommitMessage                          := DefaultCompatibilityResetGitCommitMessage,
-    setAndCommitNextCompatibilityIntention                      := {
+    compatibilityResetGitCommitMessage := DefaultCompatibilityResetGitCommitMessage,
+    setAndCommitNextCompatibilityIntention := {
       val log           = streams.value.log
       val intention     = (ThisBuild / versionPolicyIntention)
         .?
@@ -124,9 +124,9 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
   )
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions  := true,
+    devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions := true,
     devOopsReleaseVersionPolicyCrossScalaVersionsPublishCommand := "publish",
-    releaseVersion                                              := {
+    releaseVersion := {
       val maybeBump: Option[sbtrelease.Version.Bump] = versionPolicyIntention
         .?
         .value
@@ -159,11 +159,12 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
         ReleaseTransformations.inquireVersions,
         ReleaseTransformations.runClean,
         if (devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions.value) {
-          ReleaseStep { state: State =>
-            if (state.get(ReleaseKeys.skipTests).getOrElse(false))
-              state
-            else
-              releaseStepCommandAndRemaining("+test")(state)
+          ReleaseStep {
+            state: State =>
+              if (state.get(ReleaseKeys.skipTests).getOrElse(false))
+                state
+              else
+                releaseStepCommandAndRemaining("+test")(state)
           }
         } else {
           ReleaseTransformations.runTest

@@ -95,7 +95,7 @@ object HttpClient {
       val mediaRangeList = mediaRanges.toList
       mediaRangeList.headOption.fold(request) { head =>
         request.putHeaders(
-          Accept(MediaRangeAndQValue(head), mediaRangeList.drop(1).map(MediaRangeAndQValue(_)) *)
+          Accept(MediaRangeAndQValue(head), mediaRangeList.drop(1).map(MediaRangeAndQValue(_))*)
         )
       }
     }

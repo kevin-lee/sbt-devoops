@@ -28,11 +28,11 @@ object DevOopsJavaPlugin extends AutoPlugin {
   import autoImport.*
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    javaVersion      := "1.8"
+    javaVersion := "1.8"
     /*
      * crossPaths and autoScalaLibrary should be false for Java project.
      */,
-    crossPaths       := false,
+    crossPaths := false,
     autoScalaLibrary := false,
     javacOptions ++= Seq(
       "-source",

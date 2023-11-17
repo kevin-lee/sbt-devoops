@@ -33,23 +33,23 @@ object DevOopsSbtExtraPlugin extends AutoPlugin {
 
     @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     val commonSettings: SettingsDefinition = Def.settings(
-      isRootProject        := Keys.thisProjectRef.value == rootProjectRef.value,
-      isCurrentProject     := Keys.thisProjectRef.value == currentProjectRef.value,
+      isRootProject := Keys.thisProjectRef.value == rootProjectRef.value,
+      isCurrentProject := Keys.thisProjectRef.value == currentProjectRef.value,
       isCurrentProjectRoot := isCurrentProject.value && isRootProject.value,
     )
 
     lazy val noPublish: SettingsDefinition = Seq(
-      publish                   := {},
-      publishM2                 := {},
-      publishLocal              := {},
-      publishArtifact           := false,
+      publish := {},
+      publishM2 := {},
+      publishLocal := {},
+      publishArtifact := false,
       sbt.Keys.`package` / skip := true,
-      packagedArtifacts / skip  := true,
-      publish / skip            := true,
+      packagedArtifacts / skip := true,
+      publish / skip := true,
     )
 
     lazy val noDoc: SettingsDefinition = Seq(
-      Compile / doc / sources                := Seq.empty[File],
+      Compile / doc / sources := Seq.empty[File],
       Compile / packageDoc / publishArtifact := false,
     )
   }
