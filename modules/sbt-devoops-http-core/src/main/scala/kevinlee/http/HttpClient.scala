@@ -1,4 +1,4 @@
-package kevinlee.http;
+package kevinlee.http
 
 import cats.Monad
 import cats.data.EitherT
@@ -6,14 +6,15 @@ import cats.effect.*
 import cats.syntax.all.*
 import devoops.data.DevOopsLogLevel
 import effectie.core.*
-import extras.cats.syntax.either.*
+import extras.cats.syntax.all.*
+import fs2.io.file.Files
 import fs2.text
 import io.circe.Decoder
-import loggerf.syntax.all.*
 import loggerf.core.*
 import loggerf.instances.show.*
-import org.http4s.Status.Successful
+import loggerf.syntax.all.*
 import org.http4s.*
+import org.http4s.Status.Successful
 import org.http4s.circe.CirceEntityCodec.*
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
@@ -38,13 +39,13 @@ trait HttpClient[F[?]] {
 object HttpClient {
 
   def apply[
-    F[?]: Monad: Fx: Log: Async
+    F[?]: Monad: Fx: Log: Async: Files
   ](client: Client[F]): HttpClient[F] =
     new HttpClientF[F](client)
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
   final class HttpClientF[
-    F[?]: Monad: Fx: Log: Async
+    F[?]: Monad: Fx: Log: Async: Files
   ](
     client: Client[F]
   ) extends HttpClient[F] {

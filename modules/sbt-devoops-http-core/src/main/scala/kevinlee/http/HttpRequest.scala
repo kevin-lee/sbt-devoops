@@ -128,7 +128,7 @@ object HttpRequest {
   import org.http4s.dsl.request.*
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
-  def toHttp4s[F[?]: Applicative: Async: Http4sClientDsl](
+  def toHttp4s[F[?]: Applicative: Async: Http4sClientDsl: Files](
     httpRequest: HttpRequest
   ): F[Either[HttpError, Request[F]]] =
     httpRequest
@@ -403,7 +403,7 @@ object HttpRequest {
     def withHeader(header: Header): HttpRequest =
       httpRequest.copy(headers = httpRequest.headers :+ header)
 
-    def toHttp4s[F[?]: Applicative: Async: Http4sClientDsl]: F[Either[HttpError, Request[F]]] =
+    def toHttp4s[F[?]: Applicative: Async: Http4sClientDsl: Files]: F[Either[HttpError, Request[F]]] =
       HttpRequest.toHttp4s[F](httpRequest)
 
     // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303

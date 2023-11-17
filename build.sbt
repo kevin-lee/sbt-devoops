@@ -1,9 +1,9 @@
 import BuildTools._
 import ProjectInfo._
 
-ThisBuild / scalaVersion     := props.ProjectScalaVersion
+ThisBuild / scalaVersion := props.ProjectScalaVersion
 ThisBuild / crossSbtVersions := props.CrossSbtVersions
-ThisBuild / developers       := List(
+ThisBuild / developers := List(
   Developer(
     props.GitHubUsername,
     "Kevin Lee",
@@ -11,33 +11,33 @@ ThisBuild / developers       := List(
     url(s"https://github.com/${props.GitHubUsername}"),
   ),
 )
-ThisBuild / homepage         := url(s"https://github.com/${props.GitHubUsername}/${props.ProjectName}").some
-ThisBuild / scmInfo          :=
+ThisBuild / homepage := url(s"https://github.com/${props.GitHubUsername}/${props.ProjectName}").some
+ThisBuild / scmInfo :=
   ScmInfo(
     url(s"https://github.com/${props.GitHubUsername}/${props.ProjectName}"),
     s"git@github.com:${props.GitHubUsername}/${props.ProjectName}.git",
   ).some
-ThisBuild / licenses         := List("MIT" -> url("http://opensource.org/licenses/MIT"))
-ThisBuild / startYear        := 2018.some
+ThisBuild / licenses := List("MIT" -> url("http://opensource.org/licenses/MIT"))
+ThisBuild / startYear := 2018.some
 ThisBuild / testFrameworks ~=
   (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct)
 ThisBuild / resolvers += "sonatype-snapshots" at s"https://${props.SonatypeCredentialHost}/content/repositories/snapshots"
 
-Global / sbtVersion          := props.GlobalSbtVersion
+Global / sbtVersion := props.GlobalSbtVersion
 
 lazy val sbtDevOops = Project(props.ProjectName, file("."))
   .enablePlugins(SbtPlugin)
   .enablePlugins(DevOopsGitHubReleasePlugin, DocusaurPlugin)
   .settings(
-    organization        := props.Org,
-    name                := props.ProjectName,
-    description         := "DevOops - DevOps tool for GitHub",
-    writeVersion        := versionWriter(Def.spaceDelimited("filename").parsed)(version.value),
-    docusaurDir         := (ThisBuild / baseDirectory).value / "website",
-    docusaurBuildDir    := docusaurDir.value / "build",
-    gitHubPagesOrgName  := props.GitHubUsername,
+    organization := props.Org,
+    name := props.ProjectName,
+    description := "DevOops - DevOps tool for GitHub",
+    writeVersion := versionWriter(Def.spaceDelimited("filename").parsed)(version.value),
+    docusaurDir := (ThisBuild / baseDirectory).value / "website",
+    docusaurBuildDir := docusaurDir.value / "build",
+    gitHubPagesOrgName := props.GitHubUsername,
     gitHubPagesRepoName := props.ProjectName,
-    publishMavenStyle   := true,
+    publishMavenStyle := true,
   )
   .settings(mavenCentralPublishSettings)
   .dependsOn(
@@ -84,6 +84,7 @@ lazy val sbtDevOopsHttpCore = subProject(props.SubProjectNameHttpCore)
       libs.newtype,
       libs.effectie,
       libs.justSysprocess,
+      libs.extrasCats,
     ) ++ libs.loggerF ++ libs.circe ++ libs.refined ++ libs.http4sClient ++ libs.javaxActivation212,
   )
   .dependsOn(sbtDevOopsCommon % props.IncludeTest)
@@ -126,7 +127,7 @@ lazy val sbtDevOopsJava = subProject(props.SubProjectNameJava)
 lazy val mavenCentralPublishSettings: SettingsDefinition = List(
   /* Publish to Maven Central { */
   sonatypeCredentialHost := props.SonatypeCredentialHost,
-  sonatypeRepository     := props.SonatypeRepository,
+  sonatypeRepository := props.SonatypeRepository,
   /* } Publish to Maven Central */
 )
 
@@ -138,27 +139,25 @@ def subProject(projectName: String): Project = {
   val prefixedName = prefixedProjectName(projectName)
   Project(projectName, file(s"modules/$prefixedName"))
     .settings(
-      organization                      := props.Org,
-      name                              := prefixedName,
+      organization := props.Org,
+      name := prefixedName,
 //      scalacOptions ++= List("-Xsource:3"),
       Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
       Compile / compile / wartremoverErrors ++= commonWarts,
       Test / compile / wartremoverErrors ++= commonWarts,
-      testFrameworks ~=
-        (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct),
-      licenses                          := List("MIT" -> url("http://opensource.org/licenses/MIT")),
-      publishMavenStyle                 := true,
-      coverageHighlighting              := (CrossVersion.partialVersion(scalaVersion.value) match {
+      licenses := List("MIT" -> url("http://opensource.org/licenses/MIT")),
+      publishMavenStyle := true,
+      coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 10)) =>
           false
         case _ =>
           true
       }),
-      scriptedLaunchOpts                := {
+      scriptedLaunchOpts := {
         scriptedLaunchOpts.value ++
           Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
       },
-      scriptedBufferLog                 := false,
+      scriptedBufferLog := false,
     )
     .settings(mavenCentralPublishSettings)
 }
@@ -198,21 +197,21 @@ lazy val props =
 
     final val newtypeVersion = "0.4.4"
 
-    final val catsVersion       = "2.9.0"
-    final val catsEffectVersion = "3.4.3"
+    final val catsVersion       = "2.10.0"
+    final val catsEffectVersion = "3.5.2"
 
-    final val extrasVersion = "0.26.0"
+    final val extrasVersion = "0.44.0"
 
-    final val effectieVersion = "2.0.0-beta4"
-    final val loggerFVersion  = "2.0.0-beta4"
+    final val effectieVersion = "2.0.0-beta13"
+    final val loggerFVersion  = "2.0.0-beta22"
 
-    final val refinedVersion = "0.10.1"
+    final val refinedVersion = "0.11.0"
 
-    final val circeVersion = "0.14.3"
+    final val circeVersion = "0.14.6"
 
-    final val http4sVersion = "0.23.16"
+    final val http4sVersion = "0.23.24"
 
-    final val justSemVerVersion = "0.6.0"
+    final val justSemVerVersion = "0.13.0"
 
     final val justSysprocessVersion = "1.0.0"
 
