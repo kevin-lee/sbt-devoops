@@ -14,6 +14,8 @@ import effectie.syntax.all.*
 import extras.cats.syntax.all.*
 import extras.scala.io.Color
 import extras.scala.io.syntax.color.*
+import fs2.io.file.Files
+import fs2.io.net.Network
 import kevinlee.github.GitHubApi
 import kevinlee.github.data.GitHub
 import kevinlee.http.HttpClient
@@ -205,7 +207,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
     },
   )
 
-  def writeDefaultScalafmtConf[F[?]: Fx: LogF: Async](dialectVersion: String, outFile: File)(
+  def writeDefaultScalafmtConf[F[?]: Fx: LogF: Async: Network: Files](dialectVersion: String, outFile: File)(
     implicit LV: DevOopsLogLevel
   ): F[Either[StarterError, Unit]] =
     EmberClientBuilder
