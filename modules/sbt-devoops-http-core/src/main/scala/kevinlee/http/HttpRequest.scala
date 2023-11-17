@@ -152,13 +152,13 @@ object HttpRequest {
           case HttpRequest.Method.Get =>
             httpRequest
               .body
-              .fold(GET(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
+              .fold(GET(uriWithParams, http4sHeaders*).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   GET
                     .apply(
                       json,
                       uriWithParams,
-                      http4sHeaders *
+                      http4sHeaders*
                     )
                     .asRight[HttpError]
                     .pure
@@ -173,12 +173,12 @@ object HttpRequest {
           case HttpRequest.Method.Post =>
             httpRequest
               .body
-              .fold(POST(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
+              .fold(POST(uriWithParams, http4sHeaders*).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   POST(
                     json,
                     uriWithParams,
-                    http4sHeaders *
+                    http4sHeaders*
                   )
                     .asRight[HttpError]
                     .pure
@@ -196,7 +196,7 @@ object HttpRequest {
                       POST(
                         chunk,
                         uriWithParams,
-                        http4sHeaders *
+                        http4sHeaders*
                       )
                     }
                     .map(req =>
@@ -242,12 +242,12 @@ object HttpRequest {
           case HttpRequest.Method.Put =>
             httpRequest
               .body
-              .fold(PUT.apply(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
+              .fold(PUT.apply(uriWithParams, http4sHeaders*).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   PUT(
                     json,
                     uriWithParams,
-                    http4sHeaders *
+                    http4sHeaders*
                   )
                     .asRight[HttpError]
                     .pure
@@ -262,12 +262,12 @@ object HttpRequest {
           case HttpRequest.Method.Patch =>
             httpRequest
               .body
-              .fold(PATCH(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
+              .fold(PATCH(uriWithParams, http4sHeaders*).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   PATCH(
                     json,
                     uriWithParams,
-                    http4sHeaders *
+                    http4sHeaders*
                   )
                     .asRight[HttpError]
                     .pure
@@ -282,12 +282,12 @@ object HttpRequest {
           case HttpRequest.Method.Delete =>
             httpRequest
               .body
-              .fold(DELETE(uriWithParams, http4sHeaders *).asRight[HttpError].pure) {
+              .fold(DELETE(uriWithParams, http4sHeaders*).asRight[HttpError].pure) {
                 case HttpRequest.Body.Json(json) =>
                   DELETE(
                     json,
                     uriWithParams,
-                    http4sHeaders *
+                    http4sHeaders*
                   )
                     .asRight[HttpError]
                     .pure

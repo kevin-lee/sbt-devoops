@@ -233,9 +233,9 @@ object GitHub {
         Json.obj(
           (
             List(
-              "id" -> author.id.asJson,
+              "id"    -> author.id.asJson,
               "login" -> author.login.asJson,
-              "url" -> author.url.asJson,
+              "url"   -> author.url.asJson,
             ) ++
               author
                 .name
@@ -245,7 +245,7 @@ object GitHub {
                 .avatarUrl
                 .toList
                 .map(avatarUrl => "avatar_url" -> avatarUrl.asJson)
-            ) *,
+          )*,
         )
     implicit final val decoder: Decoder[User] =
       (c: HCursor) =>
