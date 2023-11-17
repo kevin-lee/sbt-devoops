@@ -187,7 +187,7 @@ lazy val props =
     final val SubProjectNameReleaseVersionPolicy = "release-version-policy"
     final val SubProjectNameJava                 = "java"
 
-    final val ProjectScalaVersion = "2.12.17"
+    final val ProjectScalaVersion = "2.12.18"
     final val CrossScalaVersions  = List(ProjectScalaVersion).distinct
 
     final val GlobalSbtVersion = "1.3.4"
@@ -224,10 +224,10 @@ lazy val props =
     val SbtVersionPolicyVersion = "2.1.3"
     val SbtReleaseVersion       = "1.1.0"
 
-    val SbtScalafmtVersion = "2.5.0"
-    val SbtScalafixVersion = "0.10.4"
+    val SbtScalafmtVersion = "2.5.2"
+    val SbtScalafixVersion = "0.11.1"
 
-    val SbtWelcomeVersion = "0.2.2"
+    val SbtWelcomeVersion = "0.4.0"
 
     final val IncludeTest = "compile->compile;test->test"
   }
@@ -336,19 +336,22 @@ logo :=
 
 import sbtwelcome._
 
+val aliasFormatter: String => String =
+  _ + s"${scala.io.AnsiColor.RESET}: "
+
 usefulTasks := Seq(
-  UsefulTask("r", "reload", "Run reload"),
-  UsefulTask("cln", "clean", "Run clean"),
-  UsefulTask("c", "compile", "Run compile"),
-  UsefulTask("tc", "Test/compile", "Run Test/compile"),
-  UsefulTask("t", "test", "Run test"),
-  UsefulTask("st", "scripted", "Run scripted for sbt-test"),
-  UsefulTask("fmtchk", "scalafmtCheckAll", "Run scalafmtCheckAll"),
-  UsefulTask("fmt", "scalafmtAll", "Run scalafmtAll"),
-  UsefulTask("pl", "publishLocal", "Run publishLocal"),
-  UsefulTask("du", "dependencyUpdates", "Run dependencyUpdates"),
-  UsefulTask("uud", "unusedCompileDependencies", "Run unusedCompileDependencies"),
-  UsefulTask("udd", "undeclaredCompileDependencies", "Run undeclaredCompileDependencies"),
-)
+  UsefulTask("reload", "Run reload").alias("r"),
+  UsefulTask("clean", "Run clean").alias("cln"),
+  UsefulTask("compile", "Run compile").alias("c"),
+  UsefulTask("Test/compile", "Run Test/compile").alias("tc"),
+  UsefulTask("test", "Run test").alias("t"),
+  UsefulTask("scripted", "Run scripted for sbt-test").alias("st"),
+  UsefulTask("scalafmtCheckAll", "Run scalafmtCheckAll").alias("fmtchk"),
+  UsefulTask("scalafmtAll", "Run scalafmtAll").alias("fmt"),
+  UsefulTask("publishLocal", "Run publishLocal").alias("pl"),
+  UsefulTask("dependencyUpdates", "Run dependencyUpdates").alias("du"),
+  UsefulTask("unusedCompileDependencies", "Run unusedCompileDependencies").alias("uud"),
+  UsefulTask("undeclaredCompileDependencies", "Run undeclaredCompileDependencies").alias("udd"),
+).map(_.formatAlias(aliasFormatter))
 
 logoColor := sConsole.MAGENTA

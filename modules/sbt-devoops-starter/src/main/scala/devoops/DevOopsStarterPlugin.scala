@@ -108,6 +108,9 @@ object DevOopsStarterPlugin extends AutoPlugin {
            |$logoAdditionalInfo""".stripMargin
     }
 
+    val sbtWelcomeAliasFormatter: String => String =
+      _ + s"${scala.io.AnsiColor.RESET}: "
+
   }
 
   import autoImport.*
@@ -290,26 +293,26 @@ object DevOopsStarterPlugin extends AutoPlugin {
       logoAdditionalInfo.value
     ),
     usefulTasks := Seq(
-      UsefulTask("r", "reload", "Run reload"),
-      UsefulTask("cln", "clean", "Run clean"),
-      UsefulTask("c", "compile", "Run compile"),
-      UsefulTask("cc", "+compile", "Run cross-scalaVersion compile"),
-      UsefulTask("tc", "Test/compile", "Run Test/compile"),
-      UsefulTask("ctc", "+Test/compile", "Run cross-scalaVersion Test/compile"),
-      UsefulTask("t", "test", "Run test"),
-      UsefulTask("ct", "+test", "Run cross-scalaVersion test"),
-      UsefulTask("fmtchk", "scalafmtCheckAll", "Run scalafmtCheckAll"),
-      UsefulTask("fmt", "scalafmtAll", "Run scalafmtAll"),
-      UsefulTask("cfmtchk", "+scalafmtCheckAll", "Run +scalafmtCheckAll"),
-      UsefulTask("cfmt", "+scalafmtAll", "Run +scalafmtAll"),
-      UsefulTask("fixchk", "scalafixAll --check", "Run scalafixAll --check"),
-      UsefulTask("fix", "scalafixAll", "Run scalafixAll"),
-      UsefulTask("cfixchk", "+scalafixAll --check", "Run +scalafixAll --check"),
-      UsefulTask("cfix", "+scalafixAll", "Run +scalafixAll"),
-      UsefulTask("chk", "fmtchk; fixchk", "Run scalafmtCheckAll; scalafixAll --check"),
-      UsefulTask("cchk", "cfmtchk; cfixchk", "Run +scalafmtCheckAll; +scalafixAll --check"),
-      UsefulTask("pl", "publishLocal", "Run publishLocal"),
-    ),
+      UsefulTask("reload", "Run reload").alias("r"),
+      UsefulTask("clean", "Run clean").alias("cln"),
+      UsefulTask("compile", "Run compile").alias("c"),
+      UsefulTask("+compile", "Run cross-scalaVersion compile").alias("cc"),
+      UsefulTask("Test/compile", "Run Test/compile").alias("tc"),
+      UsefulTask("+Test/compile", "Run cross-scalaVersion Test/compile").alias("ctc"),
+      UsefulTask("test", "Run test").alias("t"),
+      UsefulTask("+test", "Run cross-scalaVersion test").alias("ct"),
+      UsefulTask("scalafmtCheckAll", "Run scalafmtCheckAll").alias("fmtchk"),
+      UsefulTask("scalafmtAll", "Run scalafmtAll").alias("fmt"),
+      UsefulTask("+scalafmtCheckAll", "Run +scalafmtCheckAll").alias("cfmtchk"),
+      UsefulTask("+scalafmtAll", "Run +scalafmtAll").alias("cfmt"),
+      UsefulTask("scalafixAll --check", "Run scalafixAll --check").alias("fixchk"),
+      UsefulTask("scalafixAll", "Run scalafixAll").alias("fix"),
+      UsefulTask("+scalafixAll --check", "Run +scalafixAll --check").alias("cfixchk"),
+      UsefulTask("+scalafixAll", "Run +scalafixAll").alias("cfix"),
+      UsefulTask("fmtchk; fixchk", "Run scalafmtCheckAll; scalafixAll --check").alias("chk"),
+      UsefulTask("cfmtchk; cfixchk", "Run +scalafmtCheckAll; +scalafixAll --check").alias("cchk"),
+      UsefulTask("publishLocal", "Run publishLocal").alias("pl"),
+    ).map(_.formatAlias(sbtWelcomeAliasFormatter)),
     logoColor := Color.magenta.toAnsi,
     aliasColor := Color.blue.toAnsi,
   )
