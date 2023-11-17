@@ -5,7 +5,7 @@ ThisBuild / organizationName := "example"
 
 ThisBuild / crossScalaVersions := List(
   "2.13.8",
-  "2.12.15",
+  "2.12.17",
   "2.11.12",
 )
 
