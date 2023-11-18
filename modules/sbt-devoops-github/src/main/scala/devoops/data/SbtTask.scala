@@ -118,7 +118,7 @@ object SbtTask {
       EitherT[Writer[W, *], A, B] {
         val w =
           r match {
-            case Left(a) =>
+            case Left(a @ _) =>
               Monoid[W].empty
 
             case Right(b) =>
@@ -134,7 +134,7 @@ object SbtTask {
         val wf: F[(W, Either[A, B])] = r.map { eth =>
           val w =
             eth match {
-              case Left(a) =>
+              case Left(a @ _) =>
                 Monoid[W].empty
 
               case Right(b) =>

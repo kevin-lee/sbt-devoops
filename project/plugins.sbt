@@ -12,6 +12,8 @@ addSbtPlugin("com.github.reibitto" % "sbt-welcome" % "0.4.0")
 
 addSbtPlugin("io.kevinlee" % "sbt-docusaur" % "0.13.0")
 
+addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.0")
+
 val sbtDevOopsVersion = "2.24.1"
 addSbtPlugin("io.kevinlee" % "sbt-devoops-scala"     % sbtDevOopsVersion)
 addSbtPlugin("io.kevinlee" % "sbt-devoops-sbt-extra" % sbtDevOopsVersion)

@@ -217,8 +217,9 @@ object GitHubError {
     case AssetUploadFailure(failed, succeeded) =>
       @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
       val failedOnes = failed.toList.map {
-        case GitHubRelease.Asset.FailedAssetUpload(file, Some(err: AssetUploadFailure)) =>
+        case GitHubRelease.Asset.FailedAssetUpload(file @ _, Some(err: AssetUploadFailure)) =>
           GitHubError.render(err)
+
         case GitHubRelease.Asset.FailedAssetUpload(file, reason) =>
           s"${file.toString}${reason.fold("")(s => s" Reason: ${GitHubError.render(s)}")}"
       }
@@ -235,7 +236,7 @@ object GitHubError {
   }
 
   def fromHttpError(httpError: HttpError): GitHubError = httpError match {
-    case HttpError.Forbidden(httpRequest, httpResponse @ HttpResponse(_, headers, Some(body))) =>
+    case HttpError.Forbidden(httpRequest, httpResponse @ HttpResponse(_, headers @ _, Some(body))) =>
       decode[FailedResponseBodyJson](body.body) match {
         case Right(FailedResponseBodyJson(message, _, Some(docUrl))) =>
           if (

@@ -109,9 +109,6 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val baseDir         = baseDirectory.value
       lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
 
-      @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
-      implicit val ec: ExecutionContext = ExecutionContext.global
-
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
       import effectie.instances.ce3.fx.*
@@ -169,9 +166,6 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       lazy val pushRepo        = Repository(devOopsGitTagPushRepo.value)
       lazy val projectVersion  = version.value
       lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
-
-      @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
-      implicit val ec: ExecutionContext = ExecutionContext.global
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
@@ -314,21 +308,20 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
              currentBranchName.value =!= tagFrom.value,
              SbtTaskError.gitTaskError(s"current branch does not match with $tagFrom"),
            )
-
-      fetchResult <- SbtTask[F].fromGitTask(Git[F].fetchTags(basePath))
-      tagResult   <- SbtTask[F].fromGitTask(
-                       gitTagDescription
-                         .fold(
-                           Git[F].tag(tagName, basePath)
-                         ) { desc =>
-                           Git[F].tagWithDescription(
-                             tagName,
-                             Git.Description(desc),
-                             basePath,
-                           )
-                         }
-                     )
-      pushResult  <- SbtTask[F].fromGitTask(Git[F].pushTag(pushRepo, tagName, basePath))
+      _ <- SbtTask[F].fromGitTask(Git[F].fetchTags(basePath))
+      _ <- SbtTask[F].fromGitTask(
+             gitTagDescription
+               .fold(
+                 Git[F].tag(tagName, basePath)
+               ) { desc =>
+                 Git[F].tagWithDescription(
+                   tagName,
+                   Git.Description(desc),
+                   basePath,
+                 )
+               }
+           )
+      _ <- SbtTask[F].fromGitTask(Git[F].pushTag(pushRepo, tagName, basePath))
     } yield ()
 
   private def getGitHubAuthToken(
@@ -348,7 +341,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     gitTagPushRepo: Repository,
     oAuthToken: GitHub.OAuthToken,
     gitHubApi: GitHubApi[F],
-  ): GitHubTask.GitHubTaskResult[F, Unit] =
+  ): GitHubTask.GitHubTaskResult[F, Option[GitHubRelease.Response]] =
     for {
       changelog <-
         SbtTask[F].eitherTWithWriter(
@@ -402,7 +395,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
           case None =>
             List("Release has failed.")
         }
-    } yield ()
+    } yield gitHubRelease
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   private def runUploadAssetsToGitHubRelease[F[?]: Fx: CanCatch: Monad](
@@ -412,7 +405,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     gitTagPushRepo: Repository,
     oAuthToken: GitHub.OAuthToken,
     gitHubApi: GitHubApi[F],
-  )(implicit ec: ExecutionContext, timer: Temporal[F]): GitHubTask.GitHubTaskResult[F, Unit] =
+  )(implicit ec: ExecutionContext, timer: Temporal[F]): GitHubTask.GitHubTaskResult[F, List[GitHubRelease.Asset]] =
     for {
       url <- GitHubTask[F].fromGitTask(
                Git[F].getRemoteUrl(gitTagPushRepo, baseDir)
@@ -458,7 +451,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
                 .mkString("Files uploaded:\n    - ", "\n    - ", ""),
           )
         )
-    } yield ()
+    } yield gitHubRelease
 
   // $COVERAGE-ON$
 }

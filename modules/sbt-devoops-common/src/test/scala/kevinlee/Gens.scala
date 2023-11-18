@@ -189,7 +189,7 @@ object Gens {
   def genMinMaxAlphaNumHyphenGroupList(
     minMaxAlphaNumHyphenGroupGen: Gen[(Dsv, Dsv)]
   ): Gen[(List[Dsv], List[Dsv])] = for {
-    minMaxIds <- genMinMaxAlphaNumHyphenGroup.list(Range.linear(1, 3))
+    minMaxIds <- minMaxAlphaNumHyphenGroupGen.list(Range.linear(1, 3))
     (minIds, maxIds) =
       minMaxIds.foldLeft(
         (List.empty[Dsv], List.empty[Dsv])
