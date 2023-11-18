@@ -71,6 +71,9 @@ lazy val sbtDevOopsCommon = subProject(props.SubProjectNameCommon)
 
 lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala)
   .enablePlugins(SbtPlugin)
+  .settings(
+    addSbtPlugin(libs.sbtTpolecat)
+  )
   .dependsOn(sbtDevOopsCommon)
 
 lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra)
@@ -141,6 +144,8 @@ def subProject(projectName: String): Project = {
     .settings(
       organization := props.Org,
       name := prefixedName,
+      addCompilerPlugin("org.scalamacros" % "paradise"       % "2.1.1" cross CrossVersion.full),
+      addCompilerPlugin("org.typelevel"   % "kind-projector" % "0.13.2" cross CrossVersion.full),
 //      scalacOptions ++= List("-Xsource:3"),
       Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
       Compile / compile / wartremoverErrors ++= commonWarts,
@@ -220,6 +225,8 @@ lazy val props =
     final val activationVersion    = "1.1.1"
     final val activationApiVersion = "1.2.0"
 
+    val SbtTpolecatVersion = "0.5.0"
+
     val SbtVersionPolicyVersion = "2.1.3"
     val SbtReleaseVersion       = "1.1.0"
 
@@ -283,6 +290,8 @@ lazy val libs =
     lazy val javaxActivation212 = List(
       "javax.activation" % "activation" % props.activationVersion,
     )
+
+    lazy val sbtTpolecat = "org.typelevel" % "sbt-tpolecat" % props.SbtTpolecatVersion
 
     lazy val sbtVersionPolicy = "ch.epfl.scala"  % "sbt-version-policy" % props.SbtVersionPolicyVersion
     lazy val sbtRelease       = "com.github.sbt" % "sbt-release"        % props.SbtReleaseVersion
