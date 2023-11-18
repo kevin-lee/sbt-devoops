@@ -172,58 +172,58 @@ lazy val props =
 
     private val GitHubRepo = findRepoOrgAndName
 
-    final val Org      = "io.kevinlee"
+    val Org            = "io.kevinlee"
     val GitHubUsername = GitHubRepo.fold("Kevin-Lee")(_.orgToString)
     val RepoName       = GitHubRepo.fold("sbt-devoops")(_.nameToString)
 
-    final val ProjectName = RepoName
+    val ProjectName = RepoName
 
     val SonatypeCredentialHost = "s01.oss.sonatype.org"
     val SonatypeRepository     = s"https://$SonatypeCredentialHost/service/local"
 
-    final val SubProjectNameCommon               = "common"
-    final val SubProjectNameScala                = "scala"
-    final val SubProjectNameSbtExtra             = "sbt-extra"
-    final val SubProjectNameStarter              = "starter"
-    final val SubProjectNameHttpCore             = "http-core"
-    final val SubProjectNameGitHubCore           = "github-core"
-    final val SubProjectNameGitHub               = "github"
-    final val SubProjectNameReleaseVersionPolicy = "release-version-policy"
-    final val SubProjectNameJava                 = "java"
+    val SubProjectNameCommon               = "common"
+    val SubProjectNameScala                = "scala"
+    val SubProjectNameSbtExtra             = "sbt-extra"
+    val SubProjectNameStarter              = "starter"
+    val SubProjectNameHttpCore             = "http-core"
+    val SubProjectNameGitHubCore           = "github-core"
+    val SubProjectNameGitHub               = "github"
+    val SubProjectNameReleaseVersionPolicy = "release-version-policy"
+    val SubProjectNameJava                 = "java"
 
-    final val ProjectScalaVersion = "2.12.18"
-    final val CrossScalaVersions  = List(ProjectScalaVersion).distinct
+    val ProjectScalaVersion = "2.12.18"
+    val CrossScalaVersions  = List(ProjectScalaVersion).distinct
 
-    final val GlobalSbtVersion = "1.3.4"
+    val GlobalSbtVersion = "1.3.4"
 
-    final val CrossSbtVersions = List(GlobalSbtVersion).distinct
+    val CrossSbtVersions = List(GlobalSbtVersion).distinct
 
-    final val hedgehogVersion = "0.10.1"
+    val hedgehogVersion = "0.10.1"
 
-    final val newtypeVersion = "0.4.4"
+    val newtypeVersion = "0.4.4"
 
-    final val catsVersion       = "2.10.0"
-    final val catsEffectVersion = "3.5.2"
+    val catsVersion       = "2.10.0"
+    val catsEffectVersion = "3.5.2"
 
-    final val extrasVersion = "0.44.0"
+    val extrasVersion = "0.44.0"
 
-    final val effectieVersion = "2.0.0-beta13"
-    final val loggerFVersion  = "2.0.0-beta22"
+    val effectieVersion = "2.0.0-beta13"
+    val loggerFVersion  = "2.0.0-beta22"
 
-    final val refinedVersion = "0.11.0"
+    val refinedVersion = "0.11.0"
 
-    final val circeVersion = "0.14.6"
+    val circeVersion = "0.14.6"
 
-    final val http4sVersion = "0.23.24"
+    val http4sVersion = "0.23.24"
 
-    final val justSemVerVersion = "0.13.0"
+    val justSemVerVersion = "0.13.0"
 
-    final val justSysprocessVersion = "1.0.0"
+    val justSysprocessVersion = "1.0.0"
 
-    final val commonsIoVersion = "2.11.0"
+    val commonsIoVersion = "2.11.0"
 
-    final val activationVersion    = "1.1.1"
-    final val activationApiVersion = "1.2.0"
+    val activationVersion    = "1.1.1"
+    val activationApiVersion = "1.2.0"
 
     val SbtTpolecatVersion = "0.5.0"
 
@@ -235,7 +235,7 @@ lazy val props =
 
     val SbtWelcomeVersion = "0.4.0"
 
-    final val IncludeTest = "compile->compile;test->test"
+    val IncludeTest = "compile->compile;test->test"
   }
 
 lazy val libs =
