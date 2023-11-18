@@ -194,7 +194,7 @@ object GitHubApi {
                                  .FailedAssetUpload(file, err.some)
                                  .asLeft[GitHubRelease.Asset]
 
-                             case Right((file, Some(asset))) =>
+                             case Right((file @ _, Some(asset))) =>
                                asset.asRight[GitHubRelease.Asset.FailedAssetUpload]
 
                              case Right((file, None)) =>
@@ -373,7 +373,7 @@ object GitHubApi {
                 .FailedAssetUpload(file, err.some)
                 .asLeft[GitHubRelease.Asset]
 
-            case Right((file, Some(asset))) =>
+            case Right((file @ _, Some(asset))) =>
               asset.asRight[GitHubRelease.Asset.FailedAssetUpload]
 
             case Right((file, None)) =>

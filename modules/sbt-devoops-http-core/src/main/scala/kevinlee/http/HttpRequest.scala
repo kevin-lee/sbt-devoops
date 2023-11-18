@@ -18,7 +18,6 @@ import org.http4s.multipart.Multiparts
 
 import java.net.URL
 import java.util.Locale
-import scala.concurrent.ExecutionContext
 
 /** @author Kevin Lee
   * @since 2021-01-03
@@ -445,7 +444,7 @@ object HttpRequest {
     headers: List[Header],
     params: List[Param],
     file: java.io.File,
-  )(implicit ec: ExecutionContext): HttpRequest =
+  ): HttpRequest =
     HttpRequest(
       httpMethod,
       uri,

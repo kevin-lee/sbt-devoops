@@ -186,13 +186,14 @@ object Git {
     ): CmdResult[F, A] =
       EitherT {
         val fOf = r.map { eth =>
-          val w: CmdHistory                    =
+          val w: CmdHistory =
             eth match {
-              case Left(error) =>
+              case Left(error @ _) =>
                 List.empty[GitCmdAndResult]
-              case Right((cmdResult, a)) =>
+              case Right((cmdResult, a @ _)) =>
                 List(GitCmdAndResult(gitCmd, cmdResult))
             }
+
           val eth2: Either[GitCommandError, A] = eth.map {
             case (_, a) =>
               a

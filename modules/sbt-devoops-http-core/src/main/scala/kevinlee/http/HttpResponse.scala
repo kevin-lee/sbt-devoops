@@ -58,16 +58,11 @@ object HttpResponse {
         .map(_.header._2)
 
     def toFailedResponseBodyJson: Option[FailedResponseBodyJson] =
-      httpResponse
-        .body
-        .flatMap(body =>
-          decode[FailedResponseBodyJson](body.body) match {
-            case Right(responseBodyJson) =>
-              responseBodyJson.some
-            case Left(err) =>
-              none[FailedResponseBodyJson]
-          }
-        )
+      for {
+        body                   <- httpResponse.body
+        failedResponseBodyJson <- decode[FailedResponseBodyJson](body.body).toOption
+      } yield failedResponseBodyJson
+
   }
 
   implicit def show(implicit sbtLogLevel: DevOopsLogLevel): Show[HttpResponse] = { httpResponse =>

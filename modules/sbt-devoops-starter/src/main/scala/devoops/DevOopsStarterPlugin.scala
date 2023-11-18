@@ -256,8 +256,9 @@ object DevOopsStarterPlugin extends AutoPlugin {
         } yield ()).value
       }
 
-  def writeDefaultScalafixConf[F[?]: Fx: LogF: Async](templateFilename: String, outFile: File)(
-    implicit LV: DevOopsLogLevel
+  def writeDefaultScalafixConf[F[?]: Fx: LogF: Async](
+    templateFilename: String,
+    outFile: File
   ): F[Either[StarterError, File]] =
     (for {
       scalafixConfTemplate <- effectOf[F](
