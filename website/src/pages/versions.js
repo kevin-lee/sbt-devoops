@@ -24,6 +24,46 @@ function Version() {
     (version) => version !== latestVersion && version.name !== 'current',
   ).concat([
     {
+      "name": "2.24.1",
+      "label": "2.24.1",
+    },
+    {
+      "name": "2.24.0",
+      "label": "2.24.0",
+    },
+    {
+      "name": "2.23.0",
+      "label": "2.23.0",
+    },
+    {
+      "name": "2.22.0",
+      "label": "2.22.0",
+    },
+    {
+      "name": "2.21.0",
+      "label": "2.21.0",
+    },
+    {
+      "name": "2.20.0",
+      "label": "2.20.0",
+    },
+    {
+      "name": "2.19.0",
+      "label": "2.19.0",
+    },
+    {
+      "name": "2.18.0",
+      "label": "2.18.0",
+    },
+    {
+      "name": "2.17.0",
+      "label": "2.17.0",
+    },
+    {
+      "name": "2.16.0",
+      "label": "2.16.0",
+    },
+    {
       "name": "2.15.0",
       "label": "2.15.0",
     },

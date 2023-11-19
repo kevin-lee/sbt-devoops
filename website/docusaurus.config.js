@@ -119,8 +119,12 @@ const websiteConfig = {
               "label": "2.5.0",
               "path": "2.5.0",
             },
+            "2.24.1": {
+              "label": "2.24.1",
+              "path": "2.24.1",
+            },
             "current": {
-              "label": "2.16.0",
+              "label": "3.0.0",
             },
           },
         },

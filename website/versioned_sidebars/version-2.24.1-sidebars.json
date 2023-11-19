@@ -1,0 +1,22 @@
+{
+  "version-2.24.1/docs": [
+    {
+      "type": "category",
+      "label": "DevOops",
+      "collapsed": false,
+      "items": ["version-2.24.1/getting-started"]
+    },
+    {
+      "type": "category",
+      "label": "DevOopsGitReleasePlugin",
+      "collapsed": false,
+      "items": ["version-2.24.1/gh-release-plugin/config-and-run", "version-2.24.1/gh-release-plugin/examples"]
+    },
+    {
+      "DevOopsScalaPlugin": ["version-2.24.1/scala-plugin/how-to-use"]
+    },
+    {
+      "DevOopsJavaPlugin": ["version-2.24.1/java-plugin/how-to-use"]
+    }
+  ]
+}
