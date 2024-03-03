@@ -19,21 +19,29 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
   override lazy val projectSettings: Seq[Setting[_]] = Seq(
     updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error),
-    libraryDependencies ++=
+    scalacOptions := {
+      val currentOptions = scalacOptions.value
       (SemVer.parse(scalaVersion.value) match {
-        case Right(SemVer(SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7), _, _)) =>
-          Seq("com.milessabin" % "si2712fix-plugin_2.10.7" % "1.2.0" % "plugin->default(compile)")
-        case Right(_: SemVer) =>
-          Seq.empty[ModuleID]
-        case Left(error) =>
-          sLog
-            .value
-            .warn(
-              "Parsing scalaVersion failed when setting up partial-unification\n" +
-                s"Parse failure info: ${ParseError.render(error)}"
-            )
-          Seq.empty[ModuleID]
-      }),
+        case Right(SemVer(SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(patch), _, _)) if patch >= 3 =>
+          (currentOptions ++ Seq("-Ymacro-annotations")).distinct
+        case _ =>
+          currentOptions
+      })
+    },
+    libraryDependencies ++= (SemVer.parse(scalaVersion.value) match {
+      case Right(SemVer(SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7), _, _)) =>
+        Seq("com.milessabin" % "si2712fix-plugin_2.10.7" % "1.2.0" % "plugin->default(compile)")
+      case Right(_: SemVer) =>
+        Seq.empty[ModuleID]
+      case Left(error) =>
+        sLog
+          .value
+          .warn(
+            "Parsing scalaVersion failed when setting up partial-unification\n" +
+              s"Parse failure info: ${ParseError.render(error)}"
+          )
+        Seq.empty[ModuleID]
+    }),
     libraryDependencies ++= {
       val scalaV = scalaVersion.value
       if (scalaV.startsWith("3")) {
