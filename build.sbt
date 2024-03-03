@@ -203,18 +203,18 @@ lazy val props =
     val newtypeVersion = "0.4.4"
 
     val catsVersion       = "2.10.0"
-    val catsEffectVersion = "3.5.2"
+    val catsEffectVersion = "3.5.3"
 
     val extrasVersion = "0.44.0"
 
-    val effectieVersion = "2.0.0-beta13"
-    val loggerFVersion  = "2.0.0-beta22"
+    val effectieVersion = "2.0.0-beta14"
+    val loggerFVersion  = "2.0.0-beta24"
 
-    val refinedVersion = "0.11.0"
+    val refinedVersion = "0.11.1"
 
     val circeVersion = "0.14.6"
 
-    val http4sVersion = "0.23.24"
+    val http4sVersion = "0.23.25"
 
     val justSemVerVersion = "0.13.0"
 
