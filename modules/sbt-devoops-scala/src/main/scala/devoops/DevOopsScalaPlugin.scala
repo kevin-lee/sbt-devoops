@@ -44,11 +44,11 @@ object DevOopsScalaPlugin extends AutoPlugin {
           case (SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(_)) |
               (SemVer.Major(2), SemVer.Minor(11), SemVer.Patch(12)) =>
             List(
-              compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
+              compilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
             )
           case (SemVer.Major(2), SemVer.Minor(12), SemVer.Patch(patch)) if patch >= 8 =>
             List(
-              compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
+              compilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
             )
           case (SemVer.Major(2), SemVer.Minor(10), SemVer.Patch(7)) =>
             List(
