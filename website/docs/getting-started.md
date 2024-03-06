@@ -27,9 +27,9 @@ Documentation for `3.0.0` is a work in progress.
 
 In the `project/plugins.sbt`, add the following line,
 ```scala
-addSbtPlugin("io.kevinlee" % "sbt-devoops-scala"     % "3.0.0")
-addSbtPlugin("io.kevinlee" % "sbt-devoops-sbt-extra" % "3.0.0")
-addSbtPlugin("io.kevinlee" % "sbt-devoops-starter"   % "3.0.0")
+addSbtPlugin("io.kevinlee" % "sbt-devoops-scala"     % "3.1.0")
+addSbtPlugin("io.kevinlee" % "sbt-devoops-sbt-extra" % "3.1.0")
+addSbtPlugin("io.kevinlee" % "sbt-devoops-starter"   % "3.1.0")
 ```
 
 ### DevOopsGitHubReleasePlugin
