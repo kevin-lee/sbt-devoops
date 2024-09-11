@@ -227,7 +227,7 @@ lazy val props =
 
     val SbtTpolecatVersion = "0.5.0"
 
-    val SbtVersionPolicyVersion = "2.1.3"
+    val SbtVersionPolicyVersion = "3.2.1"
     val SbtReleaseVersion       = "1.1.0"
 
     val SbtScalafmtVersion = "2.5.2"
