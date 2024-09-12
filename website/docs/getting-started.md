@@ -21,7 +21,7 @@ SBT Plugin to help release artifacts and changelogs
 
 :::tip Note
 
-Documentation for `3.0.0` is a work in progress.
+Documentation for `3.1.0` is a work in progress.
 
 :::
 
