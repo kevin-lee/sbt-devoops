@@ -146,7 +146,7 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
         (maybeBump match {
           case Some(bump) => versionWithoutQualifier.bump(bump)
           case None => versionWithoutQualifier
-        }).string
+        }).unapply
       }
     },
 
