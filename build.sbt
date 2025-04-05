@@ -145,7 +145,7 @@ def subProject(projectName: String): Project = {
       organization := props.Org,
       name := prefixedName,
       addCompilerPlugin("org.scalamacros" % "paradise"       % "2.1.1" cross CrossVersion.full),
-      addCompilerPlugin("org.typelevel"   % "kind-projector" % "0.13.2" cross CrossVersion.full),
+      addCompilerPlugin("org.typelevel"   % "kind-projector" % "0.13.3" cross CrossVersion.full),
 //      scalacOptions ++= List("-Xsource:3"),
       Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
       Compile / compile / wartremoverErrors ++= commonWarts,
@@ -198,42 +198,43 @@ lazy val props =
 
     val CrossSbtVersions = List(GlobalSbtVersion).distinct
 
-    val hedgehogVersion = "0.10.1"
+    val hedgehogVersion = "0.12.0"
 
     val newtypeVersion = "0.4.4"
 
-    val catsVersion       = "2.10.0"
-    val catsEffectVersion = "3.5.3"
+    val catsVersion       = "2.13.0"
+    val catsEffectVersion = "3.5.7"
 
     val extrasVersion = "0.44.0"
 
-    val effectieVersion = "2.0.0-beta14"
-    val loggerFVersion  = "2.0.0-beta24"
+    val effectieVersion = "2.0.0"
+    val loggerFVersion  = "2.1.18"
 
-    val refinedVersion = "0.11.1"
+    val refinedVersion = "0.11.3"
 
-    val circeVersion = "0.14.6"
+    val circeVersion        = "0.14.12"
+    val circeRefinedVersion = "0.15.1"
 
-    val http4sVersion = "0.23.25"
+    val http4sVersion = "0.23.30"
 
-    val justSemVerVersion = "0.13.0"
+    val justSemVerVersion = "1.1.1"
 
     val justSysprocessVersion = "1.0.0"
 
-    val commonsIoVersion = "2.11.0"
+    val commonsIoVersion = "2.18.0"
 
     val activationVersion    = "1.1.1"
     val activationApiVersion = "1.2.0"
 
-    val SbtTpolecatVersion = "0.5.0"
+    val SbtTpolecatVersion = "0.5.2"
 
     val SbtVersionPolicyVersion = "3.2.1"
-    val SbtReleaseVersion       = "1.1.0"
+    val SbtReleaseVersion       = "1.4.0"
 
-    val SbtScalafmtVersion = "2.5.2"
-    val SbtScalafixVersion = "0.11.1"
+    val SbtScalafmtVersion = "2.5.4"
+    val SbtScalafixVersion = "0.14.2"
 
-    val SbtWelcomeVersion = "0.4.0"
+    val SbtWelcomeVersion = "0.5.0"
 
     val IncludeTest = "compile->compile;test->test"
   }
@@ -278,7 +279,8 @@ lazy val libs =
     lazy val circe = List(
       "io.circe" %% "circe-generic" % props.circeVersion,
       "io.circe" %% "circe-parser"  % props.circeVersion,
-      "io.circe" %% "circe-refined" % props.circeVersion,
+    ) ++ List(
+      "io.circe" %% "circe-refined" % props.circeRefinedVersion
     )
 
     lazy val semVer = "io.kevinlee" %% "just-semver" % props.justSemVerVersion

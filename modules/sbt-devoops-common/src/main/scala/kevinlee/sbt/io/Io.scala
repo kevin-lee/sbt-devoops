@@ -23,7 +23,11 @@ object Io {
       )
 
   def wildcardFilters(names: Seq[String], caseSensitivity: CaseSensitivity): FileFilter =
-    new WildcardFileFilter(names.toArray, CaseSensitivity.toIOCase(caseSensitivity))
+    WildcardFileFilter
+      .builder()
+      .setWildcards(names*)
+      .setIoCase(CaseSensitivity.toIOCase(caseSensitivity))
+      .get()
 
   def wildcardFilter(caseSensitivity: CaseSensitivity, name: String, names: String*): FileFilter =
     wildcardFilters(name +: names.toSeq, caseSensitivity)
