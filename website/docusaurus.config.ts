@@ -125,7 +125,7 @@ const websiteConfig = {
               "path": "2.24.1",
             },
             "current": {
-              "label": "3.1.0",
+              "label": "3.2.0",
             },
           },
         },
