@@ -21,7 +21,6 @@ ThisBuild / licenses := List("MIT" -> url("http://opensource.org/licenses/MIT"))
 ThisBuild / startYear := 2018.some
 ThisBuild / testFrameworks ~=
   (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct)
-ThisBuild / resolvers += "sonatype-snapshots" at s"https://${props.SonatypeCredentialHost}/content/repositories/snapshots"
 
 Global / sbtVersion := props.GlobalSbtVersion
 
@@ -39,7 +38,6 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     gitHubPagesRepoName := props.ProjectName,
     publishMavenStyle := true,
   )
-  .settings(mavenCentralPublishSettings)
   .dependsOn(
     sbtDevOopsCommon,
     sbtDevOopsScala,
@@ -127,13 +125,6 @@ lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameRelease
 lazy val sbtDevOopsJava = subProject(props.SubProjectNameJava)
   .enablePlugins(SbtPlugin)
 
-lazy val mavenCentralPublishSettings: SettingsDefinition = List(
-  /* Publish to Maven Central { */
-  sonatypeCredentialHost := props.SonatypeCredentialHost,
-  sonatypeRepository := props.SonatypeRepository,
-  /* } Publish to Maven Central */
-)
-
 // scalafmt: off
 def prefixedProjectName(name: String) = s"${props.RepoName}${if (name.isEmpty) "" else s"-$name"}"
 // scalafmt: on
@@ -164,7 +155,6 @@ def subProject(projectName: String): Project = {
       },
       scriptedBufferLog := false,
     )
-    .settings(mavenCentralPublishSettings)
 }
 
 lazy val props =
@@ -177,9 +167,6 @@ lazy val props =
     val RepoName       = GitHubRepo.fold("sbt-devoops")(_.nameToString)
 
     val ProjectName = RepoName
-
-    val SonatypeCredentialHost = "s01.oss.sonatype.org"
-    val SonatypeRepository     = s"https://$SonatypeCredentialHost/service/local"
 
     val SubProjectNameCommon               = "common"
     val SubProjectNameScala                = "scala"
