@@ -17,7 +17,7 @@ jobs:
           - { binary-version: "2.12", java-version: "adopt@1.11",  coveralls: "coveralls" }
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: olafurpg/setup-scala@v14
         with:
           java-version: ${{ env.GH_JAVA_VERSION }}
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: olafurpg/setup-scala@v14
         with:
           java-version: ${{ env.GH_JAVA_VERSION }}
