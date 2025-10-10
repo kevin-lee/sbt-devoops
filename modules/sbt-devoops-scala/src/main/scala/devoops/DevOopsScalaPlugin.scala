@@ -22,8 +22,16 @@ object DevOopsScalaPlugin extends AutoPlugin {
     scalacOptions := {
       val currentOptions = scalacOptions.value
       (SemVer.parse(scalaVersion.value) match {
-        case Right(SemVer(SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(patch), _, _)) if patch >= 3 =>
-          (currentOptions ++ Seq("-Ymacro-annotations")).distinct
+        case Right(SemVer(SemVer.Major(2), SemVer.Minor(13), SemVer.Patch(patch), _, _)) =>
+          (currentOptions ++
+            (
+              if (patch >= 17)
+                Seq("-Ymacro-annotations", "-Wconf:cat=lint-infer-any&msg=kind-polymorphic[\\s]+`Nothing`:s")
+              else if (patch >= 3)
+                Seq("-Ymacro-annotations")
+              else
+                Seq.empty
+            )).distinct
         case _ =>
           currentOptions
       })
