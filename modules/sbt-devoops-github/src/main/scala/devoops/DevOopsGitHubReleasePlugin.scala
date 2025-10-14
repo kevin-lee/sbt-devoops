@@ -16,7 +16,7 @@ import kevinlee.github.{GitHubApi, GitHubTask}
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.messageOnlyException
 import kevinlee.sbt.io.{CaseSensitivity, Io}
-import loggerf.instances.cats.*
+
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder
 import sbt.Keys.*

@@ -6,7 +6,7 @@ import extras.cats.syntax.option.*
 import kevinlee.github.data.GitHub
 import effectie.instances.ce3.fx.*
 import loggerf.logger.{CanLog, SbtLogger}
-import loggerf.instances.cats.*
+
 import sbt.Keys.*
 import sbt.*
 

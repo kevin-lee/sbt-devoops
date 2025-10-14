@@ -20,7 +20,7 @@ import kevinlee.github.GitHubApi
 import kevinlee.github.data.GitHub
 import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.*
-import loggerf.instances.cats.*
+
 import loggerf.core.Log as LogF
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder
