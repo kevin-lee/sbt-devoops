@@ -22,10 +22,18 @@ object Logging {
         (ignoreLogging, ignoreLogging, ignoreLogging, ignoreLogging)
     }
     new CanLog {
-      override def debug(message: => String): Unit = debugF(message)
-      override def info(message: => String): Unit  = infoF(message)
-      override def warn(message: => String): Unit  = warnF(message)
-      override def error(message: => String): Unit = errorF(message)
+      override def debug(message: => String): Unit                       = debugF(message)
+      override def debug(throwable: Throwable)(message: => String): Unit = debug(s"$message\n${throwable.toString}")
+
+      override def info(message: => String): Unit                       = infoF(message)
+      override def info(throwable: Throwable)(message: => String): Unit = info(s"$message\n${throwable.toString}")
+
+      override def warn(message: => String): Unit                       = warnF(message)
+      override def warn(throwable: Throwable)(message: => String): Unit = warn(s"$message\n${throwable.toString}")
+
+      override def error(message: => String): Unit                       = errorF(message)
+      override def error(throwable: Throwable)(message: => String): Unit = error(s"$message\n${throwable.toString}")
+
     }
   }
 

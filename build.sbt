@@ -195,7 +195,7 @@ lazy val props =
     val extrasVersion = "0.49.0"
 
     val effectieVersion = "2.0.0"
-    val loggerFVersion  = "2.2.0"
+    val loggerFVersion  = "2.4.0"
 
     val refinedVersion = "0.11.3"
 
