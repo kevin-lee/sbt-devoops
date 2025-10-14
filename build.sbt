@@ -32,6 +32,19 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     name := props.ProjectName,
     description := "DevOops - DevOps tool for GitHub",
     writeVersion := versionWriter(Def.spaceDelimited("filename").parsed)(version.value),
+    writeCurrentVersion := {
+      val latestVersion = {
+        import sys.process.*
+        "git fetch --tags".!
+        val tag = "git rev-list --tags --max-count=1".!!.trim
+        s"git describe --tags $tag".!!.trim.stripPrefix("v")
+      }
+      val websiteDir    = docusaurDir.value
+
+      val latestVersionFile = websiteDir / "latestVersion.json"
+      val latestVersionJson = s"""{"version":"$latestVersion"}"""
+      IO.write(latestVersionFile, latestVersionJson)
+    },
     docusaurDir := (ThisBuild / baseDirectory).value / "website",
     docusaurBuildDir := docusaurDir.value / "build",
     gitHubPagesOrgName := props.GitHubUsername,
@@ -315,7 +328,8 @@ lazy val libs =
     }
   }
 
-lazy val writeVersion = inputKey[Unit]("Write Version in File'")
+lazy val writeVersion        = inputKey[Unit]("Write Version in File'")
+lazy val writeCurrentVersion = inputKey[Unit]("Write the current version at ${docusaurDir.value}/latestVersion.json")
 
 import scala.{Console => sConsole}
 logo :=

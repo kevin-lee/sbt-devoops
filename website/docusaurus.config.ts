@@ -14,6 +14,9 @@ const isSearchable = !isEmptyObject(algoliaConfig);
 const hasGoogleAnalytics = !isEmptyObject(googleAnalyticsConfig);
 const gtag = hasGoogleAnalytics ? { 'gtag': googleAnalyticsConfig } : {};
 
+import LatestVersionImported from './latestVersion.json';
+const latestVersionFound = LatestVersionImported as LatestVersion;
+
 const websiteConfig = {
   title: 'sbt-devoops',
   tagline: 'Upload artifacts and changelog to GitHub Release',
@@ -125,7 +128,7 @@ const websiteConfig = {
               "path": "2.24.1",
             },
             "current": {
-              "label": "3.2.0",
+              "label": `v${latestVersionFound.version}`,
             },
           },
         },
