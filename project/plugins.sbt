@@ -10,9 +10,9 @@ addSbtPlugin("com.github.cb372" % "sbt-explicit-dependencies" % "0.3.1")
 
 addSbtPlugin("com.github.reibitto" % "sbt-welcome" % "0.5.0")
 
-addSbtPlugin("io.kevinlee" % "sbt-docusaur" % "0.17.0")
+addSbtPlugin("io.kevinlee" % "sbt-docusaur" % "0.18.0")
 
-val sbtDevOopsVersion = "3.2.1"
+val sbtDevOopsVersion = "3.3.1"
 addSbtPlugin("io.kevinlee" % "sbt-devoops-scala"     % sbtDevOopsVersion)
 addSbtPlugin("io.kevinlee" % "sbt-devoops-sbt-extra" % sbtDevOopsVersion)
 addSbtPlugin("io.kevinlee" % "sbt-devoops-github"    % sbtDevOopsVersion)
