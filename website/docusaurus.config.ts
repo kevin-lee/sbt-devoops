@@ -128,7 +128,7 @@ const websiteConfig = {
               "path": "2.24.1",
             },
             "current": {
-              "label": `v${latestVersionFound.version}`,
+              "label": `${latestVersionFound.version}`,
             },
           },
         },
