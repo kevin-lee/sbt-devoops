@@ -3,8 +3,10 @@ name: Build All
 on: [push]
 
 env:
-  GH_JAVA_VERSION: "adopt@1.11"
+  GH_JAVA_VERSION: "11"
   GH_SCALA_BINARY_VERSION: "2.12"
+  GH_JAVA_DISTRIBUTION: "temurin"
+  GH_JAVA_OPTS: "-Xss64m -Xms1024m -Xmx8G -XX:MaxMetaspaceSize=2G -XX:MaxInlineLevel=18"
 
 jobs:
 
@@ -14,24 +16,16 @@ jobs:
     strategy:
       matrix:
         scala:
-          - { binary-version: "2.12", java-version: "adopt@1.11",  coveralls: "coveralls" }
+          - { binary-version: "2.12", java-version: "11", java-distribution: "temurin",  coveralls: "coveralls" }
 
     steps:
       - uses: actions/checkout@v6
-      - uses: olafurpg/setup-scala@v14
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ env.GH_JAVA_VERSION }}
-
-      - name: Cache SBT
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.cache/coursier
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
 
       - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
         env:
@@ -45,26 +39,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: olafurpg/setup-scala@v14
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ env.GH_JAVA_VERSION }}
-
-      - name: Cache SBT
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.cache/coursier
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
 
       - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+        env:
+          JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
+          JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
+          SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
         run: |
           export CI_BRANCH="${GITHUB_REF#refs/heads/}"
           sbt \
-            -J-XX:MaxMetaspaceSize=1024m \
-            -J-Xmx4096m \
             clean \
             scripted
