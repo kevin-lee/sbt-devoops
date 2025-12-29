@@ -149,7 +149,7 @@ def subProject(projectName: String): Project = {
       organization := props.Org,
       name := prefixedName,
       addCompilerPlugin("org.scalamacros" % "paradise"       % "2.1.1" cross CrossVersion.full),
-      addCompilerPlugin("org.typelevel"   % "kind-projector" % "0.13.3" cross CrossVersion.full),
+      addCompilerPlugin("org.typelevel"   % "kind-projector" % "0.13.4" cross CrossVersion.full),
 //      scalacOptions ++= List("-Xsource:3"),
       Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
       Compile / compile / wartremoverErrors ++= commonWarts,
@@ -205,23 +205,23 @@ lazy val props =
     val catsVersion       = "2.13.0"
     val catsEffectVersion = "3.6.3"
 
-    val extrasVersion = "0.49.0"
+    val extrasVersion = "0.50.1"
 
-    val effectieVersion = "2.0.0"
-    val loggerFVersion  = "2.4.0"
+    val effectieVersion = "2.3.0"
+    val loggerFVersion  = "2.8.1"
 
     val refinedVersion = "0.11.3"
 
-    val circeVersion        = "0.14.12"
+    val circeVersion        = "0.14.15"
     val circeRefinedVersion = "0.15.1"
 
-    val http4sVersion = "0.23.30"
+    val http4sVersion = "0.23.33"
 
     val justSemVerVersion = "1.1.1"
 
     val justSysprocessVersion = "1.0.0"
 
-    val commonsIoVersion = "2.20.0"
+    val commonsIoVersion = "2.21.0"
 
     val activationVersion    = "1.1.1"
     val activationApiVersion = "1.2.0"
@@ -231,8 +231,8 @@ lazy val props =
     val SbtVersionPolicyVersion = "3.2.1"
     val SbtReleaseVersion       = "1.4.0"
 
-    val SbtScalafmtVersion = "2.5.5"
-    val SbtScalafixVersion = "0.14.3"
+    val SbtScalafmtVersion = "2.5.6"
+    val SbtScalafixVersion = "0.14.5"
 
     val SbtWelcomeVersion = "0.5.0"
 

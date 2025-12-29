@@ -275,7 +275,7 @@ object GitHubError {
           GitHubError.forbiddenRequest(httpRequest, httpResponse)
       }
 
-    case HttpError.UnprocessableEntity(request, response) =>
+    case HttpError.UnprocessableContent(request, response) =>
       val responseBodyJson = response.toFailedResponseBodyJson
       GitHubError.unprocessableEntity(request, response, responseBodyJson)
 
