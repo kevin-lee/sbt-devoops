@@ -6,8 +6,10 @@ on:
       - '*'
 
 env:
-  GH_JAVA_VERSION: "adopt@1.11"
+  GH_JAVA_VERSION: "11"
   GH_SCALA_BINARY_VERSION: "2.12"
+  GH_JAVA_DISTRIBUTION: "temurin"
+  GH_JAVA_OPTS: "-Xss64m -Xms1024m -Xmx8G -XX:MaxMetaspaceSize=2G -XX:MaxInlineLevel=18"
 
 jobs:
 
@@ -18,30 +20,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: olafurpg/setup-scala@v14
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ env.GH_JAVA_VERSION }}
-
-      - name: Cache SBT
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.cache/coursier
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
 
       - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+        env:
+          JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
+          JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
+          SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
         run: |
+          echo "Run] build"
+          echo "JAVA_OPTS=${JAVA_OPTS}"
+          echo " JVM_OPTS=${JVM_OPTS}"
+          echo " SBT_OPTS=${SBT_OPTS}"
           export CI_BRANCH="${GITHUB_REF#refs/heads/}"
-              sbt \
-                -J-XX:MaxMetaspaceSize=1024m \
-                -J-Xmx2048m \
-                clean \
-                test \
-                packagedArtifacts
+          sbt \
+            clean \
+            test \
+            packagedArtifacts
 
   sbt-test:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -50,27 +50,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: olafurpg/setup-scala@v14
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ env.GH_JAVA_VERSION }}
-
-      - name: Cache SBT
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.cache/coursier
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
 
       - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+        env:
+          JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
+          JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
+          SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
         run: |
+          echo "Run] sbt-test"
+          echo "JAVA_OPTS=${JAVA_OPTS}"
+          echo " JVM_OPTS=${JVM_OPTS}"
+          echo " SBT_OPTS=${SBT_OPTS}"
           export CI_BRANCH="${GITHUB_REF#refs/heads/}"
           sbt \
-            -J-XX:MaxMetaspaceSize=1024m \
-            -J-Xmx4096m \
             clean \
             scripted
 
@@ -81,30 +79,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: olafurpg/setup-scala@v14
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ env.GH_JAVA_VERSION }}
-
-      - name: Cache SBT
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.cache/coursier
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
 
       - name: sbt GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_AUTH_TOKEN_GITHUB }}
+          JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
+          JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
+          SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
         run: |
           echo "Run] sbt GitHub release"
-          echo 'sbt -J-XX:MaxMetaspaceSize=1024m -J-Xmx2048m devOopsGitHubRelease'
+          echo "JAVA_OPTS=${JAVA_OPTS}"
+          echo " JVM_OPTS=${JVM_OPTS}"
+          echo " SBT_OPTS=${SBT_OPTS}"
+          echo 'sbt devOopsGitHubRelease'
           sbt \
-            -J-XX:MaxMetaspaceSize=1024m \
-            -J-Xmx2048m \
             devOopsGitHubRelease
 
   publish:
@@ -116,20 +110,12 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: olafurpg/setup-scala@v14
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ env.GH_JAVA_VERSION }}
-
-      - name: Cache SBT
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.cache/coursier
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-sbt-${{ env.GH_SCALA_BINARY_VERSION }}-
+          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
 
       - name: sbt Publish
         env:
@@ -137,17 +123,23 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
+          JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
+          SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
         run: |
           echo "====================="
           echo "| Publish: Start    |"
           echo "====================="
           echo "Run] sbt publish"
+          
+          echo "JAVA_OPTS=${JAVA_OPTS}"
+          echo " JVM_OPTS=${JVM_OPTS}"
+          echo " SBT_OPTS=${SBT_OPTS}"
+                    
           export SOURCE_DATE_EPOCH=$(date +%s)
           echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
           echo "sbt -J-XX:MaxMetaspaceSize=1024m -J-Xmx2048m -v clean ci-release"
           sbt \
-            -J-XX:MaxMetaspaceSize=1024m \
-            -J-Xmx2048m \
             -v \
             clean \
             ci-release
