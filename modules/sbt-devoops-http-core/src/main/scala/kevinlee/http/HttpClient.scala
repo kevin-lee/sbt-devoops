@@ -154,8 +154,8 @@ object HttpClient {
             case Status.InternalServerError.code =>
               HttpError.internalServerError(httpResponse).asLeft[A]
 
-            case Status.UnprocessableEntity.code =>
-              HttpError.unprocessableEntity(httpRequest, httpResponse).asLeft[A]
+            case Status.UnprocessableContent.code =>
+              HttpError.unprocessableContent(httpRequest, httpResponse).asLeft[A]
 
             case Status.Unauthorized.code =>
               HttpError.unauthorized(httpRequest, httpResponse).asLeft[A]

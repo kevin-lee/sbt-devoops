@@ -43,7 +43,7 @@ object HttpError {
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
   ) extends HttpError
-  final case class UnprocessableEntity(
+  final case class UnprocessableContent(
     httpRequest: HttpRequest,
     httpResponse: HttpResponse,
   ) extends HttpError
@@ -87,8 +87,8 @@ object HttpError {
   def forbidden(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError =
     Forbidden(httpRequest, httpResponse)
 
-  def unprocessableEntity(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError =
-    UnprocessableEntity(httpRequest, httpResponse)
+  def unprocessableContent(httpRequest: HttpRequest, httpResponse: HttpResponse): HttpError =
+    UnprocessableContent(httpRequest, httpResponse)
 
   def methodUnsupportedForMultipart(httpRequest: HttpRequest): HttpError =
     MethodUnsupportedForMultipart(httpRequest)
@@ -125,8 +125,8 @@ object HttpError {
     case Forbidden(httpRequest: HttpRequest, httpResponse: HttpResponse) =>
       s"Forbidden(httpRequest: ${httpRequest.show}, httpResponse: ${httpResponse.show})"
 
-    case UnprocessableEntity(httpRequest: HttpRequest, httpResponse: HttpResponse) =>
-      s"UnprocessableEntity(httpRequest: ${httpRequest.show}, httpResponse: ${httpResponse.show})"
+    case UnprocessableContent(httpRequest: HttpRequest, httpResponse: HttpResponse) =>
+      s"UnprocessableContent(httpRequest: ${httpRequest.show}, httpResponse: ${httpResponse.show})"
 
     case MethodUnsupportedForMultipart(httpRequest: HttpRequest) =>
       s"MethodUnsupportedForMultipart(httpRequest: ${httpRequest.show})"
