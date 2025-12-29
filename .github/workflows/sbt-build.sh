@@ -24,8 +24,6 @@ then
 #      packagedArtifacts
 #  else
     sbt \
-      -J-XX:MaxMetaspaceSize=1024m \
-      -J-Xmx2048m \
       clean \
       test \
       packagedArtifacts
@@ -44,8 +42,6 @@ else
 #      package
 #  else
     sbt \
-      -J-XX:MaxMetaspaceSize=1024m \
-      -J-Xmx2048m \
       clean \
       test \
       package
