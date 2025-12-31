@@ -20,7 +20,7 @@ jobs:
         scala:
           - { binary-version: "2.12", java-version: "11", java-distribution: "temurin" }
         node:
-          - { version: "22.19.0" }
+          - { version: "24.12.0" }
 
     steps:
       - uses: actions/checkout@v6
@@ -59,7 +59,9 @@ jobs:
           echo " JVM_OPTS=${JVM_OPTS}"
           echo " SBT_OPTS=${SBT_OPTS}"
           
-          sbt clean \
+          sbt \
+            gitHubPagesCreateGitHubPagesBranchIfNotExist \
+            clean \
             writeCurrentVersion \
             docusaurGenerateAlgoliaConfigFile \
             docusaurGenerateGoogleAnalyticsConfigFile \
