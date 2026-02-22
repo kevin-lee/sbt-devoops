@@ -131,6 +131,26 @@ object GitHubError {
   def unexpectedFailure(httpError: HttpError): GitHubError =
     UnexpectedFailure(httpError)
 
+  def isReleaseTagNameAlreadyExists(gitHubError: GitHubError): Boolean = gitHubError match {
+    case GitHubError.UnprocessableEntity(_, _, Some(responseBodyJson)) =>
+      responseBodyJson.errors.exists { error =>
+        val values = error.value
+        values.get("resource").contains("Release") &&
+        values.get("field").contains("tag_name") &&
+        values.get("code").contains("already_exists")
+      }
+
+    case GitHubError.NoCredential | GitHubError.InvalidCredential | GitHubError.MalformedURL(_, _) |
+        GitHubError.ConnectionFailure(_) | GitHubError.GitHubServerError(_) | GitHubError.ReleaseAlreadyExists(_) |
+        GitHubError.ReleaseCreationError(_) | GitHubError.ReleaseNotFoundByTagName(_) |
+        GitHubError.InvalidGitHubRepoUrl(_) | GitHubError.ChangelogNotFound(_, _) |
+        GitHubError.CausedByGitCommandError(_) | GitHubError.NoReleaseCreated | GitHubError.AbuseRateLimits(_, _) |
+        GitHubError.RateLimitExceeded(_, _, _, _, _) | GitHubError.ForbiddenRequest(_, _) |
+        GitHubError.UnprocessableEntity(_, _, None) | GitHubError.AuthFailure(_) |
+        GitHubError.AssetUploadFailure(_, _) | GitHubError.UnexpectedFailure(_) =>
+      false
+  }
+
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def render(gitHubError: GitHubError)(implicit sbtLogLevel: DevOopsLogLevel): String = gitHubError match {
     case NoCredential =>
