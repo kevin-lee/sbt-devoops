@@ -356,46 +356,206 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
           effectOf(getRepoFromUrl(url))
         )(r => List(s"Get GitHub repo org and name: ${r.toRepoNameString}"))
 
-      gitHubRelease <-
-        SbtTask[F].eitherTWithWriter(
-          GitHubApi.githubWithAbuseRateLimit[F]() >> gitHubApi.createRelease(
-            GitHubRelease.CreateRequestParams(
-              tagName,
-              GitHubRelease.ReleaseName(tagName.value).some,
-              GitHubRelease.Description(changelog.changelog).some,
-              GitHubRelease.Draft.no,
-              GitHubRelease.Prerelease.no,
-            ),
-            GitHub.GitHubRepoWithAuth(
-              GitHub.Repo(
-                GitHub
-                  .Repo
-                  .Org(
-                    repo.org.org
-                  ),
-                GitHub
-                  .Repo
-                  .Name(
-                    repo.name.name
-                  ),
-              ),
-              GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
-            ),
+      repoWithAuth = GitHub.GitHubRepoWithAuth(
+                       GitHub.Repo(
+                         GitHub.Repo.Org(repo.org.org),
+                         GitHub.Repo.Name(repo.name.name),
+                       ),
+                       GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
+                     )
+
+      _                           <- liftEffectToGitHubTask(
+                                       GitHubApi.githubWithAbuseRateLimit[F]()
+                                     )
+      gitHubReleaseAndUpdateState <-
+        createOrUpdateGitHubRelease(
+          tagName,
+          changelog,
+          repoWithAuth,
+          gitHubApi,
+        )
+      _                           <- logGitHubReleaseSummary(gitHubReleaseAndUpdateState)
+    } yield gitHubReleaseAndUpdateState._1
+
+  private def createOrUpdateGitHubRelease[F[?]: Fx: Monad](
+    tagName: TagName,
+    changelog: GitHub.Changelog,
+    repoWithAuth: GitHub.GitHubRepoWithAuth,
+    gitHubApi: GitHubApi[F],
+  ): GitHubTask.GitHubTaskResult[F, (Option[GitHubRelease.Response], ReleaseCreationOrUpdate)] = {
+    val releaseName          = GitHubRelease.ReleaseName(tagName.value).some
+    val changelogDescription = GitHubRelease.Description(changelog.changelog).some
+    val createParams         = GitHubRelease.CreateRequestParams(
+      tagName,
+      releaseName,
+      changelogDescription,
+      GitHubRelease.Draft.no,
+      GitHubRelease.Prerelease.no,
+    )
+
+    for {
+      _            <- logGitHubReleaseStep(
+                        s"Try to create a GitHub release with tag: ${tagName.value}"
+                      )
+      createResult <- liftEffectToGitHubTask(
+                        gitHubApi.createRelease(createParams, repoWithAuth)
+                      )
+      result       <- createResult match {
+                        case Right(maybeRelease) =>
+                          for {
+                            _ <-
+                              logGitHubReleaseStep(
+                                maybeRelease.fold(
+                                  s"Create release API returned empty response for tag: ${tagName.value}"
+                                )(release =>
+                                  s"Create release API succeeded for release id: ${release.id.id} (tag: ${release.tagName.value})"
+                                )
+                              )
+                          } yield (maybeRelease, ReleaseCreationOrUpdate.created)
+
+                        case Left(createError) if GitHubError.isReleaseTagNameAlreadyExists(createError) =>
+                          for {
+                            _          <-
+                              logGitHubReleaseStep(
+                                s"Release with tag already exists. Try to find the existing release by tag: ${tagName.value}"
+                              )
+                            findResult <- liftEffectToGitHubTask(
+                                            gitHubApi.findReleaseByTagName(tagName, repoWithAuth)
+                                          )
+                            recovered  <- findResult match {
+                                            case Right(Some(release)) =>
+                                              val updateParams = GitHubRelease.UpdateRequestParams(
+                                                tagName,
+                                                GitHubRelease.ReleaseId(release.id.id),
+                                                releaseName,
+                                                changelogDescription,
+                                                none[GitHubRelease.Draft],
+                                                none[GitHubRelease.Prerelease],
+                                              )
+                                              for {
+                                                _            <-
+                                                  logGitHubReleaseStep(
+                                                    s"Found existing release id: ${release.id.id}. Try to update release body."
+                                                  )
+                                                updateResult <- liftEffectToGitHubTask(
+                                                                  gitHubApi.updateRelease(updateParams, repoWithAuth)
+                                                                )
+                                                updated      <- updateResult match {
+                                                                  case Right(updatedRelease) =>
+                                                                    for {
+                                                                      _ <-
+                                                                        logGitHubReleaseStep(
+                                                                          updatedRelease.fold(
+                                                                            s"Update release API returned empty response for tag: ${tagName.value}"
+                                                                          )(release =>
+                                                                            s"Update release API succeeded for release id: ${release
+                                                                                .id
+                                                                                .id} (tag: ${release.tagName.value})"
+                                                                          )
+                                                                        )
+                                                                    } yield (updatedRelease, ReleaseCreationOrUpdate.updated)
+
+                                                                  case Left(updateError) =>
+                                                                    for {
+                                                                      _      <- logGitHubReleaseStep(
+                                                                                  s"Update release API failed for tag: ${tagName.value}"
+                                                                                )
+                                                                      failed <-
+                                                                        failGitHubTask[
+                                                                          F,
+                                                                          (
+                                                                            Option[GitHubRelease.Response],
+                                                                            ReleaseCreationOrUpdate,
+                                                                          ),
+                                                                        ](updateError)
+                                                                    } yield failed
+                                                                }
+                                              } yield updated
+
+                                            case Right(None) =>
+                                              for {
+                                                _      <-
+                                                  logGitHubReleaseStep(
+                                                    s"Find release by tag returned no release for tag: ${tagName.value}. Return the original create error."
+                                                  )
+                                                failed <- failGitHubTask[
+                                                            F,
+                                                            (
+                                                              Option[GitHubRelease.Response],
+                                                              ReleaseCreationOrUpdate,
+                                                            ),
+                                                          ](createError)
+                                              } yield failed
+
+                                            case Left(findError) =>
+                                              for {
+                                                _      <- logGitHubReleaseStep(
+                                                            s"Find release by tag failed for tag: ${tagName.value}"
+                                                          )
+                                                failed <- failGitHubTask[
+                                                            F,
+                                                            (
+                                                              Option[GitHubRelease.Response],
+                                                              ReleaseCreationOrUpdate,
+                                                            ),
+                                                          ](findError)
+                                              } yield failed
+                                          }
+                          } yield recovered
+
+                        case Left(createError) =>
+                          for {
+                            _      <- logGitHubReleaseStep(
+                                        s"Create release API failed for tag: ${tagName.value}"
+                                      )
+                            failed <- failGitHubTask[
+                                        F,
+                                        (
+                                          Option[GitHubRelease.Response],
+                                          ReleaseCreationOrUpdate,
+                                        ),
+                                      ](createError)
+                          } yield failed
+                      }
+    } yield result
+  }
+
+  private def logGitHubReleaseSummary[F[?]: Fx: Monad](
+    gitHubReleaseAndUpdateState: (Option[GitHubRelease.Response], ReleaseCreationOrUpdate)
+  ): GitHubTask.GitHubTaskResult[F, Unit] =
+    logGitHubReleaseSteps(
+      gitHubReleaseAndUpdateState match {
+        case (Some(release), releaseCreationOrUpdate) =>
+          List[String](
+            ReleaseCreationOrUpdate.releaseResultMessage(releaseCreationOrUpdate, release.tagName),
+            release
+              .body
+              .description
+              .split("\n")
+              .mkString("Changelog uploaded:\n    ", "\n    ", "\n"),
           )
-        ) {
-          case Some(release) =>
-            List[String](
-              s"GitHub release: ${release.tagName.value}",
-              release
-                .body
-                .description
-                .split("\n")
-                .mkString("Changelog uploaded:\n    ", "\n    ", "\n"),
-            )
-          case None =>
-            List("Release has failed.")
-        }
-    } yield gitHubRelease
+        case (None, releaseCreationOrUpdate) =>
+          List(ReleaseCreationOrUpdate.releaseFailureMessage(releaseCreationOrUpdate))
+      }
+    )
+
+  private def logGitHubReleaseStep[F[?]: Fx: Monad](message: String): GitHubTask.GitHubTaskResult[F, Unit] =
+    logGitHubReleaseSteps(List(message))
+
+  private def logGitHubReleaseSteps[F[?]: Fx: Monad](messages: List[String]): GitHubTask.GitHubTaskResult[F, Unit] =
+    SbtTask[F].eitherTWithWriter(
+      pureOf(().asRight[GitHubError])
+    )(_ => messages)
+
+  private def liftEffectToGitHubTask[F[?]: Fx: Monad, A](fa: F[A]): GitHubTask.GitHubTaskResult[F, A] =
+    SbtTask[F].eitherTWithWriter(
+      fa.map(_.asRight[GitHubError])
+    )(_ => List.empty[String])
+
+  private def failGitHubTask[F[?]: Fx: Monad, A](error: GitHubError): GitHubTask.GitHubTaskResult[F, A] =
+    SbtTask[F].eitherTWithWriter(
+      pureOf(error.asLeft[A])
+    )(_ => List.empty[String])
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   private def runUploadAssetsToGitHubRelease[F[?]: Fx: CanCatch: Monad](
@@ -453,5 +613,34 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         )
     } yield gitHubRelease
 
+  private sealed trait ReleaseCreationOrUpdate
+  private object ReleaseCreationOrUpdate {
+    private case object Created extends ReleaseCreationOrUpdate
+    private case object Updated extends ReleaseCreationOrUpdate
+
+    def created: ReleaseCreationOrUpdate = Created
+    def updated: ReleaseCreationOrUpdate = Updated
+
+    def releaseResultMessage(
+      releaseCreationOrUpdate: ReleaseCreationOrUpdate,
+      tagName: TagName,
+    ): String =
+      releaseCreationOrUpdate match {
+        case Created =>
+          s"GitHub release: ${tagName.value}"
+        case Updated =>
+          s"GitHub release updated: ${tagName.value}"
+      }
+
+    def releaseFailureMessage(releaseCreationOrUpdate: ReleaseCreationOrUpdate): String =
+      releaseCreationOrUpdate match {
+        case Created =>
+          "Release has failed."
+        case Updated =>
+          "Release update has failed."
+      }
+  }
+
   // $COVERAGE-ON$
+
 }

@@ -65,7 +65,7 @@ trait GitHubReleaseKeys extends CommonKeys {
   )
 
   lazy val devOopsGitHubRelease: TaskKey[Unit] = taskKey[Unit](
-    "Release the current version without creating a tag. It also uploads the changelog to GitHub."
+    "Release the current version without creating a tag. It creates or updates the GitHub release and uploads the changelog."
   )
 
   lazy val devOopsGitTagAndGitHubRelease: TaskKey[Unit] = taskKey[Unit](

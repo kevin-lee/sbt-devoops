@@ -227,7 +227,8 @@ Timeout for the GitHub release tasks. If it exceeds, the task may fail. (Default
 It is an sbt task to release the current version by uploading the changelog to GitHub.
 It does
 * Copy packaged files (`devOopsCopyReleasePackages`)
-* Upload the changelog to GitHub release, but it does not upload any packaged artifacts.
+* Upload the changelog to GitHub release. If the release with the tag does not exist, it creates one; if it exists, it updates it.
+* It does not upload any packaged artifacts.
 
 **NOTE: It does not create any tag and if the tag with the project version (e.g. version: 1.0.0 => tag: v1.0.0) does not exist, `devOopsGitHubRelease` fails**
 To also upload the packaged artifacts please have a look at [devOopsGitHubReleaseUploadArtifacts](#devoopsgithubreleaseuploadartifacts).
