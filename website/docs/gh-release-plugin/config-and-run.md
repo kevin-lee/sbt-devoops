@@ -223,11 +223,36 @@ devOopsGitHubAuthTokenFile := Some(new File(Io.getUserHome, ".github"))
 ### `devOopsGitHubRequestTimeout`
 Timeout for the GitHub release tasks. If it exceeds, the task may fail. (Default: 2 minutes) 
 
+### `devOopsWhenGitHubReleaseExistsInRelease`
+How to handle the already-existing GitHub release in `devOopsGitHubRelease` and `devOopsGitTagAndGitHubRelease`.
+
+Options:
+* `WhenGitHubReleaseExistsInRelease.UpdateReleaseNote` (default): update the existing release note with changelog.
+* `WhenGitHubReleaseExistsInRelease.LogAndContinue`: skip release note update and finish successfully.
+* `WhenGitHubReleaseExistsInRelease.FailRelease`: fail with a message explaining how to change the setting.
+
+Default:
+```scala
+devOopsWhenGitHubReleaseExistsInRelease := WhenGitHubReleaseExistsInRelease.UpdateReleaseNote
+```
+
+### `devOopsWhenGitTagExistsInRelease`
+How to handle the already-existing Git tag in `devOopsGitTagAndGitHubRelease`.
+
+Options:
+* `WhenGitTagExistsInRelease.FailTagCreation` (default): fail with a message explaining how to change the setting.
+* `WhenGitTagExistsInRelease.LogAndContinue`: skip tag creation and continue to the GitHub release step.
+
+Default:
+```scala
+devOopsWhenGitTagExistsInRelease := WhenGitTagExistsInRelease.FailTagCreation
+```
+
 ### `devOopsGitHubRelease`
 It is an sbt task to release the current version by uploading the changelog to GitHub.
 It does
 * Copy packaged files (`devOopsCopyReleasePackages`)
-* Upload the changelog to GitHub release. If the release with the tag does not exist, it creates one; if it exists, it updates it.
+* Upload the changelog to GitHub release. If the release with the tag does not exist, it creates one; if it exists, it follows `devOopsWhenGitHubReleaseExistsInRelease`.
 * It does not upload any packaged artifacts.
 
 **NOTE: It does not create any tag and if the tag with the project version (e.g. version: 1.0.0 => tag: v1.0.0) does not exist, `devOopsGitHubRelease` fails**
@@ -301,8 +326,12 @@ sbt:test-project> devOopsGitHubRelease
 ### `devOopsGitTagAndGitHubRelease`
 Is it an sbt task to release the current version by uploading the changelog to GitHub after git tagging.
 It does
-* Git tag with the current version (`devOopsGitTag`)
-* Upload the changelog to GitHub, but it does not upload any packaged artifacts.
+* Tag stage:
+  * If tag does not exist, create and push tag.
+  * If tag already exists, follow `devOopsWhenGitTagExistsInRelease`.
+* Release stage:
+  * Upload the changelog to GitHub, but it does not upload any packaged artifacts.
+  * If release already exists, follow `devOopsWhenGitHubReleaseExistsInRelease`.
 
 e.g.) `devOopsGitTagAndGitHubRelease`
 ```sbtshell

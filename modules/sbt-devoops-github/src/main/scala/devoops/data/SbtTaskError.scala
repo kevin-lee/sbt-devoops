@@ -1,6 +1,8 @@
 package devoops.data
 
 import devoops.data.SbtTaskResult.SbtTaskHistory
+import extras.scala.io.syntax.truecolor.rgb.*
+import extras.scala.io.truecolor.Rgb
 import just.semver.{ParseError, SemVer}
 import kevinlee.git.GitCommandError
 import kevinlee.github.data.GitHubError
@@ -22,6 +24,7 @@ object SbtTaskError {
       extends SbtTaskError
   final case class VersionNotEligibleForTagging(semVer: SemVer) extends SbtTaskError
   final case class IoError(name: String, throwable: Throwable) extends SbtTaskError
+  final case class TagAlreadyExistsInRelease(tagName: String) extends SbtTaskError
 
   def gitCommandTaskError(cause: GitCommandError): SbtTaskError =
     GitCommandTaskError(cause)
@@ -43,6 +46,9 @@ object SbtTaskError {
 
   def ioError(name: String, throwable: Throwable): SbtTaskError =
     IoError(name, throwable)
+
+  def tagAlreadyExistsInRelease(tagName: String): SbtTaskError =
+    TagAlreadyExistsInRelease(tagName)
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def render(sbtTaskError: SbtTaskError)(implicit sbtLogLevel: DevOopsLogLevel): String = sbtTaskError match {
@@ -77,6 +83,37 @@ object SbtTaskError {
       s"""IO Error for $name
          |${throwable.getMessage}
          |""".stripMargin
+
+    case TagAlreadyExistsInRelease(tagName) =>
+      val lhsColor = Rgb.unsafeFromHexString("#F6D58E")
+      val rhsColor = Rgb.unsafeFromHexString("#7DBBFF")
+
+      val redColor    = Rgb.unsafeFromInt(0xf67280)
+      val greenColor  = Rgb.unsafeFromInt(0xc1e1c1)
+      val purpleColor = Rgb.unsafeFromInt(0xc3b1e1)
+
+      val tagExistsLhs = "devOopsWhenGitTagExistsInRelease".rgbed(lhsColor)
+      val tagExistsRhs = s"${"WhenGitTagExistsInRelease".rgbed(purpleColor)}.${"LogAndContinue".rgbed(rhsColor)}"
+
+      val releaseExistsLhs         = "devOopsWhenGitHubReleaseExistsInRelease".rgbed(lhsColor)
+      val releaseExistsUpdateRhs   =
+        s"${"WhenGitHubReleaseExistsInRelease".rgbed(greenColor)}.${"UpdateReleaseNote".rgbed(rhsColor)}"
+      val releaseExistsContinueRhs =
+        s"${"WhenGitHubReleaseExistsInRelease".rgbed(greenColor)}.${"LogAndContinue".rgbed(rhsColor)}"
+
+      val currentBehavior = s"${"WhenGitTagExistsInRelease".rgbed(greenColor)}.${"FailTagCreation".rgbed(redColor)}"
+
+      s"""|  The Git tag ${tagName} already exists.
+          |  This task stopped because devOopsWhenGitTagExistsInRelease is set to $currentBehavior.
+          |
+          |  To continue when the tag already exists:
+          |  ${tagExistsLhs} := ${tagExistsRhs}
+          |
+          |  When the GitHub release already exists, configure this separately:
+          |  ${releaseExistsLhs} := ${releaseExistsUpdateRhs}
+          |  or
+          |  ${releaseExistsLhs} := ${releaseExistsContinueRhs}
+          |""".stripMargin
   }
 
 //  /** Throws a MessageOnlyException after rendering the given SbtTaskError

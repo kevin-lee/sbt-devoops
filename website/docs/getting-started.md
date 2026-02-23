@@ -19,11 +19,6 @@ SBT Plugin to help release artifacts and changelogs
 
 ## Get sbt-devoops
 
-:::tip Note
-
-Documentation for `3.4.0` is a work in progress.
-
-:::
 
 In the `project/plugins.sbt`, add the following line,
 ```scala
