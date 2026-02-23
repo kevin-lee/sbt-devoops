@@ -122,6 +122,11 @@ lazy val sbtDevOopsStarter = subProject(props.SubProjectNameStarter)
 
 lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
   .enablePlugins(SbtPlugin)
+  .settings(
+    libraryDependencies ++= List(
+      libs.extrasScalaIo,
+    )
+  )
   .dependsOn(sbtDevOopsCommon, sbtDevOopsGitHubCore)
 
 lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameReleaseVersionPolicy)

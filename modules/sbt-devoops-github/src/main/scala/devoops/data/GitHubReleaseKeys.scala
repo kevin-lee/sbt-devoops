@@ -9,6 +9,12 @@ import scala.concurrent.duration.FiniteDuration
   */
 trait GitHubReleaseKeys extends CommonKeys {
 
+  final type WhenGitHubReleaseExistsInRelease = GitHubReleaseKeys.WhenGitHubReleaseExistsInRelease
+  final val WhenGitHubReleaseExistsInRelease = GitHubReleaseKeys.WhenGitHubReleaseExistsInRelease
+
+  final type WhenGitTagExistsInRelease = GitHubReleaseKeys.WhenGitTagExistsInRelease
+  final val WhenGitTagExistsInRelease = GitHubReleaseKeys.WhenGitTagExistsInRelease
+
   lazy val devOopsGitTagFrom: SettingKey[String] = settingKey[String]("The name of branch to tag from. (Default: main)")
 
   lazy val devOopsGitTagDescription: SettingKey[Option[String]] = settingKey[Option[String]](
@@ -64,8 +70,18 @@ trait GitHubReleaseKeys extends CommonKeys {
     "Timeout value for any request sent to GitHub (default: 2.minutes)"
   )
 
+  lazy val devOopsWhenGitTagExistsInRelease: SettingKey[WhenGitTagExistsInRelease] =
+    settingKey[WhenGitTagExistsInRelease](
+      "How to handle an existing Git tag in devOopsGitTagAndGitHubRelease (default: WhenGitTagExistsInRelease.FailTagCreation)"
+    )
+
+  lazy val devOopsWhenGitHubReleaseExistsInRelease: SettingKey[WhenGitHubReleaseExistsInRelease] =
+    settingKey[WhenGitHubReleaseExistsInRelease](
+      "How to handle an existing GitHub release in devOopsGitHubRelease and devOopsGitTagAndGitHubRelease (default: WhenGitHubReleaseExistsInRelease.UpdateReleaseNote)"
+    )
+
   lazy val devOopsGitHubRelease: TaskKey[Unit] = taskKey[Unit](
-    "Release the current version without creating a tag. It creates or updates the GitHub release and uploads the changelog."
+    "Release the current version without creating a tag. It creates the GitHub release and uploads the changelog. If the release already exists, the behavior follows devOopsWhenGitHubReleaseExistsInRelease."
   )
 
   lazy val devOopsGitTagAndGitHubRelease: TaskKey[Unit] = taskKey[Unit](
@@ -75,4 +91,41 @@ trait GitHubReleaseKeys extends CommonKeys {
   lazy val devOopsGitHubReleaseUploadArtifacts: TaskKey[Unit] = taskKey[Unit](
     "Upload the packaged files to the GitHub release with the current version. The tag with the project version and the GitHub release of it should exist to run this task."
   )
+}
+
+object GitHubReleaseKeys {
+
+  sealed trait WhenGitHubReleaseExistsInRelease
+  object WhenGitHubReleaseExistsInRelease {
+    case object UpdateReleaseNote extends WhenGitHubReleaseExistsInRelease
+    case object LogAndContinue extends WhenGitHubReleaseExistsInRelease
+    case object FailRelease extends WhenGitHubReleaseExistsInRelease
+
+    def updateReleaseNote: WhenGitHubReleaseExistsInRelease = UpdateReleaseNote
+    def logAndContinue: WhenGitHubReleaseExistsInRelease    = LogAndContinue
+    def failRelease: WhenGitHubReleaseExistsInRelease       = FailRelease
+
+    def render(whenGitHubReleaseExistsInRelease: WhenGitHubReleaseExistsInRelease): String =
+      whenGitHubReleaseExistsInRelease match {
+        case UpdateReleaseNote => "UpdateReleaseNote"
+        case LogAndContinue => "LogAndContinue"
+        case FailRelease => "FailRelease"
+      }
+  }
+
+  sealed trait WhenGitTagExistsInRelease
+  object WhenGitTagExistsInRelease {
+
+    case object LogAndContinue extends WhenGitTagExistsInRelease
+    case object FailTagCreation extends WhenGitTagExistsInRelease
+
+    def logAndContinue: WhenGitTagExistsInRelease  = LogAndContinue
+    def failTagCreation: WhenGitTagExistsInRelease = FailTagCreation
+
+    def render(whenGitTagExistsInRelease: WhenGitTagExistsInRelease): String =
+      whenGitTagExistsInRelease match {
+        case LogAndContinue => "LogAndContinue"
+        case FailTagCreation => "FailTagCreation"
+      }
+  }
 }
