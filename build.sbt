@@ -208,12 +208,12 @@ lazy val props =
     val newtypeVersion = "0.4.4"
 
     val catsVersion       = "2.13.0"
-    val catsEffectVersion = "3.6.3"
+    val catsEffectVersion = "3.7.0"
 
-    val extrasVersion = "0.50.1"
+    val extrasVersion = "0.51.0"
 
     val effectieVersion = "2.3.0"
-    val loggerFVersion  = "2.8.1"
+    val loggerFVersion  = "2.9.0"
 
     val refinedVersion = "0.11.3"
 
@@ -222,7 +222,7 @@ lazy val props =
 
     val http4sVersion = "0.23.33"
 
-    val justSemVerVersion = "1.1.1"
+    val justSemVerVersion = "1.2.0"
 
     val justSysprocessVersion = "1.0.0"
 
@@ -231,13 +231,13 @@ lazy val props =
     val activationVersion    = "1.1.1"
     val activationApiVersion = "1.2.0"
 
-    val SbtTpolecatVersion = "0.5.2"
+    val SbtTpolecatVersion = "0.5.3"
 
     val SbtVersionPolicyVersion = "3.2.1"
     val SbtReleaseVersion       = "1.4.0"
 
     val SbtScalafmtVersion = "2.5.6"
-    val SbtScalafixVersion = "0.14.5"
+    val SbtScalafixVersion = "0.14.6"
 
     val SbtWelcomeVersion = "0.5.0"
 
