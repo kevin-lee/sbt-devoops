@@ -11,7 +11,6 @@ import fs2.io.file.Files
 import fs2.text
 import io.circe.Decoder
 import loggerf.core.*
-import loggerf.instances.show.*
 import loggerf.syntax.all.*
 import org.http4s.*
 import org.http4s.Status.Successful
@@ -23,7 +22,7 @@ import org.http4s.headers.*
 /** @author Kevin Lee
   * @since 2021-01-03
   */
-trait HttpClient[F[?]] {
+trait HttpClient[F[_]] {
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def request[A](
@@ -39,13 +38,13 @@ trait HttpClient[F[?]] {
 object HttpClient {
 
   def apply[
-    F[?]: Monad: Fx: Log: Async: Files
+    F[_]: Monad: Fx: Log: Async: Files
   ](client: Client[F]): HttpClient[F] =
     new HttpClientF[F](client)
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
   final class HttpClientF[
-    F[?]: Monad: Fx: Log: Async: Files
+    F[_]: Monad: Fx: Log: Async: Files
   ](
     client: Client[F]
   ) extends HttpClient[F] {
@@ -67,7 +66,9 @@ object HttpClient {
       implicit entityDecoderA: Decoder[A],
       dsl: Http4sClientDsl[F],
       sbtLogLevel: DevOopsLogLevel
-    ): EitherT[F, HttpError, A] =
+    ): EitherT[F, HttpError, A] = {
+      implicit val httpErrorToLog: loggerf.core.ToLog[HttpError] =
+        loggerf.instances.show.showToLog[HttpError]
       for {
         request <- httpRequest.toHttp4s[F].eitherT
 
@@ -91,6 +92,7 @@ object HttpClient {
               res => debug(String.valueOf(res)),
             )
       } yield res
+    }
 
     private[this] def postProcessRequest(request: Request[F], mediaRanges: Set[MediaRange]): Request[F] = {
       val mediaRangeList = mediaRanges.toList

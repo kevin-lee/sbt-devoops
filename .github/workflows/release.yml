@@ -6,71 +6,80 @@ on:
       - '*'
 
 env:
-  GH_JAVA_VERSION: "11"
+  # Java 17 is required for the Scala 3 / sbt 2 axis (the 3.8.4 compiler bridge needs >= 17).
+  # It also builds the Scala 2.12 / sbt 1 axis fine, so the release jobs standardize on it.
+  GH_JAVA_VERSION: "17"
   GH_SCALA_BINARY_VERSION: "2.12"
   GH_JAVA_DISTRIBUTION: "temurin"
   GH_JAVA_OPTS: "-Xss64m -Xms1024m -Xmx8G -XX:MaxMetaspaceSize=2G -XX:MaxInlineLevel=18"
 
 jobs:
 
+  setup:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    outputs:
+      scala-matrix: ${{ steps.read.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: read
+        run: echo "matrix=$(jq -c . .github/scala-versions.json)" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: setup
     if: startsWith(github.ref, 'refs/tags/v')
 
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: ${{ fromJSON(needs.setup.outputs.scala-matrix) }}
 
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
         with:
-          java-version: ${{ env.GH_JAVA_VERSION }}
-          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          java-version: ${{ matrix.scala.java-version }}
+          distribution: ${{ matrix.scala.java-distribution }}
           cache: sbt
       - uses: sbt/setup-sbt@v1
 
-      - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+      - name: "Build for ${{ matrix.scala.name }} (${{ matrix.scala.version }}) on Java ${{ matrix.scala.java-version }}"
         env:
           JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
           JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
           SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
         run: |
-          echo "Run] build"
-          echo "JAVA_OPTS=${JAVA_OPTS}"
-          echo " JVM_OPTS=${JVM_OPTS}"
-          echo " SBT_OPTS=${SBT_OPTS}"
-          export CI_BRANCH="${GITHUB_REF#refs/heads/}"
-          sbt \
-            clean \
-            test \
-            packagedArtifacts
+          .github/workflows/sbt-build.sh ${{ matrix.scala.version }} ${{ matrix.scala.sbt-series }}
 
   sbt-test:
+    needs: setup
     if: startsWith(github.ref, 'refs/tags/v')
 
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: ${{ fromJSON(needs.setup.outputs.scala-matrix) }}
 
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
         with:
-          java-version: ${{ env.GH_JAVA_VERSION }}
-          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          java-version: ${{ matrix.scala.java-version }}
+          distribution: ${{ matrix.scala.java-distribution }}
           cache: sbt
       - uses: sbt/setup-sbt@v1
 
-      - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+      - name: "Scripted for ${{ matrix.scala.name }} (${{ matrix.scala.sbt-series }}) on Java ${{ matrix.scala.java-version }}"
         env:
           JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
           JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
           SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
         run: |
-          echo "Run] sbt-test"
-          echo "JAVA_OPTS=${JAVA_OPTS}"
-          echo " JVM_OPTS=${JVM_OPTS}"
-          echo " SBT_OPTS=${SBT_OPTS}"
-          export CI_BRANCH="${GITHUB_REF#refs/heads/}"
-          sbt \
-            clean \
-            scripted
+          .github/workflows/sbt-scripted.sh ${{ matrix.scala.version }} ${{ matrix.scala.sbt-series }}
 
   gh-release:
     needs: [build, sbt-test]

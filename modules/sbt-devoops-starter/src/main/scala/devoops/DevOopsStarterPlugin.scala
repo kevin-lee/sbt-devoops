@@ -2,7 +2,7 @@ package devoops
 
 import org.scalafmt.sbt.ScalafmtPlugin
 import sbt.Keys.*
-import sbt.{none as *, some as *, *}
+import sbt.{none as _, some as _, *}
 import Def.Setting
 import cats.effect.{Async, IO}
 import cats.syntax.all.*
@@ -127,7 +127,8 @@ object DevOopsStarterPlugin extends AutoPlugin {
       val baseDirFile    = (ThisBuild / baseDirectory).value
       val outFile        = baseDirFile / ".scalafmt.conf"
 
-      implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
+      implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
+      implicit val log: CanLog                  = SbtLogger.sbtLoggerCanLog
       import cats.effect.unsafe.implicits.global
 
       if (outFile.exists()) {
@@ -152,7 +153,8 @@ object DevOopsStarterPlugin extends AutoPlugin {
       val scalaVer       = scalaVersion.value
       val baseDirFile    = (ThisBuild / baseDirectory).value
 
-      implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
+      implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
+      implicit val log: CanLog                  = SbtLogger.sbtLoggerCanLog
       import cats.effect.unsafe.implicits.global
 
       if (crossScalaVers.exists(_.startsWith("2.")) && crossScalaVers.exists(_.startsWith("3."))) {
@@ -207,7 +209,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
     },
   )
 
-  def writeDefaultScalafmtConf[F[?]: Fx: LogF: Async: Network: Files](dialectVersion: String, outFile: File)(
+  def writeDefaultScalafmtConf[F[_]: Fx: LogF: Async: Network: Files](dialectVersion: String, outFile: File)(
     implicit LV: DevOopsLogLevel
   ): F[Either[StarterError, Unit]] =
     EmberClientBuilder
@@ -256,7 +258,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
         } yield ()).value
       }
 
-  def writeDefaultScalafixConf[F[?]: Fx: LogF: Async](
+  def writeDefaultScalafixConf[F[_]: Fx: LogF: Async](
     templateFilename: String,
     outFile: File
   ): F[Either[StarterError, File]] =

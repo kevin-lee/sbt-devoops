@@ -3,56 +3,69 @@ name: Build All
 on: [push]
 
 env:
-  GH_JAVA_VERSION: "11"
-  GH_SCALA_BINARY_VERSION: "2.12"
   GH_JAVA_DISTRIBUTION: "temurin"
   GH_JAVA_OPTS: "-Xss64m -Xms1024m -Xmx8G -XX:MaxMetaspaceSize=2G -XX:MaxInlineLevel=18"
 
 jobs:
 
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      scala-matrix: ${{ steps.read.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: read
+        run: echo "matrix=$(jq -c . .github/scala-versions.json)" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: setup
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        scala:
-          - { binary-version: "2.12", java-version: "11", java-distribution: "temurin",  coveralls: "coveralls" }
+        scala: ${{ fromJSON(needs.setup.outputs.scala-matrix) }}
 
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
         with:
-          java-version: ${{ env.GH_JAVA_VERSION }}
-          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
+          java-version: ${{ matrix.scala.java-version }}
+          distribution: ${{ matrix.scala.java-distribution }}
           cache: sbt
       - uses: sbt/setup-sbt@v1
 
-      - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: |
-          export CI_BRANCH="${GITHUB_REF#refs/heads/}"
-          .github/workflows/sbt-build.sh ${{ matrix.scala.coveralls }}
-
-  sbt-test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5
-        with:
-          java-version: ${{ env.GH_JAVA_VERSION }}
-          distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
-          cache: sbt
-      - uses: sbt/setup-sbt@v1
-
-      - name: Build for ${{ env.GH_SCALA_BINARY_VERSION }}
+      - name: "Build for ${{ matrix.scala.name }} (${{ matrix.scala.version }}) on Java ${{ matrix.scala.java-version }}"
         env:
           JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
           JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
           SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
         run: |
-          export CI_BRANCH="${GITHUB_REF#refs/heads/}"
-          sbt \
-            clean \
-            scripted
+          .github/workflows/sbt-build.sh ${{ matrix.scala.version }} ${{ matrix.scala.sbt-series }}
+
+  sbt-test:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: ${{ fromJSON(needs.setup.outputs.scala-matrix) }}
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.scala.java-version }}
+          distribution: ${{ matrix.scala.java-distribution }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+
+      - name: "Scripted for ${{ matrix.scala.name }} (${{ matrix.scala.sbt-series }}) on Java ${{ matrix.scala.java-version }}"
+        env:
+          JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
+          JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
+          SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
+        run: |
+          java -version
+          .github/workflows/sbt-scripted.sh ${{ matrix.scala.version }} ${{ matrix.scala.sbt-series }}

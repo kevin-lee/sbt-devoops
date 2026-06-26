@@ -13,8 +13,8 @@ object Files {
 sealed trait CaseSensitivity
 
 object CaseSensitivity {
-  final case object CaseSensitive extends CaseSensitivity
-  final case object CaseInsensitive extends CaseSensitivity
+  case object CaseSensitive extends CaseSensitivity
+  case object CaseInsensitive extends CaseSensitivity
 
   def caseSensitive: CaseSensitivity   = CaseSensitive
   def caseInsensitive: CaseSensitivity = CaseInsensitive

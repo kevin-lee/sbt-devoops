@@ -158,7 +158,7 @@ object Io {
       getClass.getResourceAsStream(input)
     ) { in =>
       Using.file(new PrintWriter(_))(out) { o =>
-        in.getLines.foreach(o.println)
+        in.getLines().foreach(o.println)
         out
       }
     }

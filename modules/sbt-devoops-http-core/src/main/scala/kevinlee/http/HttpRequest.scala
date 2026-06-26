@@ -1,4 +1,4 @@
-package kevinlee.http;
+package kevinlee.http
 
 import cats.effect.{Async, Sync}
 import cats.syntax.all.*
@@ -6,11 +6,10 @@ import cats.{Applicative, Show}
 import devoops.data.DevOopsLogLevel
 import fs2.Chunk
 import io.circe.Encoder
-import io.estatico.newtype.macros.*
 import kevinlee.ops.*
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.headers.`Content-Type`
-import org.http4s.{MediaType, Request, Header as Http4sHeader, Headers as Http4sHeaders, Uri as Http4sUri}
+import org.http4s.{MediaType, Request, Headers as Http4sHeaders}
 import org.typelevel.ci.CIString
 import extras.cats.syntax.all.*
 import fs2.io.file.{Files, Path as Fs2Path}
@@ -32,15 +31,7 @@ final case class HttpRequest(
   override def toString: String = HttpRequest.show(DevOopsLogLevel.info).show(this)
 }
 
-@SuppressWarnings(
-  Array(
-    "org.wartremover.warts.ImplicitConversion",
-    "org.wartremover.warts.ImplicitParameter",
-    "org.wartremover.warts.ExplicitImplicitTypes",
-    "org.wartremover.warts.PublicInference",
-  )
-)
-object HttpRequest {
+object HttpRequest extends HttpRequestBase {
   sealed trait Method
 
   object Method {
@@ -127,7 +118,7 @@ object HttpRequest {
   import org.http4s.dsl.request.*
 
   @SuppressWarnings(Array("org.wartremover.warts.Any", "org.wartremover.warts.Nothing"))
-  def toHttp4s[F[?]: Applicative: Async: Http4sClientDsl: Files](
+  def toHttp4s[F[_]: Applicative: Async: Http4sClientDsl: Files](
     httpRequest: HttpRequest
   ): F[Either[HttpError, Request[F]]] =
     httpRequest
@@ -302,19 +293,6 @@ object HttpRequest {
       }
       .value
 
-  @newtype final case class Uri(uri: String) {
-    def toHttp4s: Either[HttpError, Http4sUri] =
-      Http4sUri
-        .fromString(uri)
-        .leftMap(parseFailure => HttpError.invalidUri(uri, parseFailure.message))
-  }
-
-  @newtype final case class Header(header: (String, String)) {
-    def toHttp4s: Http4sHeader.ToRaw = Http4sHeader.Raw(CIString(header._1), header._2)
-  }
-
-  @newtype final case class Param(param: (String, String))
-
   sealed trait Body
 
   object Body {
@@ -359,16 +337,14 @@ object HttpRequest {
       mediaTypes: List[MediaType],
     ): MultipartData = Url(name, url, mediaTypes)
 
-    @newtype final case class Name(name: String)
-
     import org.http4s.multipart.{Part, Multipart as Http4sMultipart}
 
     implicit final class MultipartDataOps(val multipartData: MultipartData) extends AnyVal {
-      def toHttp4s[F[?]: Sync: Files]: F[Http4sMultipart[F]] =
+      def toHttp4s[F[_]: Sync: Files]: F[Http4sMultipart[F]] =
         MultipartData.toHttp4s(multipartData)
     }
 
-    def toHttp4s[F[?]: Sync: Files](multipartData: MultipartData): F[Http4sMultipart[F]] =
+    def toHttp4s[F[_]: Sync: Files](multipartData: MultipartData): F[Http4sMultipart[F]] =
       Multiparts
         .forSync[F]
         .flatMap(
@@ -402,7 +378,7 @@ object HttpRequest {
     def withHeader(header: Header): HttpRequest =
       httpRequest.copy(headers = httpRequest.headers :+ header)
 
-    def toHttp4s[F[?]: Applicative: Async: Http4sClientDsl: Files]: F[Either[HttpError, Request[F]]] =
+    def toHttp4s[F[_]: Applicative: Async: Http4sClientDsl: Files]: F[Either[HttpError, Request[F]]] =
       HttpRequest.toHttp4s[F](httpRequest)
 
     // TODO: uncomment it once this issue is solved properly. https://github.com/http4s/http4s/issues/4303
