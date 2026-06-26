@@ -5,8 +5,6 @@ import cats.data.*
 import cats.syntax.all.*
 import effectie.syntax.all.*
 import effectie.core.*
-import io.circe.{Decoder, Encoder}
-import io.estatico.newtype.macros.newtype
 
 import java.io.File
 
@@ -81,15 +79,7 @@ trait Git[F[_]] {
 
 }
 
-@SuppressWarnings(
-  Array(
-    "org.wartremover.warts.ExplicitImplicitTypes",
-    "org.wartremover.warts.ImplicitConversion",
-    "org.wartremover.warts.ImplicitParameter",
-    "org.wartremover.warts.PublicInference",
-  )
-)
-object Git {
+object Git extends GitBase {
   // $COVERAGE-OFF$
 
   type CmdHistory = List[GitCmdAndResult]
@@ -97,20 +87,6 @@ object Git {
   type CmdHistoryWriter[F[_], A] = WriterT[F, CmdHistory, A]
 
   type CmdResult[F[_], A] = EitherT[CmdHistoryWriter[F, *], GitCommandError, A]
-
-  @newtype final case class BranchName(value: String)
-  @newtype final case class TagName(value: String)
-  object TagName {
-    implicit val encoder: Encoder[TagName] = deriving
-    implicit val decoder: Decoder[TagName] = deriving
-  }
-  @newtype final case class Repository(value: String)
-  @newtype final case class RemoteName(remoteName: String)
-  @newtype final case class RepoUrl(repoUrl: String)
-  @newtype final case class Description(value: String)
-
-  @newtype final case class TagMessage(tagMessage: String)
-  @newtype final case class HashObject(hashObject: String)
 
   def apply[F[_]: Git]: Git[F] = implicitly[Git[F]]
 

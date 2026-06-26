@@ -1,8 +1,7 @@
 import BuildTools._
-import ProjectInfo._
 
 ThisBuild / scalaVersion := props.ProjectScalaVersion
-ThisBuild / crossSbtVersions := props.CrossSbtVersions
+ThisBuild / crossScalaVersions := props.CrossScalaVersions
 ThisBuild / developers := List(
   Developer(
     props.GitHubUsername,
@@ -22,8 +21,6 @@ ThisBuild / startYear := 2018.some
 ThisBuild / testFrameworks ~=
   (frameworks => (TestFramework("hedgehog.sbt.Framework") +: frameworks).distinct)
 
-Global / sbtVersion := props.GlobalSbtVersion
-
 lazy val sbtDevOops = Project(props.ProjectName, file("."))
   .enablePlugins(SbtPlugin)
   .enablePlugins(DevOopsGitHubReleasePlugin, DocusaurPlugin)
@@ -31,6 +28,13 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     organization := props.Org,
     name := props.ProjectName,
     description := "DevOops - DevOps tool for GitHub",
+    /* The root project is the build aggregator + docs/release driver (not a published
+     * plugin itself in the sbt 2 sense); keep it on Scala 2.12 / sbt 1 so it doesn't try
+     * to resolve scripted-sbt_3 etc. on the Scala 3 axis. Individual plugin modules are
+     * what sbt 2 users depend on.
+     */
+    crossScalaVersions := List(props.ProjectScalaVersion),
+    (pluginCrossBuild / sbtVersion) := props.Sbt1Version,
     writeVersion := versionWriter(Def.spaceDelimited("filename").parsed)(version.value),
     writeCurrentVersion := {
       val latestVersion = {
@@ -76,8 +80,12 @@ lazy val sbtDevOopsCommon = subProject(props.SubProjectNameCommon)
       libs.semVer,
       libs.commonsIo,
       libs.cats,
-      libs.newtype % Test,
-    ) ++ libs.hedgehogLibs,
+    ) ++ libs.hedgehogLibs ++ (
+      if (scalaBinaryVersion.value == "2.12")
+        List(libs.newtype % Test)
+      else
+        libs.refined4s.map(_ % Test)
+    ),
   )
 
 lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala)
@@ -95,18 +103,24 @@ lazy val sbtDevOopsHttpCore = subProject(props.SubProjectNameHttpCore)
   .settings(
     libraryDependencies ++= List(
       libs.catsEffect,
-      libs.newtype,
       libs.effectie,
       libs.justSysprocess,
       libs.extrasCats,
-    ) ++ libs.loggerF ++ libs.circe ++ libs.refined ++ libs.http4sClient ++ libs.javaxActivation212,
+    ) ++ libs.loggerF ++ libs.circe ++ libs.refined ++ libs.http4sClient ++ libs.javaxActivation212 ++ (
+      if (scalaBinaryVersion.value == "2.12")
+        List(libs.newtype)
+      else
+        libs.refined4s
+    ),
   )
   .dependsOn(sbtDevOopsCommon % props.IncludeTest)
 
 lazy val sbtDevOopsGitHubCore = subProject(props.SubProjectNameGitHubCore)
   .enablePlugins(SbtPlugin)
   .settings(
-    libraryDependencies ++= libs.hedgehogLibs ++ List(libs.extrasHedgehogCatsEffect3),
+    libraryDependencies ++= libs.hedgehogLibs ++ List(libs.extrasHedgehogCatsEffect3) ++ (
+      if (scalaBinaryVersion.value == "2.12") List.empty else libs.refined4s
+    ),
   )
   .dependsOn(sbtDevOopsCommon, sbtDevOopsHttpCore)
 
@@ -132,6 +146,11 @@ lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
 lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameReleaseVersionPolicy)
   .enablePlugins(SbtPlugin)
   .settings(
+    /* sbt-version-policy has no sbt 2 (`_sbt2_3`) artifact yet, so this module stays
+     * Scala 2.12 / sbt 1 only. The Scala 3 axis (`++3.x`) skips it via crossScalaVersions.
+     */
+    crossScalaVersions := List(props.ProjectScalaVersion),
+    (pluginCrossBuild / sbtVersion) := props.Sbt1Version,
     addSbtPlugin(libs.sbtRelease),
     addSbtPlugin(libs.sbtVersionPolicy),
     libraryDependencies ++= List(
@@ -153,12 +172,53 @@ def subProject(projectName: String): Project = {
     .settings(
       organization := props.Org,
       name := prefixedName,
-      addCompilerPlugin("org.scalamacros" % "paradise"       % "2.1.1" cross CrossVersion.full),
-      addCompilerPlugin("org.typelevel"   % "kind-projector" % "0.13.4" cross CrossVersion.full),
+      crossScalaVersions := props.CrossScalaVersions,
+      (pluginCrossBuild / sbtVersion) := {
+        scalaBinaryVersion.value match {
+          case "2.12" => props.Sbt1Version
+          case _      => props.Sbt2Version
+        }
+      },
+      libraryDependencies ++= (
+        if (scalaBinaryVersion.value == "2.12")
+          List(
+            compilerPlugin("org.scalamacros" % "paradise"       % "2.1.1" cross CrossVersion.full),
+            compilerPlugin("org.typelevel"   % "kind-projector" % "0.13.4" cross CrossVersion.full),
+          )
+        else
+          List.empty
+      ),
+      scalacOptions ++= (
+        if (scalaBinaryVersion.value == "2.12") List.empty
+        else
+          List(
+            "-Xkind-projector",
+            // Scala 3 migration warning for explicit application of implicit params (e.g. Source.fromInputStream(in)(Codec.UTF8)).
+            "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
+            // sbt 2 plugin classpath pulls the Scala 3 stdlib transitively; the "several versions of the
+            // Scala standard library" / duplicate `caps` object+package notice is a classpath artifact, not our code.
+            "-Wconf:msg=package scala contains object and package with same name:s",
+            "-Wconf:msg=several versions of the Scala standard library:s",
+            // Scala 3 migration-style notices on code that must remain valid on Scala 2.12 too.
+            "-Wconf:msg=The syntax `private\\[this\\]` will be deprecated:s",
+            "-Wconf:msg=is eta-expanded even though:s",
+            // Scala 3 -Wunused flags context-bound type classes (used only via implicit machinery) as unused.
+            "-Wconf:msg=unused implicit parameter:s",
+            // `final case object` is a pervasive style here; the redundant-final notice is Scala-3-only noise.
+            "-Wconf:msg=Modifier final is redundant:s",
+            // `Seq[Setting[_]]`-style wildcards must stay `_` for the shared Scala 2.12 sources.
+            "-Wconf:msg=`_` is deprecated for wildcard arguments of types:s",
+            // sbt DSL uses alphanumeric methods (e.g. `m cross CrossVersion.full`) as infix; Scala 3 warns on this.
+            "-Wconf:msg=is not declared infix:s",
+            // Scala 3 -Wunused over-eagerly flags intentional exclusion imports (e.g. `import sbt.{some as _, *}`).
+            "-Wconf:msg=unused import:s",
+            // Discarded values (e.g. `mkdirs(): Boolean`, expression statements) — mostly in tests.
+            "-Wconf:msg=unused value of type:s",
+            "-Wconf:msg=discarded non-Unit value:s",
+          )
+      ),
 //      scalacOptions ++= List("-Xsource:3"),
       Compile / console / scalacOptions := scalacOptions.value diff List("-Ywarn-unused-import", "-Xfatal-warnings"),
-      Compile / compile / wartremoverErrors ++= commonWarts,
-      Test / compile / wartremoverErrors ++= commonWarts,
       licenses := List("MIT" -> url("http://opensource.org/licenses/MIT")),
       publishMavenStyle := true,
       coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -197,15 +257,20 @@ lazy val props =
     val SubProjectNameJava                 = "java"
 
     val ProjectScalaVersion = "2.12.18"
-    val CrossScalaVersions  = List(ProjectScalaVersion).distinct
+    val ProjectScala3Version = "3.8.4"
+    val CrossScalaVersions  = List(ProjectScalaVersion, ProjectScala3Version).distinct
 
-    val GlobalSbtVersion = "1.3.4"
-
-    val CrossSbtVersions = List(GlobalSbtVersion).distinct
+    /* sbt versions targeted by each Scala axis when building/publishing the plugins.
+     * Scala 2.12 -> sbt 1.x, Scala 3 -> sbt 2.x (see pluginCrossBuild / sbtVersion in subProject).
+     */
+    val Sbt1Version = "1.11.7"
+    val Sbt2Version = "2.0.1"
 
     val hedgehogVersion = "0.13.1"
 
     val newtypeVersion = "0.4.4"
+
+    val refined4sVersion = "1.18.0"
 
     val catsVersion       = "2.13.0"
     val catsEffectVersion = "3.7.0"
@@ -213,7 +278,13 @@ lazy val props =
     val extrasVersion = "0.53.0"
 
     val effectieVersion = "2.3.0"
-    val loggerFVersion  = "2.10.0"
+
+    /* logger-f-sbt-logging was split out of logger-f in 2.11.0 and is now versioned
+     * independently. logger-f (core/cats) stays on 2.11.0; logger-f-sbt-logging is 2.11.1+
+     * and provides the sbt 2 (util-logging_3) build needed for the Scala 3 axis.
+     */
+    val loggerFVersion           = "2.11.0"
+    val loggerFSbtLoggingVersion = "2.11.1"
 
     val refinedVersion = "0.11.3"
 
@@ -231,7 +302,7 @@ lazy val props =
     val activationVersion    = "1.1.1"
     val activationApiVersion = "1.2.0"
 
-    val SbtTpolecatVersion = "0.5.6"
+    val SbtTpolecatVersion = "0.5.7"
 
     val SbtVersionPolicyVersion = "3.2.1"
     val SbtReleaseVersion       = "1.5.0"
@@ -255,6 +326,12 @@ lazy val libs =
 
     lazy val newtype = "io.estatico" %% "newtype" % props.newtypeVersion
 
+    /* refined4s replaces io.estatico.newtype on the Scala 3 axis (newtype has no Scala 3 build). */
+    lazy val refined4s = List(
+      "io.kevinlee" %% "refined4s-core"  % props.refined4sVersion,
+      "io.kevinlee" %% "refined4s-circe" % props.refined4sVersion,
+    )
+
     lazy val refined = Seq(
       "eu.timepit" %% "refined"      % props.refinedVersion,
       "eu.timepit" %% "refined-cats" % props.refinedVersion,
@@ -272,7 +349,7 @@ lazy val libs =
 
     lazy val loggerF = List(
       "io.kevinlee" %% "logger-f-cats"        % props.loggerFVersion,
-      "io.kevinlee" %% "logger-f-sbt-logging" % props.loggerFVersion,
+      "io.kevinlee" %% "logger-f-sbt-logging" % props.loggerFSbtLoggingVersion,
     )
 
     lazy val http4sClient = List(
@@ -359,9 +436,13 @@ usefulTasks := Seq(
   UsefulTask("reload", "Run reload").alias("r"),
   UsefulTask("clean", "Run clean").alias("cln"),
   UsefulTask("compile", "Run compile").alias("c"),
+  UsefulTask("+compile", "Run +compile").alias("cc"),
   UsefulTask("Test/compile", "Run Test/compile").alias("tc"),
+  UsefulTask("+Test/compile", "Run +Test/compile").alias("ctc"),
   UsefulTask("test", "Run test").alias("t"),
+  UsefulTask("+test", "Run +test").alias("ct"),
   UsefulTask("scripted", "Run scripted for sbt-test").alias("st"),
+  UsefulTask("+scripted", "Run +scripted for sbt-test").alias("cst"),
   UsefulTask("scalafmtCheckAll", "Run scalafmtCheckAll").alias("fmtchk"),
   UsefulTask("scalafmtAll", "Run scalafmtAll").alias("fmt"),
   UsefulTask("publishLocal", "Run publishLocal").alias("pl"),

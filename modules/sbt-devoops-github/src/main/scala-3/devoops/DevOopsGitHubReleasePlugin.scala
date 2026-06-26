@@ -22,7 +22,7 @@ import kevinlee.sbt.io.{CaseSensitivity, Io}
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder
 import sbt.Keys.*
-import sbt.{AutoPlugin, File, PluginTrigger, Plugins, Setting}
+import sbt.{AutoPlugin, Def, File, PluginTrigger, Plugins, Setting}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
@@ -57,7 +57,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.instances.ce3.fx.*
+      import effectie.instances.ce3.fx.ioFx
 
       val run1: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] =
         getTagVersion[IO](basePath, tagFrom, tagName, tagDesc, pushRepo, projectVersion)
@@ -80,7 +80,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         s"*/*/*/target/scala-*/${filenamePrefix}*.jar",
       )
     },
-    devOopsCopyReleasePackages := {
+    devOopsCopyReleasePackages := Def.uncached {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
@@ -103,10 +103,10 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     devOopsGitHubAuthTokenEnvVar := "GITHUB_TOKEN",
     devOopsGitHubAuthTokenFile :=
       Some(new File(Io.getUserHome, ".github")),
-    devOopsGitHubRequestTimeout := 2.minutes,
+    devOopsGitHubRequestTimeout := Def.uncached(2.minutes),
     devOopsWhenGitTagExistsInRelease := WhenGitTagExistsInRelease.failTagCreation,
     devOopsWhenGitHubReleaseExistsInRelease := WhenGitHubReleaseExistsInRelease.updateReleaseNote,
-    devOopsGitHubRelease := {
+    devOopsGitHubRelease := Def.uncached {
       lazy val tagName         = TagName(devOopsGitTagName.value)
       lazy val authTokenEnvVar = devOopsGitHubAuthTokenEnvVar.value
       lazy val authTokenFile   = devOopsGitHubAuthTokenFile.value
@@ -117,9 +117,10 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.instances.ce3.fx.*
+      import effectie.instances.ce3.fx.ioFx
 
-      implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
+      implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
+      implicit val log: CanLog                  = SbtLogger.sbtLoggerCanLog
       val git                  = Git[IO]
       val sbtTask              = SbtTask[IO]
 
@@ -163,7 +164,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         .handleSbtTask(result)
         .unsafeRunSync()
     },
-    devOopsGitTagAndGitHubRelease := {
+    devOopsGitTagAndGitHubRelease := Def.uncached {
       lazy val tagName                          = TagName(devOopsGitTagName.value)
       lazy val tagDesc                          = devOopsGitTagDescription.value
       lazy val tagFrom                          = BranchName(devOopsGitTagFrom.value)
@@ -178,9 +179,10 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
+      implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
+      implicit val log: CanLog                  = SbtLogger.sbtLoggerCanLog
 
-      import effectie.instances.ce3.fx.*
+      import effectie.instances.ce3.fx.ioFx
 
       EmberClientBuilder
         .default[IO]
@@ -222,7 +224,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         }
         .unsafeRunSync()
     },
-    devOopsGitHubReleaseUploadArtifacts := {
+    devOopsGitHubReleaseUploadArtifacts := Def.uncached {
       lazy val tagName         = TagName(devOopsGitTagName.value)
       lazy val assets          = devOopsCopyReleasePackages.value
       lazy val authTokenEnvVar = devOopsGitHubAuthTokenEnvVar.value
@@ -236,9 +238,10 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
 
       implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
 
-      import effectie.instances.ce3.fx.*
+      import effectie.instances.ce3.fx.ioFx
 
-      implicit val log: CanLog = SbtLogger.sbtLoggerCanLog(streams.value.log)
+      implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
+      implicit val log: CanLog                  = SbtLogger.sbtLoggerCanLog
       val git                  = Git[IO]
       val sbtTask              = SbtTask[IO]
 
@@ -291,7 +294,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     },
   )
 
-  private def getTagVersion[F[?]: Fx: Monad](
+  private def getTagVersion[F[_]: Fx: Monad](
     basePath: File,
     tagFrom: BranchName,
     tagName: TagName,
@@ -342,7 +345,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       _ <- SbtTask[F].fromGitTask(Git[F].pushTag(pushRepo, tagName, basePath))
     } yield ()
 
-  private def getTagVersionInReleaseTask[F[?]: Fx: Monad](
+  private def getTagVersionInReleaseTask[F[_]: Fx: Monad](
     basePath: File,
     tagFrom: BranchName,
     tagName: TagName,
@@ -422,7 +425,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       .fold(readOAuthToken(authTokenFile))(token => GitHub.OAuthToken(token).asRight)
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  private def runGitHubRelease[F[?]: Fx: CanCatch: Monad: Temporal](
+  private def runGitHubRelease[F[_]: Fx: CanCatch: Monad: Temporal](
     tagName: TagName,
     baseDir: File,
     changelogLocation: GitHub.ChangelogLocation,
@@ -467,7 +470,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       _                           <- logGitHubReleaseSummary(tagName, gitHubReleaseAndUpdateState)
     } yield gitHubReleaseAndUpdateState._1
 
-  private def createOrUpdateGitHubRelease[F[?]: Fx: Monad](
+  private def createOrUpdateGitHubRelease[F[_]: Fx: Monad](
     tagName: TagName,
     changelog: GitHub.Changelog,
     repoWithAuth: GitHub.GitHubRepoWithAuth,
@@ -566,7 +569,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
     } yield result
   }
 
-  private def recoverAndUpdateGitHubReleaseWhenExists[F[?]: Fx: Monad](
+  private def recoverAndUpdateGitHubReleaseWhenExists[F[_]: Fx: Monad](
     tagName: TagName,
     repoWithAuth: GitHub.GitHubRepoWithAuth,
     releaseName: Option[GitHubRelease.ReleaseName],
@@ -691,7 +694,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         |""".stripMargin
   }
 
-  private def logGitHubReleaseSummary[F[?]: Fx: Monad](
+  private def logGitHubReleaseSummary[F[_]: Fx: Monad](
     tagName: TagName,
     gitHubReleaseAndUpdateState: (Option[GitHubRelease.Response], ReleaseCreationOrUpdate)
   ): GitHubTask.GitHubTaskResult[F, Unit] =
@@ -722,36 +725,36 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       }
     )
 
-  private def logGitHubReleaseStep[F[?]: Fx: Monad](message: String): GitHubTask.GitHubTaskResult[F, Unit] =
+  private def logGitHubReleaseStep[F[_]: Fx: Monad](message: String): GitHubTask.GitHubTaskResult[F, Unit] =
     logGitHubReleaseSteps(List(message))
 
-  private def logGitHubReleaseSteps[F[?]: Fx: Monad](messages: List[String]): GitHubTask.GitHubTaskResult[F, Unit] =
+  private def logGitHubReleaseSteps[F[_]: Fx: Monad](messages: List[String]): GitHubTask.GitHubTaskResult[F, Unit] =
     SbtTask[F].eitherTWithWriter(
       pureOf(().asRight[GitHubError])
     )(_ => messages)
 
-  private def liftEffectToGitHubTask[F[?]: Fx: Monad, A](fa: F[A]): GitHubTask.GitHubTaskResult[F, A] =
+  private def liftEffectToGitHubTask[F[_]: Fx: Monad, A](fa: F[A]): GitHubTask.GitHubTaskResult[F, A] =
     SbtTask[F].eitherTWithWriter(
       fa.map(_.asRight[GitHubError])
     )(_ => List.empty[String])
 
-  private def failGitHubTask[F[?]: Fx: Monad, A](error: GitHubError): GitHubTask.GitHubTaskResult[F, A] =
+  private def failGitHubTask[F[_]: Fx: Monad, A](error: GitHubError): GitHubTask.GitHubTaskResult[F, A] =
     SbtTask[F].eitherTWithWriter(
       pureOf(error.asLeft[A])
     )(_ => List.empty[String])
 
-  private def succeedSbtTaskWithMessage[F[?]: Fx: Monad](message: String): SbtTask.Result[F, Unit] =
+  private def succeedSbtTaskWithMessage[F[_]: Fx: Monad](message: String): SbtTask.Result[F, Unit] =
     SbtTask[F].eitherTWithWriter(
       pureOf(().asRight[SbtTaskError])
     )(_ => List(SbtTaskResult.nonSbtTaskResult(message)))
 
-  private def failSbtTask[F[?]: Fx: Monad](error: SbtTaskError): SbtTask.Result[F, Unit] =
+  private def failSbtTask[F[_]: Fx: Monad](error: SbtTaskError): SbtTask.Result[F, Unit] =
     SbtTask[F].eitherTWithWriter(
       pureOf(error.asLeft[Unit])
     )(_ => List.empty[SbtTaskResult])
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
-  private def runUploadAssetsToGitHubRelease[F[?]: Fx: CanCatch: Monad](
+  private def runUploadAssetsToGitHubRelease[F[_]: Fx: CanCatch: Monad](
     tagName: TagName,
     assets: Vector[File],
     baseDir: File,

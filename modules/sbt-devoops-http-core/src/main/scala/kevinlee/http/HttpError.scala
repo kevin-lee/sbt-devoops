@@ -141,8 +141,8 @@ object HttpError {
   def recoverFromOptional404[A](httpError: HttpError): Either[HttpError, Option[A]] =
     httpError match {
       case HttpError.FailedResponse(
-            HttpResponse(HttpResponse.Status(HttpResponse.Status.Code(404), _), _, _)
-          ) =>
+            HttpResponse(HttpResponse.Status(code, _), _, _)
+          ) if code.code === 404 =>
         none[A].asRight[HttpError]
       case error =>
         error.asLeft[Option[A]]

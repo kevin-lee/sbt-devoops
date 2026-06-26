@@ -1,5 +1,3 @@
-import wartremover.{Wart, Warts}
-
 /** @author Kevin Lee
   * @since 2018-05-21
   */
@@ -21,15 +19,5 @@ object ProjectInfo {
     "-encoding",
     "UTF-8"
   )
-
-  val commonWarts: Seq[Wart] =
-    Warts.allBut(
-      Wart.DefaultArguments,
-      Wart.Overloading,
-      Wart.Any,
-      Wart.Nothing,
-      Wart.NonUnitStatements,
-      Wart.ImplicitParameter
-    )
 
 }

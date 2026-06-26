@@ -4,7 +4,7 @@ import cats.effect.IO
 import devoops.data.{DevOopsLogLevel, Logging}
 import extras.cats.syntax.option.*
 import kevinlee.github.data.GitHub
-import effectie.instances.ce3.fx.*
+import effectie.instances.ce3.fx.ioFx
 import loggerf.logger.{CanLog, SbtLogger}
 
 import sbt.Keys.*
@@ -49,11 +49,13 @@ object DevOopsGitHubPlugin extends AutoPlugin {
   import autoImport.*
 
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
-    gitHubFindRepoOrgAndName :=
-      findRepoOrgAndNameWithCanLog(SbtLogger.sbtLoggerCanLog(streams.value.log))
+    gitHubFindRepoOrgAndName := {
+      implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
+      findRepoOrgAndNameWithCanLog(SbtLogger.sbtLoggerCanLog)
         .map {
           case GitHub.Repo(org, name) => (org.org, name.name)
-        },
+        }
+    },
   )
 
 }
