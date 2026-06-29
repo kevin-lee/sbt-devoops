@@ -20,10 +20,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       scala-matrix: ${{ steps.read.outputs.matrix }}
+      java11-versions: ${{ steps.read.outputs.java11 }}
+      java17-versions: ${{ steps.read.outputs.java17 }}
+      java-versions: ${{ steps.read.outputs.javas }}
     steps:
       - uses: actions/checkout@v7
       - id: read
-        run: echo "matrix=$(jq -c . .github/scala-versions.json)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "matrix=$(jq -c . .github/scala-versions.json)" >> "$GITHUB_OUTPUT"
+          echo "java11=$(jq -c '[.[] | select(."java-version" == "11") | .version]' .github/scala-versions.json)" >> "$GITHUB_OUTPUT"
+          echo "java17=$(jq -c '[.[] | select(."java-version" == "17") | .version]' .github/scala-versions.json)" >> "$GITHUB_OUTPUT"
+          {
+            echo "javas<<__GHA_EOF__"
+            jq -r '[.[]."java-version"] | unique | .[]' .github/scala-versions.json
+            echo "__GHA_EOF__"
+          } >> "$GITHUB_OUTPUT"
 
   build:
     needs: setup
@@ -111,7 +122,7 @@ jobs:
             devOopsGitHubRelease
 
   publish:
-    needs: gh-release
+    needs: [setup, gh-release]
 
     runs-on: ubuntu-latest
 
@@ -119,9 +130,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      # Install every JDK the matrix uses (Java 11 for the sbt 1 / Scala 2.12 axis,
+      # Java 17 for the sbt 2 / Scala 3 axis) so each axis is published on its own JDK.
       - uses: actions/setup-java@v5
         with:
-          java-version: ${{ env.GH_JAVA_VERSION }}
+          java-version: ${{ needs.setup.outputs.java-versions }}
           distribution: ${{ env.GH_JAVA_DISTRIBUTION }}
           cache: sbt
       - uses: sbt/setup-sbt@v1
@@ -132,26 +145,45 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
-          JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
           SBT_OPTS: ${{ env.GH_JAVA_OPTS }}
+          JAVA11_VERSIONS_JSON: ${{ needs.setup.outputs.java11-versions }}
+          JAVA17_VERSIONS_JSON: ${{ needs.setup.outputs.java17-versions }}
+        shell: bash
         run: |
           echo "====================="
           echo "| Publish: Start    |"
           echo "====================="
-          echo "Run] sbt publish"
-          
-          echo "JAVA_OPTS=${JAVA_OPTS}"
-          echo " JVM_OPTS=${JVM_OPTS}"
-          echo " SBT_OPTS=${SBT_OPTS}"
-                    
           export SOURCE_DATE_EPOCH=$(date +%s)
           echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
-          echo "sbt -J-XX:MaxMetaspaceSize=1024m -J-Xmx2048m -v clean ci-release"
-          sbt \
-            -v \
-            clean \
-            ci-release
+          echo "SBT_OPTS=${SBT_OPTS}"
+          echo "JAVA11_VERSIONS_JSON=${JAVA11_VERSIONS_JSON}"
+          echo "JAVA17_VERSIONS_JSON=${JAVA17_VERSIONS_JSON}"
+
+          echo '[GPG] import secret key (same as sbt-ci-release setupGpg)'
+          echo "$PGP_SECRET" | base64 --decode | gpg --batch --import
+
+          echo '[Java 11] publishSigned for the sbt 1 / Scala 2.x axis'
+          export JAVA_HOME="$JAVA_HOME_11_X64"
+          export PATH="$JAVA_HOME_11_X64/bin:$PATH"
+          java -version
+          args=(clean)
+          while IFS= read -r v; do
+            args+=("++${v}" publishSigned)
+          done < <(jq -r '.[]' <<< "$JAVA11_VERSIONS_JSON")
+          sbt -v "${args[@]}"
+
+          echo '[Java 17] publishSigned for the sbt 2 / Scala 3 axis'
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          export PATH="$JAVA_HOME_17_X64/bin:$PATH"
+          java -version
+          args=()
+          while IFS= read -r v; do
+            args+=("++${v}" publishSigned)
+          done < <(jq -r '.[]' <<< "$JAVA17_VERSIONS_JSON")
+          sbt -v "${args[@]}"
+
+          echo '[Release] sonaRelease (single Sonatype bundle for both axes)'
+          sbt -v sonaRelease
 
           echo "====================="
           echo "| Publish: Done     |"
