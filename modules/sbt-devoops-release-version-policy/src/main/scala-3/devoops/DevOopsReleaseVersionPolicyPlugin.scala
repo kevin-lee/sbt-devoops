@@ -77,7 +77,7 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
       .value
       .getOrElse(errorWithCompatibilityFileSetupInstruction()),
     compatibilityResetGitCommitMessage := DefaultCompatibilityResetGitCommitMessage,
-    setAndCommitNextCompatibilityIntention := {
+    setAndCommitNextCompatibilityIntention := Def.uncached {
       val log           = streams.value.log
       val intention     = (ThisBuild / versionPolicyIntention)
         .?
@@ -159,12 +159,11 @@ object DevOopsReleaseVersionPolicyPlugin extends AutoPlugin {
         ReleaseTransformations.inquireVersions,
         ReleaseTransformations.runClean,
         if (devOopsReleaseVersionPolicyShouldReleaseCrossScalaVersions.value) {
-          ReleaseStep {
-            state: State =>
-              if (state.get(ReleaseKeys.skipTests).getOrElse(false))
-                state
-              else
-                releaseStepCommandAndRemaining("+test")(state)
+          ReleaseStep { (state: State) =>
+            if (state.get(ReleaseKeys.skipTests).getOrElse(false))
+              state
+            else
+              releaseStepCommandAndRemaining("+test")(state)
           }
         } else {
           ReleaseTransformations.runTest

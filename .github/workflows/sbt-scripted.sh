@@ -25,7 +25,7 @@ echo "--------------------------------------------"
 
 if [ "$sbt_series" == "sbt2" ]; then
   # Scope to the modules that own sbt 2 scripted tests so the scripted pre-publish only
-  # publishes _sbt2_3-capable projects (not the Scala-2.12-pinned root / release-version-policy).
+  # publishes _sbt2_3-capable projects (not the Scala-2.12-pinned root).
   sbt \
     "++${scala_version}" \
     -v \
