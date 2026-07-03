@@ -146,11 +146,6 @@ lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
 lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameReleaseVersionPolicy)
   .enablePlugins(SbtPlugin)
   .settings(
-    /* sbt-version-policy has no sbt 2 (`_sbt2_3`) artifact yet, so this module stays
-     * Scala 2.12 / sbt 1 only. The Scala 3 axis (`++3.x`) skips it via crossScalaVersions.
-     */
-    crossScalaVersions := List(props.ProjectScalaVersion),
-    (pluginCrossBuild / sbtVersion) := props.Sbt1Version,
     addSbtPlugin(libs.sbtRelease),
     addSbtPlugin(libs.sbtVersionPolicy),
     libraryDependencies ++= List(
@@ -304,7 +299,7 @@ lazy val props =
 
     val SbtTpolecatVersion = "0.5.7"
 
-    val SbtVersionPolicyVersion = "3.2.1"
+    val SbtVersionPolicyVersion = "3.3.0"
     val SbtReleaseVersion       = "1.5.0"
 
     val SbtScalafmtVersion = "2.6.1"
