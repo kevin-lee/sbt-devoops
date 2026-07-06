@@ -162,13 +162,19 @@ jobs:
           echo '[GPG] import secret key (same as sbt-ci-release setupGpg)'
           echo "$PGP_SECRET" | base64 --decode | gpg --batch --import
 
+          # Note: "++${v} publishSigned" must stay a single sbt command. In that form sbt
+          # runs the task only on subprojects whose crossScalaVersions contains ${v}, which
+          # keeps the Scala-2.12-pinned root out of the sbt 2 / Scala 3 axis (an aggregated
+          # publishSigned there resolves the root's inter-project deps with a malformed
+          # _sbt2_2.12 suffix — see the same note in sbt-build.sh). As two separate
+          # commands ("++${v}" publishSigned) the task would run on the whole aggregate.
           echo '[Java 11] publishSigned for the sbt 1 / Scala 2.x axis'
           export JAVA_HOME="$JAVA_HOME_11_X64"
           export PATH="$JAVA_HOME_11_X64/bin:$PATH"
           java -version
           args=(clean)
           while IFS= read -r v; do
-            args+=("++${v}" publishSigned)
+            args+=("++${v} publishSigned")
           done < <(jq -r '.[]' <<< "$JAVA11_VERSIONS_JSON")
           sbt -v "${args[@]}"
 
@@ -178,7 +184,7 @@ jobs:
           java -version
           args=()
           while IFS= read -r v; do
-            args+=("++${v}" publishSigned)
+            args+=("++${v} publishSigned")
           done < <(jq -r '.[]' <<< "$JAVA17_VERSIONS_JSON")
           sbt -v "${args[@]}"
 
