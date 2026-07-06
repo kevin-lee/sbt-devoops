@@ -2,6 +2,7 @@ package devoops
 
 import sbt.*
 import sbt.Keys.*
+import sbtcompat.PluginCompat.*
 
 /** @author Kevin Lee
   * @since 2021-04-10
@@ -34,8 +35,8 @@ object DevOopsSbtExtraPlugin extends AutoPlugin {
     @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     val commonSettings: SettingsDefinition = Def.settings(
       isRootProject := Keys.thisProjectRef.value == rootProjectRef.value,
-      isCurrentProject := Keys.thisProjectRef.value == currentProjectRef.value,
-      isCurrentProjectRoot := isCurrentProject.value && isRootProject.value,
+      isCurrentProject := Def.uncached(Keys.thisProjectRef.value == currentProjectRef.value),
+      isCurrentProjectRoot := Def.uncached(isCurrentProject.value && isRootProject.value),
     )
 
     lazy val noPublish: SettingsDefinition = Seq(

@@ -4,6 +4,7 @@ import extras.scala.io.syntax.color.*
 import kevinlee.sbt.SbtCommon.*
 import sbt.Keys.*
 import sbt.*
+import sbtcompat.PluginCompat.*
 import sbtrelease.ReleasePlugin
 import sbtrelease.ReleasePlugin.autoImport.*
 import sbtversionpolicy.SbtVersionPolicyPlugin

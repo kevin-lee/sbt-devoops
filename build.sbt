@@ -97,6 +97,9 @@ lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala)
 
 lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra)
   .enablePlugins(SbtPlugin)
+  .settings(
+    addSbtPlugin(libs.sbt2Compat)
+  )
 
 lazy val sbtDevOopsHttpCore = subProject(props.SubProjectNameHttpCore)
   .enablePlugins(SbtPlugin)
@@ -137,6 +140,7 @@ lazy val sbtDevOopsStarter = subProject(props.SubProjectNameStarter)
 lazy val sbtDevOopsGitHub = subProject(props.SubProjectNameGitHub)
   .enablePlugins(SbtPlugin)
   .settings(
+    addSbtPlugin(libs.sbt2Compat),
     libraryDependencies ++= List(
       libs.extrasScalaIo,
     )
@@ -148,6 +152,7 @@ lazy val sbtDevOopsReleaseVersionPolicy = subProject(props.SubProjectNameRelease
   .settings(
     addSbtPlugin(libs.sbtRelease),
     addSbtPlugin(libs.sbtVersionPolicy),
+    addSbtPlugin(libs.sbt2Compat),
     libraryDependencies ++= List(
       libs.extrasScalaIo,
     )
@@ -302,6 +307,11 @@ lazy val props =
     val SbtVersionPolicyVersion = "3.3.0"
     val SbtReleaseVersion       = "1.5.0"
 
+    /* Compatibility bridge from the sbt team so shared plugin sources compile on both
+     * sbt 1 and sbt 2 (e.g. Def.uncached is native in sbt 2 and a no-op enrichment in sbt 1).
+     */
+    val Sbt2CompatVersion = "0.1.0"
+
     val SbtScalafmtVersion = "2.6.1"
     val SbtScalafixVersion = "0.14.7"
 
@@ -374,6 +384,8 @@ lazy val libs =
 
     lazy val sbtVersionPolicy = "ch.epfl.scala"  % "sbt-version-policy" % props.SbtVersionPolicyVersion
     lazy val sbtRelease       = "com.github.sbt" % "sbt-release"        % props.SbtReleaseVersion
+
+    lazy val sbt2Compat = "com.github.sbt" % "sbt2-compat" % props.Sbt2CompatVersion
 
     lazy val sbtScalafmt = "org.scalameta" % "sbt-scalafmt" % props.SbtScalafmtVersion
     lazy val sbtScalafix = "ch.epfl.scala" % "sbt-scalafix" % props.SbtScalafixVersion

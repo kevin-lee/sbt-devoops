@@ -23,6 +23,7 @@ import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder
 import sbt.Keys.*
 import sbt.{AutoPlugin, Def, File, PluginTrigger, Plugins, Setting}
+import sbtcompat.PluginCompat.*
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
