@@ -17,8 +17,7 @@ object DevOopsScalaPlugin extends AutoPlugin {
 
   object autoImport {}
 
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
-    updateOptions := updateOptions.value.withCircularDependencyLevel(CircularDependencyLevel.Error),
+  override lazy val projectSettings: Seq[Setting[_]] = DevOopsScalaPluginCompat.circularDependencyCheckSettings ++ Seq(
     scalacOptions := {
       val currentOptions = scalacOptions.value
       (SemVer.parse(scalaVersion.value) match {
