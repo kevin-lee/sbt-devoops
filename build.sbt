@@ -65,6 +65,7 @@ lazy val sbtDevOops = Project(props.ProjectName, file("."))
     sbtDevOopsCommon,
     sbtDevOopsScala,
     sbtDevOopsSbtExtra,
+    sbtDevOopsSbtLocalCache,
     sbtDevOopsHttpCore,
     sbtDevOopsGitHubCore,
     sbtDevOopsStarter,
@@ -96,6 +97,12 @@ lazy val sbtDevOopsScala = subProject(props.SubProjectNameScala)
   .dependsOn(sbtDevOopsCommon)
 
 lazy val sbtDevOopsSbtExtra = subProject(props.SubProjectNameSbtExtra)
+  .enablePlugins(SbtPlugin)
+  .settings(
+    addSbtPlugin(libs.sbt2Compat)
+  )
+
+lazy val sbtDevOopsSbtLocalCache = subProject(props.SubProjectNameSbtLocalCache)
   .enablePlugins(SbtPlugin)
   .settings(
     addSbtPlugin(libs.sbt2Compat)
@@ -249,6 +256,7 @@ lazy val props =
     val SubProjectNameCommon               = "common"
     val SubProjectNameScala                = "scala"
     val SubProjectNameSbtExtra             = "sbt-extra"
+    val SubProjectNameSbtLocalCache        = "sbt-local-cache"
     val SubProjectNameStarter              = "starter"
     val SubProjectNameHttpCore             = "http-core"
     val SubProjectNameGitHubCore           = "github-core"

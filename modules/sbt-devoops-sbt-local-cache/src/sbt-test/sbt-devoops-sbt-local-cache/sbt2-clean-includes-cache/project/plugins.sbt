@@ -1,0 +1,5 @@
+sys.props.get("plugin.version") match {
+  case Some(x) => addSbtPlugin("io.kevinlee" % "sbt-devoops-sbt-local-cache" % x)
+  case _ => sys.error("""|The system property 'plugin.version' is not defined.
+                         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+}
