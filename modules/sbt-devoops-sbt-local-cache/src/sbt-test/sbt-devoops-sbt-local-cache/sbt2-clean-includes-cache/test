@@ -1,0 +1,20 @@
+> compile
+> checkCacheNonEmpty
+# The shell history lives inside the output directory that a purge deletes; it must survive.
+> writeHistory
+> clean
+> checkCachePurged
+> checkHistoryKept
+> compile
+> checkCacheNonEmpty
+# A second clean must also purge. If the purge were cached (memoized), the second
+# clean would restore the cached no-op result and skip the purge, leaving the cache.
+> clean
+> checkCachePurged
+# The devOopsCleanLocalCache command must also purge the cache while keeping the history.
+> compile
+> checkCacheNonEmpty
+> writeHistory
+> devOopsCleanLocalCache
+> checkCachePurged
+> checkHistoryKept

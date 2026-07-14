@@ -1,0 +1,9 @@
+> compile
+> checkCacheNonEmpty
+> clean
+> checkCacheNonEmpty
+> devOopsLocalCacheSize
+> devOopsCleanLocalCache
+> checkCacheEmpty
+> compile
+> checkCacheNonEmpty
