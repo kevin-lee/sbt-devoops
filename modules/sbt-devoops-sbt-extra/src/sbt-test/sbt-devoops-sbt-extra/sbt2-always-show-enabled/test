@@ -1,0 +1,9 @@
+# With the flag on, the build must load and behave normally. The banner itself is emitted on an
+# interactive prompt render, which scripted cannot drive, so it is verified manually instead.
+> checkFlagIsOn
+> checkOnLoadMessageIsReadable
+> compile
+# reload re-runs the load path, which is where the suppression flag is armed.
+> reload
+> checkFlagIsOn
+> compile

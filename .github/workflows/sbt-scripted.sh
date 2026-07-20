@@ -32,7 +32,8 @@ if [ "$sbt_series" == "sbt2" ]; then
     clean \
     "scala/scripted sbt-devoops-scala/scala-3-sbt2-test" \
     "starter/scripted sbt-devoops-starter/write-default-scalafmt-conf-sbt2-test-new sbt-devoops-starter/write-default-scalafix-conf-scala3-sbt2-test-new" \
-    "sbt-local-cache/scripted sbt-devoops-sbt-local-cache/sbt2-local-cache sbt-devoops-sbt-local-cache/sbt2-clean-includes-cache sbt-devoops-sbt-local-cache/sbt2-default-off"
+    "sbt-local-cache/scripted sbt-devoops-sbt-local-cache/sbt2-local-cache sbt-devoops-sbt-local-cache/sbt2-clean-includes-cache sbt-devoops-sbt-local-cache/sbt2-default-off" \
+    "sbt-extra/scripted sbt-devoops-sbt-extra/sbt2-always-show-default-off sbt-devoops-sbt-extra/sbt2-always-show-enabled"
 else
   # sbt 1: run the full scripted suite. The sbt-2-pinned tests (sbt.version=2.0.1) are
   # automatically skipped by the scripted runner because their binary sbt version differs

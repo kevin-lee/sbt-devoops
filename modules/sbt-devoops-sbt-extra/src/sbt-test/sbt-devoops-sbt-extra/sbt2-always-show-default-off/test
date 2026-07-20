@@ -1,0 +1,6 @@
+# The flag must be off by default so that sbt 2's stock behaviour is unchanged
+# for anyone who has not opted in.
+> checkFlagIsOffByDefault
+# The prompt override is installed unconditionally, so the build must still work normally.
+> compile
+> checkFlagIsOffByDefault
