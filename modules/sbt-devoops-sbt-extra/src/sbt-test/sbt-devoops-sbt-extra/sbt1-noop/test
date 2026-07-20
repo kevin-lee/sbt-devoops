@@ -1,0 +1,6 @@
+# Setting the sbt 2 only flag on sbt 1 must be harmless: it compiles, loads and runs as usual.
+> compile
+> reload
+> compile
+> clean
+> compile

@@ -32,6 +32,12 @@ object DevOopsSbtExtraPlugin extends AutoPlugin {
       "Check if this project is the root project as well as currently selected."
     )
 
+    val devOopsAlwaysShowOnLoadMessage: SettingKey[Boolean] = settingKey[Boolean](
+      "sbt 2 only: If true, show onLoadMessage (e.g. the sbt-welcome banner) on every interactive start, " +
+        "including when sbt's thin client attaches to an already running server, which normally skips it. " +
+        "Set it at the Global scope: Global / devOopsAlwaysShowOnLoadMessage := true (default: false)"
+    )
+
     @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     val commonSettings: SettingsDefinition = Def.settings(
       isRootProject := Keys.thisProjectRef.value == rootProjectRef.value,
@@ -56,6 +62,10 @@ object DevOopsSbtExtraPlugin extends AutoPlugin {
   }
 
   import autoImport.*
+
+  override def globalSettings: Seq[Def.Setting[_]] = Seq(
+    devOopsAlwaysShowOnLoadMessage := false
+  ) ++ DevOopsSbtExtraCompat.alwaysShowOnLoadMessageSettings(devOopsAlwaysShowOnLoadMessage)
 
   override def projectSettings: Seq[Def.Setting[_]] = commonSettings
 
