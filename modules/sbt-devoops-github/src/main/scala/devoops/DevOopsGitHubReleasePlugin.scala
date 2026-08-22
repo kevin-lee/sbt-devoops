@@ -641,13 +641,15 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
                       )
       _            <- logGitHubReleaseSteps(
                         List[String](
-                          s"GitHub release created from tag: ${created.tagName.value} (release id: ${created.id.id})",
-                          created
-                            .body
-                            .description
-                            .split("\n")
-                            .mkString("Generated release note:\n    ", "\n    ", "\n"),
-                        )
+                          s"GitHub release created from tag: ${created.tagName.value} (release id: ${created.id.id})"
+                        ) ++ created
+                          .body
+                          .toList
+                          .map(
+                            _.description
+                              .split("\n")
+                              .mkString("Generated release note:\n    ", "\n    ", "\n")
+                          )
                       )
     } yield ReleaseResult.releasedWithGeneratedReleaseNote
   }
@@ -951,13 +953,15 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
             ) =>
           /* Release success with new release creation. */
           List[String](
-            ReleaseCreationOrUpdate.releaseResultMessage(releaseCreationOrUpdate, release.tagName),
-            release
-              .body
-              .description
-              .split("\n")
-              .mkString("Changelog uploaded:\n    ", "\n    ", "\n"),
-          )
+            ReleaseCreationOrUpdate.releaseResultMessage(releaseCreationOrUpdate, release.tagName)
+          ) ++ release
+            .body
+            .toList
+            .map(
+              _.description
+                .split("\n")
+                .mkString("Changelog uploaded:\n    ", "\n    ", "\n")
+            )
 
         case (None, releaseCreationOrUpdate @ (ReleaseCreationOrUpdate.Created | ReleaseCreationOrUpdate.Updated)) =>
           /* Release failure in creation or update path. */
