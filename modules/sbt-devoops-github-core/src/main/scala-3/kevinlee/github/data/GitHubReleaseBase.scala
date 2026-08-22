@@ -19,6 +19,9 @@ trait GitHubReleaseBase {
   type UpdateRequestParams = GitHubReleaseBase.UpdateRequestParams
   val UpdateRequestParams = GitHubReleaseBase.UpdateRequestParams
 
+  type GenerateNotesRequestParams = GitHubReleaseBase.GenerateNotesRequestParams
+  val GenerateNotesRequestParams = GitHubReleaseBase.GenerateNotesRequestParams
+
   type UploadAssetParams = GitHubReleaseBase.UploadAssetParams
   val UploadAssetParams = GitHubReleaseBase.UploadAssetParams
 
@@ -40,6 +43,12 @@ trait GitHubReleaseBase {
   type Prerelease = GitHubReleaseBase.Prerelease
   val Prerelease = GitHubReleaseBase.Prerelease
 
+  type GenerateReleaseNotes = GitHubReleaseBase.GenerateReleaseNotes
+  val GenerateReleaseNotes = GitHubReleaseBase.GenerateReleaseNotes
+
+  type GeneratedNotes = GitHubReleaseBase.GeneratedNotes
+  val GeneratedNotes = GitHubReleaseBase.GeneratedNotes
+
   type Asset = GitHubReleaseBase.Asset
   val Asset = GitHubReleaseBase.Asset
 
@@ -53,6 +62,7 @@ object GitHubReleaseBase {
     body: Option[Description],
     draft: Draft,
     prerelease: Prerelease,
+    generateReleaseNotes: GenerateReleaseNotes,
   )
   object CreateRequestParams {
     given encoder: Encoder[CreateRequestParams] =
@@ -62,20 +72,22 @@ object GitHubReleaseBase {
             requestParams.name.toList.map(name => "name" -> name.asJson) ++
             requestParams.body.toList.map(body => "body" -> body.asJson) ++
             List(
-              "draft"      -> requestParams.draft.asJson,
-              "prerelease" -> requestParams.prerelease.asJson,
+              "draft"                  -> requestParams.draft.asJson,
+              "prerelease"             -> requestParams.prerelease.asJson,
+              "generate_release_notes" -> requestParams.generateReleaseNotes.asJson,
             ))*
         )
 
     given decoder: Decoder[CreateRequestParams] =
       c =>
         for {
-          tagName    <- c.downField("tag_name").as[Git.TagName]
-          name       <- c.downField("name").as[Option[ReleaseName]]
-          body       <- c.downField("body").as[Option[Description]]
-          draft      <- c.downField("draft").as[Draft]
-          prerelease <- c.downField("prerelease").as[Prerelease]
-        } yield CreateRequestParams(tagName, name, body, draft, prerelease)
+          tagName              <- c.downField("tag_name").as[Git.TagName]
+          name                 <- c.downField("name").as[Option[ReleaseName]]
+          body                 <- c.downField("body").as[Option[Description]]
+          draft                <- c.downField("draft").as[Draft]
+          prerelease           <- c.downField("prerelease").as[Prerelease]
+          generateReleaseNotes <- c.downField("generate_release_notes").as[GenerateReleaseNotes]
+        } yield CreateRequestParams(tagName, name, body, draft, prerelease, generateReleaseNotes)
 
   }
 
@@ -113,6 +125,21 @@ object GitHubReleaseBase {
           draft      <- c.downField("draft").as[Option[Draft]]
           prerelease <- c.downField("prerelease").as[Option[Prerelease]]
         } yield UpdateRequestParams(tagName, releaseId, name, body, draft, prerelease)
+
+  }
+
+  final case class GenerateNotesRequestParams(
+    tagName: Git.TagName
+  )
+  object GenerateNotesRequestParams {
+    given encoder: Encoder[GenerateNotesRequestParams] =
+      requestParams =>
+        Json.obj(
+          "tag_name" -> requestParams.tagName.asJson
+        )
+
+    given decoder: Decoder[GenerateNotesRequestParams] =
+      _.downField("tag_name").as[Git.TagName].map(GenerateNotesRequestParams(_))
 
   }
 
@@ -207,6 +234,55 @@ object GitHubReleaseBase {
     implicit val encoder: Encoder[Prerelease] = a => Json.fromBoolean(Prerelease.toBoolean(a))
 
     implicit val decoder: Decoder[Prerelease] = _.as[Boolean].map(Prerelease.fromBoolean)
+
+  }
+
+  sealed trait GenerateReleaseNotes
+  object GenerateReleaseNotes {
+    case object Yes extends GenerateReleaseNotes
+    case object No extends GenerateReleaseNotes
+
+    def yes: GenerateReleaseNotes = Yes
+    def no: GenerateReleaseNotes  = No
+
+    def toBoolean(generateReleaseNotes: GenerateReleaseNotes): Boolean = generateReleaseNotes match {
+      case GenerateReleaseNotes.Yes =>
+        true
+      case GenerateReleaseNotes.No =>
+        false
+    }
+
+    def fromBoolean(generateReleaseNotes: Boolean): GenerateReleaseNotes =
+      if (generateReleaseNotes)
+        GenerateReleaseNotes.yes
+      else
+        GenerateReleaseNotes.no
+
+    implicit val encoder: Encoder[GenerateReleaseNotes] =
+      a => Json.fromBoolean(GenerateReleaseNotes.toBoolean(a))
+
+    implicit val decoder: Decoder[GenerateReleaseNotes] = _.as[Boolean].map(GenerateReleaseNotes.fromBoolean)
+
+  }
+
+  final case class GeneratedNotes(
+    name: ReleaseName,
+    body: Description,
+  )
+  object GeneratedNotes {
+    given encoder: Encoder[GeneratedNotes] =
+      generatedNotes =>
+        Json.obj(
+          "name" -> generatedNotes.name.asJson,
+          "body" -> generatedNotes.body.asJson,
+        )
+
+    given decoder: Decoder[GeneratedNotes] =
+      c =>
+        for {
+          name <- c.downField("name").as[ReleaseName]
+          body <- c.downField("body").as[Description]
+        } yield GeneratedNotes(name, body)
 
   }
 

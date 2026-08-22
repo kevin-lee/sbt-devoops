@@ -15,6 +15,9 @@ trait GitHubReleaseKeys extends CommonKeys {
   final type WhenGitTagExistsInRelease = GitHubReleaseKeys.WhenGitTagExistsInRelease
   final val WhenGitTagExistsInRelease = GitHubReleaseKeys.WhenGitTagExistsInRelease
 
+  final type ReleaseResult = GitHubReleaseKeys.ReleaseResult
+  final val ReleaseResult = GitHubReleaseKeys.ReleaseResult
+
   lazy val devOopsGitTagFrom: SettingKey[String] = settingKey[String]("The name of branch to tag from. (Default: main)")
 
   lazy val devOopsGitTagDescription: SettingKey[Option[String]] = settingKey[Option[String]](
@@ -91,6 +94,10 @@ trait GitHubReleaseKeys extends CommonKeys {
   lazy val devOopsGitHubReleaseUploadArtifacts: TaskKey[Unit] = taskKey[Unit](
     "Upload the packaged files to the GitHub release with the current version. The tag with the project version and the GitHub release of it should exist to run this task."
   )
+
+  lazy val devOopsReleaseFromTag: InputKey[Unit] = inputKey[Unit](
+    """Release from an existing Git tag using GitHub's own 'generate release notes' feature. It takes exactly one tag name (e.g. devOopsReleaseFromTag v1.2.3) and fails when it is missing. If the tag has no GitHub release yet, it creates one with the generated release notes. If the release already exists, it appends the generated release notes to the existing release note. It does not use the changelog and does not follow devOopsWhenGitHubReleaseExistsInRelease."""
+  )
 }
 
 object GitHubReleaseKeys {
@@ -126,6 +133,25 @@ object GitHubReleaseKeys {
       whenGitTagExistsInRelease match {
         case LogAndContinue => "LogAndContinue"
         case FailTagCreation => "FailTagCreation"
+      }
+  }
+
+  sealed trait ReleaseResult
+  object ReleaseResult {
+
+    case object ReleasedWithGeneratedReleaseNote extends ReleaseResult
+    case object GeneratedReleaseNoteAppended extends ReleaseResult
+    case object IgnoredDuplicateReleaseNote extends ReleaseResult
+
+    def releasedWithGeneratedReleaseNote: ReleaseResult = ReleasedWithGeneratedReleaseNote
+    def generatedReleaseNoteAppended: ReleaseResult     = GeneratedReleaseNoteAppended
+    def ignoredDuplicateReleaseNote: ReleaseResult      = IgnoredDuplicateReleaseNote
+
+    def render(releaseResult: ReleaseResult): String =
+      releaseResult match {
+        case ReleasedWithGeneratedReleaseNote => "ReleasedWithGeneratedReleaseNote"
+        case GeneratedReleaseNoteAppended => "GeneratedReleaseNoteAppended"
+        case IgnoredDuplicateReleaseNote => "IgnoredDuplicateReleaseNote"
       }
   }
 }

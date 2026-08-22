@@ -30,6 +30,9 @@ object GitHubError {
   final case class ReleaseNotFoundByTagName(
     tagName: TagName
   ) extends GitHubError
+  final case class GitTagNotFoundOnGitHub(
+    tagName: TagName
+  ) extends GitHubError
   final case class InvalidGitHubRepoUrl(repoUrl: RepoUrl) extends GitHubError
   final case class ChangelogNotFound(
     changelogLocation: String,
@@ -89,6 +92,9 @@ object GitHubError {
   def releaseNotFoundByTagName(tagName: TagName): GitHubError =
     ReleaseNotFoundByTagName(tagName)
 
+  def gitTagNotFoundOnGitHub(tagName: TagName): GitHubError =
+    GitTagNotFoundOnGitHub(tagName)
+
   def invalidGitHubRepoUrl(repoUrl: RepoUrl): GitHubError =
     InvalidGitHubRepoUrl(repoUrl)
 
@@ -143,10 +149,10 @@ object GitHubError {
     case GitHubError.NoCredential | GitHubError.InvalidCredential | GitHubError.MalformedURL(_, _) |
         GitHubError.ConnectionFailure(_) | GitHubError.GitHubServerError(_) | GitHubError.ReleaseAlreadyExists(_) |
         GitHubError.ReleaseCreationError(_) | GitHubError.ReleaseNotFoundByTagName(_) |
-        GitHubError.InvalidGitHubRepoUrl(_) | GitHubError.ChangelogNotFound(_, _) |
-        GitHubError.CausedByGitCommandError(_) | GitHubError.NoReleaseCreated | GitHubError.AbuseRateLimits(_, _) |
-        GitHubError.RateLimitExceeded(_, _, _, _, _) | GitHubError.ForbiddenRequest(_, _) |
-        GitHubError.UnprocessableEntity(_, _, None) | GitHubError.AuthFailure(_) |
+        GitHubError.GitTagNotFoundOnGitHub(_) | GitHubError.InvalidGitHubRepoUrl(_) |
+        GitHubError.ChangelogNotFound(_, _) | GitHubError.CausedByGitCommandError(_) | GitHubError.NoReleaseCreated |
+        GitHubError.AbuseRateLimits(_, _) | GitHubError.RateLimitExceeded(_, _, _, _, _) |
+        GitHubError.ForbiddenRequest(_, _) | GitHubError.UnprocessableEntity(_, _, None) | GitHubError.AuthFailure(_) |
         GitHubError.AssetUploadFailure(_, _) | GitHubError.UnexpectedFailure(_) =>
       false
   }
@@ -176,6 +182,12 @@ object GitHubError {
 
     case ReleaseNotFoundByTagName(tagName) =>
       s"Error] There is no GitHub release with the given tag, ${tagName.value}"
+
+    case GitTagNotFoundOnGitHub(tagName) =>
+      s"""Error] There is no Git tag, ${tagName.value}, on the GitHub repository.
+         |  The tag must exist on GitHub before releasing from it.
+         |  If it only exists locally, push it first. e.g.) git push origin ${tagName.value}
+         |""".stripMargin
 
     case InvalidGitHubRepoUrl(repoUrl) =>
       s"Error] Invalid GitHub repository URL: ${repoUrl.repoUrl}"
