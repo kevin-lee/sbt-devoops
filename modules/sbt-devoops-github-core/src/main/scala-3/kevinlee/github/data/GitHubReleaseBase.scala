@@ -291,14 +291,14 @@ object GitHubReleaseBase {
     url: Asset.Url,
     browserDownloadUrl: Asset.BrowserDownloadUrl,
     name: Asset.Name,
-    label: Asset.Label,
+    label: Option[Asset.Label],
     state: Asset.State,
     contentType: Asset.ContentType,
     size: Asset.Size,
     downloadCount: Asset.DownloadCount,
     createdAt: Asset.CreatedAt,
     updatedAt: Asset.UpdatedAt,
-    uploader: GitHub.User,
+    uploader: Option[GitHub.User],
   )
   object Asset {
     type Id = Id.Type
@@ -379,14 +379,14 @@ object GitHubReleaseBase {
           url                <- c.downField("url").as[Url]
           browserDownloadUrl <- c.downField("browser_download_url").as[BrowserDownloadUrl]
           name               <- c.downField("name").as[Name]
-          label              <- c.downField("label").as[Label]
+          label              <- c.downField("label").as[Option[Label]]
           state              <- c.downField("state").as[State]
           contentType        <- c.downField("content_type").as[ContentType]
           size               <- c.downField("size").as[Size]
           downloadCount      <- c.downField("download_count").as[DownloadCount]
           createdAt          <- c.downField("created_at").as[CreatedAt]
           updatedAt          <- c.downField("updated_at").as[UpdatedAt]
-          uploader           <- c.downField("uploader").as[GitHub.User]
+          uploader           <- c.downField("uploader").as[Option[GitHub.User]]
         } yield Asset(
           id,
           url,
@@ -412,8 +412,8 @@ object GitHubReleaseBase {
     uploadUrl: Response.UploadUrl,
     author: GitHub.User,
     tagName: Git.TagName,
-    name: ReleaseName,
-    body: Description,
+    name: Option[ReleaseName],
+    body: Option[Description],
     draft: Draft,
     prerelease: Prerelease,
     createdAt: Response.CreatedAt,
@@ -480,8 +480,8 @@ object GitHubReleaseBase {
           uploadUrl   <- c.downField("upload_url").as[UploadUrl]
           author      <- c.downField("author").as[GitHub.User]
           tagName     <- c.downField("tag_name").as[Git.TagName]
-          name        <- c.downField("name").as[ReleaseName]
-          body        <- c.downField("body").as[Description]
+          name        <- c.downField("name").as[Option[ReleaseName]]
+          body        <- c.downField("body").as[Option[Description]]
           draft       <- c.downField("draft").as[Draft]
           prerelease  <- c.downField("prerelease").as[Prerelease]
           createdAt   <- c.downField("created_at").as[Response.CreatedAt]
