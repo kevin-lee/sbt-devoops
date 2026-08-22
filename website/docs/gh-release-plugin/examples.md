@@ -109,11 +109,34 @@ jobs:
           devOopsGitHubRelease \
           devOopsGitHubReleaseUploadArtifacts
 
+    - name: sbt Append Generated Release Notes
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+      run: |
+        echo "Run] sbt append generated release notes"
+        echo 'sbt -J-Xmx2048m ++${{ matrix.scala.version }}! "devOopsReleaseFromTag ${{ github.ref_name }}"'
+        sbt -J-Xmx2048m \
+          ++${{ matrix.scala.version }}! \
+          "devOopsReleaseFromTag ${{ github.ref_name }}"
+
 ```
+
+The last step appends GitHub's
+[automatically generated release notes](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes)
+to the release note uploaded by `devOopsGitHubRelease`.
+Since the workflow is triggered by a tag push, `${{ github.ref_name }}` is the tag name.
+`devOopsReleaseFromTag` skips appending when the generated release notes are already there, so re-running the
+workflow does not duplicate them.
+For more details, see [devOopsReleaseFromTag](config-and-run.md#devoopsreleasefromtag).
 
 If you want to manually run it, you need run at least the following three tasks.
 ```bash
 sbt packagedArtifacts devOopsGitHubRelease devOopsGitHubReleaseUploadArtifacts
+```
+
+and then, to append the generated release notes,
+```bash
+sbt 'devOopsReleaseFromTag v0.1.0'
 ```
 
 ## A Project with Multiple Sub-projects
