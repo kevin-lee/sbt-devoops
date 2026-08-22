@@ -27,6 +27,9 @@ trait GitHubBase {
   type GitHubRepoWithAuth = GitHubBase.GitHubRepoWithAuth
   val GitHubRepoWithAuth = GitHubBase.GitHubRepoWithAuth
 
+  type GitRef = GitHubBase.GitRef
+  val GitRef = GitHubBase.GitRef
+
   type User = GitHubBase.User
   val User = GitHubBase.User
 }
@@ -140,6 +143,31 @@ object GitHubBase {
     implicit final class RepoOps(val repo: GitHubRepoWithAuth) extends AnyVal {
       def toRepoNameString: String = repo.gitHubRepo.toRepoNameString
     }
+
+  }
+
+  /** A Git reference returned by the GitHub API.
+    *
+    * Only `ref` is decoded because the only thing sbt-devoops needs from it is whether the reference exists.
+    */
+  final case class GitRef(
+    ref: GitRef.Ref
+  )
+  object GitRef {
+    @newtype final case class Ref(ref: String)
+    object Ref {
+      implicit val encoder: Encoder[Ref] = deriving
+      implicit val decoder: Decoder[Ref] = deriving
+    }
+
+    implicit val encoder: Encoder[GitRef] =
+      gitRef =>
+        Json.obj(
+          "ref" -> gitRef.ref.asJson
+        )
+
+    implicit val decoder: Decoder[GitRef] =
+      _.downField("ref").as[Ref].map(GitRef(_))
 
   }
 

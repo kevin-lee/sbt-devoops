@@ -41,6 +41,11 @@ trait GitHubApi[F[_]] {
     repo: GitHub.GitHubRepoWithAuth,
   ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
 
+  def findGitRefByTagName(
+    tagName: Git.TagName,
+    repo: GitHub.GitHubRepoWithAuth,
+  ): F[Either[GitHubError, Option[GitHub.GitRef]]]
+
   def createRelease(
     params: GitHubRelease.CreateRequestParams,
     repo: GitHub.GitHubRepoWithAuth,
@@ -50,6 +55,11 @@ trait GitHubApi[F[_]] {
     params: GitHubRelease.UpdateRequestParams,
     repo: GitHub.GitHubRepoWithAuth,
   ): F[Either[GitHubError, Option[GitHubRelease.Response]]]
+
+  def generateReleaseNotes(
+    params: GitHubRelease.GenerateNotesRequestParams,
+    repo: GitHub.GitHubRepoWithAuth,
+  ): F[Either[GitHubError, GitHubRelease.GeneratedNotes]]
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
   def uploadAssetToRelease(
@@ -159,6 +169,7 @@ object GitHubApi {
                                 GitHubRelease.Description(changelog.changelog).some,
                                 GitHubRelease.Draft.no,
                                 GitHubRelease.Prerelease.no,
+                                GitHubRelease.GenerateReleaseNotes.no,
                               ),
                               repo,
                             )
@@ -251,6 +262,28 @@ object GitHubApi {
         )
     }
 
+    override def findGitRefByTagName(
+      tagName: Git.TagName,
+      repo: GitHub.GitHubRepoWithAuth,
+    ): F[Either[GitHubError, Option[GitHub.GitRef]]] = {
+      val url         = s"$baseUrl/repos/${repo.toRepoNameString}/git/ref/tags/${tagName.value}"
+      val httpRequest = HttpRequest.withHeaders(
+        HttpRequest.Method.get,
+        HttpRequest.Uri(url),
+        defaultHeaders ++
+          repo
+            .accessToken
+            .toHeaderList,
+      )
+      httpClient
+        .request[Option[GitHub.GitRef]](httpRequest)
+        .map(
+          _.toOptionIfNotFound
+            .leftMap(GitHubError.fromHttpError)
+            .flatMap(res => res.asRight[GitHubError])
+        )
+    }
+
     override def createRelease(
       params: GitHubRelease.CreateRequestParams,
       repo: GitHub.GitHubRepoWithAuth,
@@ -297,6 +330,26 @@ object GitHubApi {
             .leftMap(GitHubError.fromHttpError)
             .flatMap(res => res.asRight[GitHubError])
         )
+    }
+
+    override def generateReleaseNotes(
+      params: GitHubRelease.GenerateNotesRequestParams,
+      repo: GitHub.GitHubRepoWithAuth,
+    ): F[Either[GitHubError, GitHubRelease.GeneratedNotes]] = {
+      val url         = s"$baseUrl/repos/${repo.toRepoNameString}/releases/generate-notes"
+      val httpRequest = HttpRequest
+        .withHeadersAndJsonBody[GitHubRelease.GenerateNotesRequestParams](
+          HttpRequest.Method.post,
+          HttpRequest.Uri(url),
+          defaultHeaders ++
+            repo
+              .accessToken
+              .toHeaderList,
+          params,
+        )
+      httpClient
+        .request[GitHubRelease.GeneratedNotes](httpRequest)
+        .map(_.leftMap(GitHubError.fromHttpError))
     }
 
     private def defaultHeaders: List[HttpRequest.Header] = List(

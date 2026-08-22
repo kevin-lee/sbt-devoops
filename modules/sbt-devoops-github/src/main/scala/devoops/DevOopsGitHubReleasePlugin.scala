@@ -293,7 +293,95 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
         .handleSbtTask(result)
         .unsafeRunSync()
     },
+    devOopsReleaseFromTag := {
+      /* `sbt.Def.parserToInput` (sbt 1) and the `sbt.Def.parsed` extension (sbt 2) both provide `.parsed`
+       * but under different names, so the whole `Def` namespace is imported to cover both.
+       */
+      import sbt.Def.*
+
+      val tagNameArgs = Def.spaceDelimited("<tag-name>").parsed
+
+      /* Not lazy so that a missing or extra tag name fails before any git or GitHub work is done. */
+      val tagName = TagName(
+        tagNameArgs match {
+          case Seq(tagNameArg) =>
+            tagNameArg
+          case _ =>
+            messageOnlyException(releaseFromTagUsageMessage(tagNameArgs))
+        }
+      )
+
+      lazy val authTokenEnvVar = devOopsGitHubAuthTokenEnvVar.value
+      lazy val authTokenFile   = devOopsGitHubAuthTokenFile.value
+      lazy val baseDir         = baseDirectory.value
+      lazy val requestTimeout  = devOopsGitHubRequestTimeout.value
+      lazy val pushRepo        = Repository(devOopsGitTagPushRepo.value)
+
+      implicit val devOopsLogLevelValue: DevOopsLogLevel = DevOopsLogLevel.fromStringUnsafe(devOopsLogLevel.value)
+
+      import effectie.instances.ce3.fx.ioFx
+
+      implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
+      implicit val log: CanLog                     = SbtLogger.sbtLoggerCanLog
+      val git                                      = Git[IO]
+      val sbtTask                                  = SbtTask[IO]
+
+      val result: IO[(SbtTaskHistory, Either[SbtTaskError, Unit])] = EmberClientBuilder
+        .default[IO]
+        .withIdleConnectionTime(requestTimeout)
+        .withTimeout(requestTimeout)
+        .build
+        .use { client =>
+          val r: SbtTask.Result[IO, Unit] =
+            for {
+              _     <- sbtTask.fromGitTask(git.fetchTags(baseDir))
+              tags  <- sbtTask.fromGitTask(git.getTag(baseDir))
+              _     <- sbtTask.toLeftWhen(
+                         !tags.contains(tagName.value),
+                         SbtTaskError.gitTaskError(
+                           s"tag ${tagName.value} does not exist. tags: ${tags.mkString("[", ",", "]")}"
+                         ),
+                       )
+              oauth <- sbtTask.eitherTWithWriter(
+                         effectOf[IO](
+                           getGitHubAuthToken(authTokenEnvVar, authTokenFile)
+                             .leftMap(SbtTaskError.gitHubTaskError)
+                         )
+                       )(_ => List(SbtTaskResult.gitHubTaskResult("Get GitHub OAuth token")))
+              _     <- sbtTask.handleGitHubTask(
+                         runReleaseFromTag(
+                           tagName,
+                           baseDir,
+                           pushRepo,
+                           oauth,
+                           GitHubApi[IO](HttpClient[IO](client)),
+                         )
+                       )
+            } yield ()
+          r.value.run
+        }
+      sbtTask
+        .handleSbtTask(result)
+        .unsafeRunSync()
+    },
   )
+
+  private def releaseFromTagUsageMessage(args: Seq[String]): String = {
+    val given0 =
+      if (args.isEmpty)
+        "no argument was given"
+      else
+        args.mkString("the given arguments were [", ", ", "]")
+
+    s"""|  devOopsReleaseFromTag requires exactly one Git tag name but $given0.
+        |
+        |  Usage:
+        |  devOopsReleaseFromTag <tag-name>
+        |
+        |  e.g.)
+        |  devOopsReleaseFromTag v1.2.3
+        |""".stripMargin
+  }
 
   private def getTagVersion[F[_]: Fx: Monad](
     basePath: File,
@@ -471,6 +559,157 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       _                           <- logGitHubReleaseSummary(tagName, gitHubReleaseAndUpdateState)
     } yield gitHubReleaseAndUpdateState._1
 
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitParameter"))
+  private def runReleaseFromTag[F[_]: Fx: CanCatch: Monad: Temporal](
+    tagName: TagName,
+    baseDir: File,
+    gitTagPushRepo: Repository,
+    oAuthToken: GitHub.OAuthToken,
+    gitHubApi: GitHubApi[F],
+  ): GitHubTask.GitHubTaskResult[F, ReleaseResult] =
+    for {
+      url  <- GitHubTask[F].fromGitTask(
+                Git[F].getRemoteUrl(gitTagPushRepo, baseDir)
+              )
+      repo <-
+        SbtTask[F].eitherTWithWriter(
+          effectOf(getRepoFromUrl(url))
+        )(r => List(s"Get GitHub repo org and name: ${r.toRepoNameString}"))
+
+      repoWithAuth = GitHub.GitHubRepoWithAuth(
+                       GitHub.Repo(
+                         GitHub.Repo.Org(repo.org.org),
+                         GitHub.Repo.Name(repo.name.name),
+                       ),
+                       GitHub.GitHubRepoWithAuth.AccessToken(oAuthToken.token).some,
+                     )
+
+      _ <- liftEffectToGitHubTask(
+             GitHubApi.githubWithAbuseRateLimit[F]()
+           )
+
+      maybeGitRef <-
+        SbtTask[F].eitherTWithWriter(
+          gitHubApi.findGitRefByTagName(tagName, repoWithAuth)
+        )(_ => List(s"Try to find the Git tag on GitHub: ${tagName.value}"))
+      _           <- GitHubTask[F].toLeftIfNone(
+                       maybeGitRef,
+                       GitHubError.gitTagNotFoundOnGitHub(tagName),
+                     )
+
+      maybeRelease <-
+        SbtTask[F].eitherTWithWriter(
+          gitHubApi.findReleaseByTagName(tagName, repoWithAuth)
+        )(_ => List(s"Try to find a GitHub release with the given tag: ${tagName.value}"))
+
+      releaseResult <- maybeRelease.fold(
+                         releaseFromTagWithGeneratedReleaseNote(tagName, repoWithAuth, gitHubApi)
+                       )(release => appendGeneratedReleaseNote(tagName, release, repoWithAuth, gitHubApi))
+
+      _ <- logGitHubReleaseStep(s"Release result: ${ReleaseResult.render(releaseResult)}")
+    } yield releaseResult
+
+  private def releaseFromTagWithGeneratedReleaseNote[F[_]: Fx: Monad](
+    tagName: TagName,
+    repoWithAuth: GitHub.GitHubRepoWithAuth,
+    gitHubApi: GitHubApi[F],
+  ): GitHubTask.GitHubTaskResult[F, ReleaseResult] = {
+    /* Neither name nor body is sent so that GitHub generates both.
+     * A body, if given, would be pre-pended to the generated release notes instead of replaced by them.
+     */
+    val createParams = GitHubRelease.CreateRequestParams(
+      tagName,
+      none[GitHubRelease.ReleaseName],
+      none[GitHubRelease.Description],
+      GitHubRelease.Draft.no,
+      GitHubRelease.Prerelease.no,
+      GitHubRelease.GenerateReleaseNotes.yes,
+    )
+
+    for {
+      _            <- logGitHubReleaseStep(
+                        s"No GitHub release found for tag: ${tagName.value}. " +
+                          "Try to create a release from the tag with the generated release notes."
+                      )
+      maybeCreated <-
+        SbtTask[F].eitherTWithWriter(
+          gitHubApi.createRelease(createParams, repoWithAuth)
+        )(_ => List.empty[String])
+      created      <- GitHubTask[F].toLeftIfNone(
+                        maybeCreated,
+                        GitHubError.noReleaseCreated,
+                      )
+      _            <- logGitHubReleaseSteps(
+                        List[String](
+                          s"GitHub release created from tag: ${created.tagName.value} (release id: ${created.id.id})",
+                          created
+                            .body
+                            .description
+                            .split("\n")
+                            .mkString("Generated release note:\n    ", "\n    ", "\n"),
+                        )
+                      )
+    } yield ReleaseResult.releasedWithGeneratedReleaseNote
+  }
+
+  private def appendGeneratedReleaseNote[F[_]: Fx: Monad](
+    tagName: TagName,
+    release: GitHubRelease.Response,
+    repoWithAuth: GitHub.GitHubRepoWithAuth,
+    gitHubApi: GitHubApi[F],
+  ): GitHubTask.GitHubTaskResult[F, ReleaseResult] =
+    for {
+      _         <- logGitHubReleaseStep(
+                     s"GitHub release already exists for tag: ${tagName.value} (release id: ${release.id.id}). " +
+                       "Try to generate the release notes."
+                   )
+      generated <-
+        SbtTask[F].eitherTWithWriter(
+          gitHubApi.generateReleaseNotes(GitHubRelease.GenerateNotesRequestParams(tagName), repoWithAuth)
+        )(_ => List(s"Generate release notes for tag: ${tagName.value}"))
+
+      releaseResult <-
+        GitHubRelease.appendGeneratedReleaseNote(release.body, generated.body) match {
+          case None =>
+            for {
+              _ <- logGitHubReleaseStep(
+                     s"The generated release note is already in the release note of ${tagName.value}. " +
+                       "Skip appending it."
+                   )
+            } yield ReleaseResult.ignoredDuplicateReleaseNote
+
+          case Some(newReleaseNote) =>
+            val updateParams = GitHubRelease.UpdateRequestParams(
+              tagName,
+              GitHubRelease.ReleaseId(release.id.id),
+              none[GitHubRelease.ReleaseName],
+              newReleaseNote.some,
+              none[GitHubRelease.Draft],
+              none[GitHubRelease.Prerelease],
+            )
+            for {
+              maybeUpdated <-
+                SbtTask[F].eitherTWithWriter(
+                  gitHubApi.updateRelease(updateParams, repoWithAuth)
+                )(_ => List.empty[String])
+              updated      <- GitHubTask[F].toLeftIfNone(
+                                maybeUpdated,
+                                GitHubError.releaseNotFoundByTagName(tagName),
+                              )
+              _            <- logGitHubReleaseSteps(
+                                List[String](
+                                  s"GitHub release note updated: ${updated.tagName.value} (release id: ${updated.id.id})",
+                                  generated
+                                    .body
+                                    .description
+                                    .split("\n")
+                                    .mkString("Generated release note appended:\n    ", "\n    ", "\n"),
+                                )
+                              )
+            } yield ReleaseResult.generatedReleaseNoteAppended
+        }
+    } yield releaseResult
+
   private def createOrUpdateGitHubRelease[F[_]: Fx: Monad](
     tagName: TagName,
     changelog: GitHub.Changelog,
@@ -486,6 +725,7 @@ object DevOopsGitHubReleasePlugin extends AutoPlugin {
       changelogDescription,
       GitHubRelease.Draft.no,
       GitHubRelease.Prerelease.no,
+      GitHubRelease.GenerateReleaseNotes.no,
     )
 
     for {
