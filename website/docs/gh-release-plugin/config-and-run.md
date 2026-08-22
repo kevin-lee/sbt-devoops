@@ -424,3 +424,123 @@ task success>
 
 [success] Total time: 16 s, completed 17 Feb. 2021, 7:21:18 pm
 ```
+
+### `devOopsReleaseFromTag`
+*Available since `3.8.0`*
+
+This is an sbt **input task** to release from an existing Git tag using GitHub's own
+[generate release notes](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes)
+feature.
+
+Unlike the other release tasks, it does not use the project version, does not read any changelog file
+(`devOopsChangelogLocation`) and does not follow `devOopsWhenGitHubReleaseExistsInRelease`.
+The release note is whatever GitHub generates.
+
+It takes **exactly one** tag name and fails when the tag name is missing.
+
+```sbtshell
+devOopsReleaseFromTag <tag-name>
+```
+
+e.g.)
+```bash
+sbt 'devOopsReleaseFromTag v1.2.3'
+```
+
+It does
+* Check that the tag exists locally (`git fetch --tags` then `git tag`). If not, the task fails.
+* Check that the tag exists on the GitHub repository. If not, the task fails.
+
+  **NOTE: This check matters. When the tag does not exist on GitHub, GitHub's create release API creates a new tag
+  on the default branch instead of failing, so a tag that has not been pushed yet would be released from the wrong
+  commit.**
+* If there is no GitHub release for the tag, create one with the generated release notes.
+  GitHub also generates the release name.
+* If the GitHub release for the tag already exists, generate the release notes and append them to the existing
+  release note after a `***` separator.
+
+  ```
+  EXISTING RELEASE NOTE
+  ***
+  GENERATED RELEASE NOTE
+  ```
+
+  If the existing release note is empty, the generated release notes become the whole release note without
+  the separator.
+* If the existing release note already contains the generated release notes, nothing is updated so that the same
+  release notes are not appended twice. It is safe to run `devOopsReleaseFromTag` more than once for the same tag.
+
+The result is one of
+
+| `ReleaseResult`                    | Meaning                                                                     |
+|:-----------------------------------|:----------------------------------------------------------------------------|
+| `ReleasedWithGeneratedReleaseNote` | There was no release for the tag, so it was created with the generated release notes. |
+| `GeneratedReleaseNoteAppended`     | The release already existed, and the generated release notes were appended.  |
+| `IgnoredDuplicateReleaseNote`      | The generated release notes were already in the release note, so nothing changed. |
+
+e.g.) `devOopsReleaseFromTag` when there is no GitHub release for the tag yet
+```sbtshell
+sbt:test-project> devOopsReleaseFromTag v0.1.1
+task success>
+>> git fetch --tags
+>> git tag
+  |  v0.1.0
+  |  v0.1.1
+>> task success>
+>> Get GitHub OAuth token
+
+>> task success>
+>> git remote get-url origin => git@github.com:Kevin-Lee/test-project.git
+
+>> task success>
+>> Get GitHub repo org and name: Kevin-Lee/test-project
+
+>> task success>
+>> Try to find the Git tag on GitHub: v0.1.1
+
+>> task success>
+>> Try to find a GitHub release with the given tag: v0.1.1
+
+>> task success>
+>> No GitHub release found for tag: v0.1.1. Try to create a release from the tag with the generated release notes.
+
+>> task success>
+>> GitHub release created from tag: v0.1.1 (release id: 12345678)
+
+>> task success>
+>> Generated release note:
+    ## What's Changed
+    * Add something new by @Kevin-Lee in https://github.com/Kevin-Lee/test-project/pull/2
+
+    **Full Changelog**: https://github.com/Kevin-Lee/test-project/compare/v0.1.0...v0.1.1
+
+>> task success>
+>> Release result: ReleasedWithGeneratedReleaseNote
+
+[success] Total time: 5 s, completed 22 Aug. 2026, 9:30:11 pm
+```
+
+e.g.) When the tag does not exist on GitHub
+```sbtshell
+sbt:test-project> devOopsReleaseFromTag v0.1.1
+[error] Failure]
+[error] >> sbt task failed after finishing the following tasks
+[error] ...
+[error] ---
+[error] >> Failed:
+[error] Error] There is no Git tag, v0.1.1, on the GitHub repository.
+[error]   The tag must exist on GitHub before releasing from it.
+[error]   If it only exists locally, push it first. e.g.) git push origin v0.1.1
+```
+
+e.g.) When no tag name is given
+```sbtshell
+sbt:test-project> devOopsReleaseFromTag
+[error]   devOopsReleaseFromTag requires exactly one Git tag name but no argument was given.
+[error]
+[error]   Usage:
+[error]   devOopsReleaseFromTag <tag-name>
+[error]
+[error]   e.g.)
+[error]   devOopsReleaseFromTag v1.2.3
+```
