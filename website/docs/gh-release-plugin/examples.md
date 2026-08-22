@@ -3,7 +3,6 @@ id: examples
 title: DevOopsGitHubReleasePlugin Examples
 sidebar_label: Examples
 ---
-import useBaseUrl from '@docusaurus/useBaseUrl';
 
 ## With GitHub Actions
 
@@ -41,19 +40,23 @@ If the project version in `build.sbt` is `0.1.0`,
 
 
 ### GitHub Actions Config
-Before setting up GitHub Actions, make sure you have a GitHub 
-[personal access token](https://github.com/settings/tokens) 
-with at least the `publis_repo` scope.  
-- [X] `public_repo     Access public repositories`
-  <img alt="Person Access Token Scope" src={useBaseUrl('img/github-personal-access-token.png')} />
-
-and add the access token to the project's `Secrets`.
+GitHub Actions provides a built-in `GITHUB_TOKEN`, so no personal access token is required.
+You only need to allow the workflow to write to the repository.
 
 e.g.)
-* Go to https://github.com/YOUR_USERNAME/YOUR_PROJECT/settings/secrets
-* Click the `New secret` button
-* In the `Name`, put the access token name you want (e.g. `RELEASE_GITHUB_TOKEN`)
-* Add the token to the `Value`.
+* Go to `https://github.com/YOUR_USERNAME/YOUR_PROJECT/settings/actions`
+* Under `Workflow permissions`, select `Read and write permissions`
+* Click the `Save` button
+
+Alternatively, you can grant the permission per workflow (or per job) with the `permissions` key
+instead of changing the repository settings.
+```yaml
+permissions:
+  contents: write
+```
+
+Then pass `${{ secrets.GITHUB_TOKEN }}` to the `GITHUB_TOKEN` environment variable in the steps
+running the release tasks.
 
 To release whenever tag is created and pushed to the remote repo, 
 add the GitHub Actions config yaml file like the following one to 
@@ -97,7 +100,7 @@ jobs:
 
     - name: sbt GitHub Release
       env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "Run] sbt GitHub release"
         echo 'sbt -J-Xmx2048m ++${{ matrix.scala.version }}! clean test packagedArtifacts'
@@ -111,14 +114,15 @@ jobs:
 
     - name: sbt Append Generated Release Notes
       env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TAG_NAME: ${{ github.ref_name }}
       run: |
         echo "Run] sbt append generated release notes"
-        echo 'sbt -J-Xmx2048m ++${{ matrix.scala.version }}! "devOopsReleaseFromTag ${{ github.ref_name }}"'
-        sbt -J-Xmx2048m \
+        echo 'sbt -J-Xmx2048m ++${{ matrix.scala.version }}! "devOopsReleaseFromTag ${TAG_NAME}"'
+        sbt \
+          -J-Xmx2048m \
           ++${{ matrix.scala.version }}! \
-          "devOopsReleaseFromTag ${{ github.ref_name }}"
-
+          "devOopsReleaseFromTag ${TAG_NAME}"
 ```
 
 The last step appends GitHub's
@@ -129,7 +133,20 @@ Since the workflow is triggered by a tag push, `${{ github.ref_name }}` is the t
 workflow does not duplicate them.
 For more details, see [devOopsReleaseFromTag](config-and-run.md#devoopsreleasefromtag).
 
-If you want to manually run it, you need run at least the following three tasks.
+If you want to manually run it, note that `secrets.GITHUB_TOKEN` exists only inside GitHub Actions,
+so a local run still needs your own
+[personal access token](https://github.com/settings/tokens)
+with at least the `public_repo` scope (`repo` for a private repository).
+Make it available in one of the following ways.
+* Set it to the `GITHUB_TOKEN` environment variable
+  (the name is configurable with [devOopsGitHubAuthTokenEnvVar](config-and-run.md#devoopsgithubauthtokenenvvar)).
+  ```bash
+  export GITHUB_TOKEN=YOUR_PERSONAL_ACCESS_TOKEN
+  ```
+* Or put it in `$USER_HOME/.github` as `oauth=YOUR_PERSONAL_ACCESS_TOKEN`
+  (the path is configurable with [devOopsGitHubAuthTokenFile](config-and-run.md#devoopsgithubauthtokenfile)).
+
+Then you need to run at least the following three tasks.
 ```bash
 sbt packagedArtifacts devOopsGitHubRelease devOopsGitHubReleaseUploadArtifacts
 ```
