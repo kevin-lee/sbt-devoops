@@ -2,6 +2,9 @@ name: Build All
 
 on: [push]
 
+permissions:
+  contents: read
+
 env:
   GH_JAVA_DISTRIBUTION: "temurin"
   GH_JAVA_OPTS: "-Xss64m -Xms1024m -Xmx8G -XX:MaxMetaspaceSize=2G -XX:MaxInlineLevel=18"
