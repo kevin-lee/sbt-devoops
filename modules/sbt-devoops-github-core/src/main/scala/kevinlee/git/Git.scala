@@ -256,9 +256,12 @@ object Git extends GitBase {
           /* The history entry for this command. Only a successful command is recorded. */
           val w: CmdHistory =
             eth match {
-              case Left(error @ _) =>
+              case Left(_: GitCommandError) =>
+                /* No point recording the error here because it will stop further command execution,
+                 * so it's automatically known that the last command is the failed
+                 */
                 List.empty[GitCmdAndResult]
-              case Right((cmdResult, a @ _)) =>
+              case Right((cmdResult, _)) =>
                 List(GitCmdAndResult(gitCmd, cmdResult))
             }
 
