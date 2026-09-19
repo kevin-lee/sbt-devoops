@@ -118,7 +118,10 @@ object SbtTask {
       EitherT[Writer[W, *], A, B] {
         val w =
           r match {
-            case Left(a @ _) =>
+            case Left(_) =>
+              /* The value in Left is ignored because only the result of a successful task is written.
+               * The error is not lost as the Left itself is still returned as `r`.
+               */
               Monoid[W].empty
 
             case Right(b) =>
@@ -134,7 +137,10 @@ object SbtTask {
         val wf: F[(W, Either[A, B])] = r.map { eth =>
           val w =
             eth match {
-              case Left(a @ _) =>
+              case Left(_) =>
+                /* The value in Left is ignored because only the result of a successful task is written.
+                 * The error is not lost as the Left itself is still returned as `eth`.
+                 */
                 Monoid[W].empty
 
               case Right(b) =>
