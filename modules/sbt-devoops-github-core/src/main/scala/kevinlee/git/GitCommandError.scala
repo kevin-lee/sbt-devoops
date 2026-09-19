@@ -8,16 +8,16 @@ sealed trait GitCommandError
 object GitCommandError {
   // $COVERAGE-OFF$
 
-  final case class GenericGotCommandResultError(gitCmd: GitCmd, code: Int, errors: List[String]) extends GitCommandError
+  final case class GenericGitCommandResultError(gitCmd: GitCmd, code: Int, errors: List[String]) extends GitCommandError
 
-  def genericGotCommandResultError(gitCmd: GitCmd, code: Int, errors: List[String]): GitCommandError =
-    GenericGotCommandResultError(gitCmd, code, errors)
+  def genericGitCommandResultError(gitCmd: GitCmd, code: Int, errors: List[String]): GitCommandError =
+    GenericGitCommandResultError(gitCmd, code, errors)
 
   private def renderCodeAndError(gitCmd: GitCmd, code: Int, errors: List[String]): String =
     s"[cmd: ${GitCmd.render(gitCmd)}], [code: $code], [errors: ${errors.mkString("\n  ")}]"
 
   def render(gitError: GitCommandError): String = gitError match {
-    case GenericGotCommandResultError(gitCmd, code, errors) =>
+    case GenericGitCommandResultError(gitCmd, code, errors) =>
       renderCodeAndError(gitCmd, code, errors)
   }
 

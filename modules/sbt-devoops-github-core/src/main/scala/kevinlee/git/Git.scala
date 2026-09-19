@@ -38,9 +38,6 @@ trait Git[F[_]] {
     *     output into the value the caller actually wants.
     *   - [[ProcessResult.Failure]] becomes `Left(errorHandler(gitCmd, exitCode, errors))`.
     *
-    * It is typed as a `PartialFunction` because [[ProcessResult.toEither]] takes one, but it covers both cases of
-    * [[ProcessResult]], so it is total in practice.
-    *
     * @param gitCmd the command that was run. It is only used to build the error.
     * @param successHandler parses the output lines (stdout followed by stderr, see [[ProcessResult.processResult]])
     * @param errorHandler builds the error from the command, exit code and stderr lines
@@ -49,7 +46,7 @@ trait Git[F[_]] {
     gitCmd: GitCmd,
     successHandler: List[String] => A,
     errorHandler: (GitCmd, Int, List[String]) => GitCommandError,
-  ): PartialFunction[ProcessResult, Either[GitCommandError, (GitCommandResult, A)]]
+  ): ProcessResult => Either[GitCommandError, (GitCommandResult, A)]
 
   /** Runs `git` with the given command and arguments in `baseDir`, and blocks until it finishes.
     *
@@ -79,7 +76,7 @@ trait Git[F[_]] {
     e: (GitCmd, Int, List[String]) => GitCommandError,
   ): F[Either[GitCommandError, (GitCommandResult, A)]]
 
-  /** Same as [[gitCmd]] but uses [[GitCommandError.genericGotCommandResultError]] as the error handler. */
+  /** Same as [[gitCmd]] but uses [[GitCommandError.genericGitCommandResultError]] as the error handler. */
   def gitCmdSimple[A](
     baseDir: File,
     cmd: GitCmd,
@@ -183,7 +180,7 @@ object Git extends GitBase {
       gitCmd: GitCmd,
       successHandler: List[String] => A,
       errorHandler: (GitCmd, Int, List[String]) => GitCommandError,
-    ): PartialFunction[ProcessResult, Either[GitCommandError, (GitCommandResult, A)]] = {
+    ): ProcessResult => Either[GitCommandError, (GitCommandResult, A)] = {
       case ProcessResult.Success(outputs) =>
         /* Keep the raw output as GitCommandResult for the history, and also the parsed value. */
         (GitCommandResult.genericResult(outputs), successHandler(outputs)).asRight
@@ -230,7 +227,7 @@ object Git extends GitBase {
         baseDir,
         cmd,
         resultHandler,
-        GitCommandError.genericGotCommandResultError,
+        GitCommandError.genericGitCommandResultError,
       )
 
     override def gitCmdSimpleWithWriter[A](
@@ -304,7 +301,7 @@ object Git extends GitBase {
         identity,
       )
 
-    def getTag(baseDir: File): CmdResult[F, List[String]] =
+    override def getTag(baseDir: File): CmdResult[F, List[String]] =
       gitCmdSimpleWithWriter(
         baseDir,
         GitCmd.getTag,
