@@ -89,6 +89,9 @@ jobs:
 
       - name: "Scripted for ${{ matrix.scala.name }} (${{ matrix.scala.sbt-series }}) on Java ${{ matrix.scala.java-version }}"
         env:
+          # starterWriteDefaultScalafmtConf calls the GitHub API. Authenticated requests avoid the low rate limit
+          # for unauthenticated requests, which is shared by all the jobs running on the same runner IP address.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JAVA_OPTS: ${{ env.GH_JAVA_OPTS }}
           JVM_OPTS: ${{ env.GH_JAVA_OPTS }}
           SBT_OPTS: ${{ env.GH_JAVA_OPTS }}

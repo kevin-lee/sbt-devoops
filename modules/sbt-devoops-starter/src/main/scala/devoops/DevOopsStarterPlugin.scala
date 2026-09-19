@@ -4,6 +4,7 @@ import org.scalafmt.sbt.ScalafmtPlugin
 import sbt.Keys.*
 import sbt.{none as _, some as _, *}
 import Def.Setting
+import cats.Monad
 import cats.effect.{Async, IO}
 import cats.syntax.all.*
 import devoops.data.{CommonKeys, DevOopsLogLevel}
@@ -22,6 +23,7 @@ import kevinlee.http.HttpClient
 import kevinlee.sbt.SbtCommon.*
 
 import loggerf.core.Log as LogF
+import loggerf.core.syntax.all.*
 import loggerf.logger.{CanLog, SbtLogger}
 import org.http4s.ember.client.EmberClientBuilder
 import sbt.IO as SbtIO
@@ -128,7 +130,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
       val outFile        = baseDirFile / ".scalafmt.conf"
 
       implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
-      implicit val log: CanLog                  = SbtLogger.sbtLoggerCanLog
+      implicit val log: CanLog                     = SbtLogger.sbtLoggerCanLog
       import cats.effect.unsafe.implicits.global
 
       if (outFile.exists()) {
@@ -138,7 +140,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
                |""".stripMargin
         )
       } else {
-        writeDefaultScalafmtConf[IO](dialectVersion, outFile)
+        writeDefaultScalafmtConf[IO](dialectVersion, outFile, findGitHubAccessToken(sys.env))
           .unsafeRunSync() match {
           case Left(err) => messageOnlyException(err.render)
           case Right(_) => log.info(s"The default ${outFile.getName.blue} file has been written.")
@@ -154,7 +156,7 @@ object DevOopsStarterPlugin extends AutoPlugin {
       val baseDirFile    = (ThisBuild / baseDirectory).value
 
       implicit val sbtLoggerValue: sbt.util.Logger = streams.value.log
-      implicit val log: CanLog                  = SbtLogger.sbtLoggerCanLog
+      implicit val log: CanLog                     = SbtLogger.sbtLoggerCanLog
       import cats.effect.unsafe.implicits.global
 
       if (crossScalaVers.exists(_.startsWith("2.")) && crossScalaVers.exists(_.startsWith("3."))) {
@@ -209,7 +211,49 @@ object DevOopsStarterPlugin extends AutoPlugin {
     },
   )
 
-  def writeDefaultScalafmtConf[F[_]: Fx: LogF: Async: Network: Files](dialectVersion: String, outFile: File)(
+  /** The environment variable for the GitHub access token used to get the latest scalafmt version.
+    * Without it, the GitHub API requests are unauthenticated and have a much lower rate limit.
+    */
+  val GitHubTokenEnvVar: String = "GITHUB_TOKEN"
+
+  /** The scalafmt version used when the latest one cannot be found on GitHub. */
+  val DefaultScalafmtVersion: String = "3.11.5"
+
+  private val ScalafmtRepo: GitHub.Repo = GitHub.Repo(GitHub.Repo.Org("scalameta"), GitHub.Repo.Name("scalafmt"))
+
+  def findGitHubAccessToken(env: Map[String, String]): Option[GitHub.GitHubRepoWithAuth.AccessToken] =
+    env
+      .get(GitHubTokenEnvVar)
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .map(GitHub.GitHubRepoWithAuth.AccessToken(_))
+
+  /** Gets the latest scalafmt version from the tags of the scalafmt GitHub repository.
+    * If it fails (e.g. due to the GitHub API rate limit), it logs a warning and returns [[DefaultScalafmtVersion]]
+    * because a failure to get the latest version should not stop writing the default `.scalafmt.conf`.
+    */
+  def findLatestScalafmtVersion[F[_]: Monad: LogF](
+    gitHubApi: GitHubApi[F],
+    maybeAccessToken: Option[GitHub.GitHubRepoWithAuth.AccessToken],
+  )(implicit LV: DevOopsLogLevel): F[String] =
+    gitHubApi
+      .getTags(GitHub.GitHubRepoWithAuth(ScalafmtRepo, maybeAccessToken))
+      .flatMap {
+        case Right(tags) =>
+          tags.headOption.fold(DefaultScalafmtVersion)(_.name.name.stripPrefix("v")).pure[F]
+
+        case Left(err) =>
+          raw"""Failed to get the latest scalafmt version from GitHub so the default version $DefaultScalafmtVersion is used instead.
+               |${StarterError.gitHub("getting the tags", err).render}
+               |If it is due to the GitHub API rate limit, set the $GitHubTokenEnvVar environment variable to send authenticated requests.
+               |""".stripMargin.logS_(warn) *> DefaultScalafmtVersion.pure[F]
+      }
+
+  def writeDefaultScalafmtConf[F[_]: Fx: LogF: Async: Network: Files](
+    dialectVersion: String,
+    outFile: File,
+    maybeAccessToken: Option[GitHub.GitHubRepoWithAuth.AccessToken],
+  )(
     implicit LV: DevOopsLogLevel
   ): F[Either[StarterError, Unit]] =
     EmberClientBuilder
@@ -217,44 +261,35 @@ object DevOopsStarterPlugin extends AutoPlugin {
       .build
       .use { client =>
         (for {
-          gitHubApi <- GitHubApi[F](HttpClient[F](client)).rightTF
-          tags      <- gitHubApi
-                         .getTags(
-                           GitHub.GitHubRepoWithAuth(
-                             GitHub.Repo(GitHub.Repo.Org("scalameta"), GitHub.Repo.Name("scalafmt")),
-                             none
-                           )
-                         )
-                         .t
-                         .leftMap(StarterError.gitHub("getting the tags", _))
-          theLatestScalafmtVersion = tags.headOption.fold("3.5.4")(_.name.name.stripPrefix("v"))
-          scalafmtConfTemplate <- effectOf[F](
-                                    SbtIO.readStream(
-                                      this.getClass.getResourceAsStream("/scalafmt/default-scalafmt.conf.template"),
-                                      StandardCharsets.UTF_8
-                                    )
-                                  ).catchNonFatal {
-                                    case err =>
-                                      StarterError.resourceReadWrite(
-                                        s"reading the default .scalafmt.conf template file at resources/scalafmt/default-scalafmt.conf.template",
-                                        err.toString
-                                      )
+          gitHubApi                <- GitHubApi[F](HttpClient[F](client)).rightTF
+          theLatestScalafmtVersion <- findLatestScalafmtVersion[F](gitHubApi, maybeAccessToken).rightT[StarterError]
+          scalafmtConfTemplate     <- effectOf[F](
+                                        SbtIO.readStream(
+                                          this.getClass.getResourceAsStream("/scalafmt/default-scalafmt.conf.template"),
+                                          StandardCharsets.UTF_8
+                                        )
+                                      ).catchNonFatal {
+                                        case err =>
+                                          StarterError.resourceReadWrite(
+                                            s"reading the default .scalafmt.conf template file at resources/scalafmt/default-scalafmt.conf.template",
+                                            err.toString
+                                          )
 
-                                  }.t
-          scalafmtConf         <- pureOrError[F](
-                                    scalafmtConfTemplate
-                                      .replace("%SCALAFMT_VERSION%", theLatestScalafmtVersion)
-                                      .replace("%DIALECT_VERSION%", dialectVersion)
-                                  ).rightT[StarterError]
-          _                    <- effectOf[F](
-                                    SbtIO.write(outFile, scalafmtConf, StandardCharsets.UTF_8)
-                                  ).catchNonFatal {
-                                    case err =>
-                                      StarterError.resourceReadWrite(
-                                        s"writing the default .scalafmt.conf to ${outFile.toString}",
-                                        err.toString
-                                      )
-                                  }.t
+                                      }.t
+          scalafmtConf             <- pureOrError[F](
+                                        scalafmtConfTemplate
+                                          .replace("%SCALAFMT_VERSION%", theLatestScalafmtVersion)
+                                          .replace("%DIALECT_VERSION%", dialectVersion)
+                                      ).rightT[StarterError]
+          _                        <- effectOf[F](
+                                        SbtIO.write(outFile, scalafmtConf, StandardCharsets.UTF_8)
+                                      ).catchNonFatal {
+                                        case err =>
+                                          StarterError.resourceReadWrite(
+                                            s"writing the default .scalafmt.conf to ${outFile.toString}",
+                                            err.toString
+                                          )
+                                      }.t
         } yield ()).value
       }
 
