@@ -5,6 +5,9 @@ on:
     branches:
       - "**"
 
+permissions:
+  contents: read
+
 env:
   GH_JAVA_VERSION: "11"
   GH_SCALA_BINARY_VERSION: "2.12"

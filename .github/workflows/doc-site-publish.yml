@@ -3,6 +3,9 @@ name: "[Doc][M] Publish"
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   GH_JAVA_VERSION: "11"
   GH_SCALA_BINARY_VERSION: "2.12"
@@ -12,6 +15,10 @@ env:
 jobs:
   build_and_publish_doc_site:
     if: github.ref != 'refs/heads/gh-pages' && github.ref != 'gh-pages'
+
+    # gitHubPagesCreateGitHubPagesBranchIfNotExist and publishToGitHubPages write to the gh-pages branch using GITHUB_TOKEN.
+    permissions:
+      contents: write
 
     runs-on: ubuntu-latest
 
