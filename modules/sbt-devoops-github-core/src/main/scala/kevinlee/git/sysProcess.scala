@@ -64,7 +64,7 @@ object ProcessResult {
     }
 
   def toEither[A, B](processResult: ProcessResult)(
-    resultToEither: PartialFunction[ProcessResult, Either[A, B]]
+    resultToEither: ProcessResult => Either[A, B]
   ): Either[A, B] =
     resultToEither(processResult)
 }
