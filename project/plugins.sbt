@@ -2,7 +2,7 @@ logLevel := sbt.Level.Warn
 
 addSbtPlugin("com.eed3si9n" % "sbt-salad-days" % "0.2.0")
 
-addSbtPlugin("com.github.sbt"   % "sbt-ci-release"            % "1.11.2")
+addSbtPlugin("com.github.sbt"   % "sbt-ci-release"            % "1.12.1")
 addSbtPlugin("org.scoverage"    % "sbt-scoverage"             % "2.4.4")
 addSbtPlugin("org.scoverage"    % "sbt-coveralls"             % "1.3.15")
 addSbtPlugin("org.lyranthe.sbt" % "partial-unification"       % "1.1.2")
@@ -11,9 +11,9 @@ addSbtPlugin("com.github.cb372" % "sbt-explicit-dependencies" % "0.3.1")
 
 addSbtPlugin("com.github.reibitto" % "sbt-welcome" % "0.6.0")
 
-addSbtPlugin("io.kevinlee" % "sbt-docusaur" % "0.21.0")
+addSbtPlugin("io.kevinlee" % "sbt-docusaur" % "0.22.0")
 
-val sbtDevOopsVersion = "3.5.1"
+val sbtDevOopsVersion = "3.8.0"
 addSbtPlugin("io.kevinlee" % "sbt-devoops-scala"     % sbtDevOopsVersion)
 addSbtPlugin("io.kevinlee" % "sbt-devoops-sbt-extra" % sbtDevOopsVersion)
 addSbtPlugin("io.kevinlee" % "sbt-devoops-github"    % sbtDevOopsVersion)

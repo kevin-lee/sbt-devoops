@@ -248,7 +248,7 @@ lazy val props =
     private val GitHubRepo = findRepoOrgAndName
 
     val Org            = "io.kevinlee"
-    val GitHubUsername = GitHubRepo.fold("Kevin-Lee")(_.orgToString)
+    val GitHubUsername = GitHubRepo.fold("kevin-lee")(_.orgToString)
     val RepoName       = GitHubRepo.fold("sbt-devoops")(_.nameToString)
 
     val ProjectName = RepoName
@@ -274,32 +274,32 @@ lazy val props =
     val Sbt1Version = "1.11.7"
     val Sbt2Version = "2.0.1"
 
-    val hedgehogVersion = "0.13.1"
+    val hedgehogVersion = "0.15.0"
 
     val newtypeVersion = "0.4.4"
 
-    val refined4sVersion = "1.18.0"
+    val refined4sVersion = "1.21.0"
 
     val catsVersion       = "2.13.0"
-    val catsEffectVersion = "3.7.0"
+    val catsEffectVersion = "3.7.1"
 
-    val extrasVersion = "0.53.0"
+    val extrasVersion = "0.56.0"
 
-    val effectieVersion = "2.3.0"
+    val effectieVersion = "2.5.0"
 
     /* logger-f-sbt-logging was split out of logger-f in 2.11.0 and is now versioned
      * independently. logger-f (core/cats) stays on 2.11.0; logger-f-sbt-logging is 2.11.1+
      * and provides the sbt 2 (util-logging_3) build needed for the Scala 3 axis.
      */
-    val loggerFVersion           = "2.11.0"
-    val loggerFSbtLoggingVersion = "2.11.1"
+    val loggerFVersion           = "2.14.0"
+    val loggerFSbtLoggingVersion = "2.14.0"
 
     val refinedVersion = "0.11.3"
 
-    val circeVersion        = "0.14.15"
+    val circeVersion        = "0.14.16"
     val circeRefinedVersion = "0.15.1"
 
-    val http4sVersion = "0.23.34"
+    val http4sVersion = "0.23.37"
 
     val justSemVerVersion = "1.3.0"
 
@@ -318,10 +318,10 @@ lazy val props =
     /* Compatibility bridge from the sbt team so shared plugin sources compile on both
      * sbt 1 and sbt 2 (e.g. Def.uncached is native in sbt 2 and a no-op enrichment in sbt 1).
      */
-    val Sbt2CompatVersion = "0.1.0"
+    val Sbt2CompatVersion = "0.2.0"
 
-    val SbtScalafmtVersion = "2.6.1"
-    val SbtScalafixVersion = "0.14.7"
+    val SbtScalafmtVersion = "2.6.2"
+    val SbtScalafixVersion = "0.14.9"
 
     val SbtWelcomeVersion = "0.6.0"
 
