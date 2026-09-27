@@ -378,7 +378,7 @@ lazy val libs =
       "io.circe" %% "circe-refined" % props.circeRefinedVersion
     )
 
-    lazy val semVer = "io.kevinlee" %% "just-semver" % props.justSemVerVersion
+    lazy val semVer = "io.kevinlee" %% "just-semver-core" % props.justSemVerVersion
 
     lazy val justSysprocess = "io.kevinlee" %% "just-sysprocess" % props.justSysprocessVersion
 
