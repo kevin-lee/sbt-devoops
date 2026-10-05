@@ -13,7 +13,7 @@ addSbtPlugin("com.github.reibitto" % "sbt-welcome" % "0.6.0")
 
 addSbtPlugin("io.kevinlee" % "sbt-docusaur" % "0.22.0")
 
-val sbtDevOopsVersion = "3.8.0"
+val sbtDevOopsVersion = "3.9.0"
 addSbtPlugin("io.kevinlee" % "sbt-devoops-scala"     % sbtDevOopsVersion)
 addSbtPlugin("io.kevinlee" % "sbt-devoops-sbt-extra" % sbtDevOopsVersion)
 addSbtPlugin("io.kevinlee" % "sbt-devoops-github"    % sbtDevOopsVersion)
